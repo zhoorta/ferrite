@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Nodes\EmptyTrash;
+use App\Actions\Nodes\PurgeNode;
 use App\Actions\Nodes\RestoreNode;
 use App\Models\Node;
 use Flux\Flux;
@@ -22,6 +24,22 @@ new #[Title('Trash')] class extends Component {
             ->get();
     }
 
+    public function purge(int $id, PurgeNode $action): void
+    {
+        $action->handle(Auth::user(), Node::findOrFail($id));
+
+        unset($this->items);
+        Flux::toast(variant: 'success', text: __('Deleted permanently.'));
+    }
+
+    public function emptyTrash(EmptyTrash $action): void
+    {
+        $action->handle(Auth::user());
+
+        unset($this->items);
+        Flux::toast(variant: 'success', text: __('The trash is empty.'));
+    }
+
     public function restore(int $id, RestoreNode $action): void
     {
         $action->handle(Auth::user(), Node::findOrFail($id));
@@ -32,7 +50,16 @@ new #[Title('Trash')] class extends Component {
 }; ?>
 
 <div class="mx-auto flex w-full max-w-5xl flex-col gap-6">
-    <flux:heading size="xl" level="1">{{ __('Trash') }}</flux:heading>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <flux:heading size="xl" level="1">{{ __('Trash') }}</flux:heading>
+            <flux:text>{{ __('Items are deleted for good after :days days.', ['days' => config('shed.trash_days')]) }}</flux:text>
+        </div>
+
+        @if ($this->items->isNotEmpty())
+            <flux:button variant="danger" icon="trash" wire:click="emptyTrash" wire:confirm="{{ __('Permanently delete everything in the trash? This cannot be undone.') }}">{{ __('Empty trash') }}</flux:button>
+        @endif
+    </div>
 
     @if ($this->items->isEmpty())
         <flux:callout icon="trash" :heading="__('The trash is empty')" />
@@ -55,7 +82,10 @@ new #[Title('Trash')] class extends Component {
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->trashed_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
-                            <flux:button size="sm" icon="arrow-uturn-left" wire:click="restore({{ $item->id }})">{{ __('Restore') }}</flux:button>
+                            <div class="flex justify-end gap-2">
+                                <flux:button size="sm" icon="arrow-uturn-left" wire:click="restore({{ $item->id }})">{{ __('Restore') }}</flux:button>
+                                <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="purge({{ $item->id }})" wire:confirm="{{ __('Delete permanently? This cannot be undone.') }}" :aria-label="__('Delete permanently')" />
+                            </div>
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach

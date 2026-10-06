@@ -63,6 +63,7 @@ class Activity extends Model
             ActivityAction::Moved => __(':who moved :name to :to', ['who' => $who, 'name' => $name, 'to' => $meta['to'] ?? __('My files')]),
             ActivityAction::Trashed => __(':who moved :name to the trash', ['who' => $who, 'name' => $name]),
             ActivityAction::Restored => __(':who restored :name from the trash', ['who' => $who, 'name' => $name]),
+            ActivityAction::Purged => __(':who permanently deleted :name', ['who' => $who, 'name' => $name]),
             ActivityAction::Downloaded => __(':who downloaded :name', ['who' => $who, 'name' => $name]),
             ActivityAction::LinkCreated => __(':who created a share link for :name', ['who' => $who, 'name' => $name]),
             ActivityAction::LinkRevoked => __(':who revoked a share link for :name', ['who' => $who, 'name' => $name]),

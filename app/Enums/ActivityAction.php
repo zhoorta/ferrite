@@ -10,6 +10,7 @@ enum ActivityAction: string
     case Moved = 'moved';
     case Trashed = 'trashed';
     case Restored = 'restored';
+    case Purged = 'purged';
     case Downloaded = 'downloaded';
     case LinkCreated = 'link_created';
     case LinkRevoked = 'link_revoked';

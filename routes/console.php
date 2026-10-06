@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('uploads:prune')->daily();
 Schedule::command('activity:prune')->daily();
+Schedule::command('trash:purge')->daily();
