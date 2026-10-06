@@ -33,6 +33,12 @@
 @layer theme {
     .dark {
         /* Brighter text tones for dark mode (muted text uses zinc-400/500). */
+        /* Plum surfaces. */
+        --color-zinc-700: #6b4562;
+        --color-zinc-800: #4d2f4a;
+        --color-zinc-900: #3c2339;
+        --color-zinc-950: #2a1829;
+
         --color-zinc-200: #f6ecd8;
         --color-zinc-300: #ecdfc4;
         --color-zinc-400: #dac8a6;
