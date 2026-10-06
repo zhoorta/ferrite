@@ -86,6 +86,34 @@
         --color-zinc-900: #443f1f;
         --color-zinc-950: #2e2b13;
     }
+
+    .dark[data-palette='berry'] {
+        --color-zinc-700: #8a4560;
+        --color-zinc-800: #6b2f4a;
+        --color-zinc-900: #55233b;
+        --color-zinc-950: #3a1727;
+    }
+
+    .dark[data-palette='charcoal'] {
+        --color-zinc-700: #5a5652;
+        --color-zinc-800: #403d3a;
+        --color-zinc-900: #302e2b;
+        --color-zinc-950: #1d1c1a;
+    }
+
+    .dark[data-palette='sage'] {
+        --color-zinc-700: #6f8470;
+        --color-zinc-800: #566b58;
+        --color-zinc-900: #45574a;
+        --color-zinc-950: #2f3c33;
+    }
+
+    .dark[data-palette='slate'] {
+        --color-zinc-700: #5a6b7d;
+        --color-zinc-800: #435364;
+        --color-zinc-900: #34424f;
+        --color-zinc-950: #222c36;
+    }
 }
 
 @layer base {
