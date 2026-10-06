@@ -25,6 +25,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property CarbonInterface|null $email_verified_at
  * @property string $password
  * @property UserRole $role
+ * @property string $palette
  * @property int|null $quota_bytes
  * @property int $used_bytes
  * @property CarbonInterface|null $disabled_at
@@ -41,6 +42,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /** Dark-mode palettes a user can pick in the appearance settings. */
+    public const PALETTES = ['plum', 'wood'];
+
+    /** @var array<string, mixed> */
+    protected $attributes = ['palette' => 'plum'];
 
     /**
      * Get the attributes that should be cast.

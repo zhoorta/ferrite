@@ -15,5 +15,10 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance
 <script>
-    try { document.documentElement.dataset.palette = localStorage.getItem('shed.palette') || 'plum'; } catch (e) {}
+    // Signed-in pages carry the account's palette from the server; remember it for guest pages (sign-in, share links).
+    try {
+        const root = document.documentElement;
+        if (root.dataset.palette) localStorage.setItem('shed.palette', root.dataset.palette);
+        else root.dataset.palette = localStorage.getItem('shed.palette') || 'plum';
+    } catch (e) {}
 </script>
