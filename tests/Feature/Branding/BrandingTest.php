@@ -29,7 +29,10 @@ it('has a valid multi-size favicon.ico with PNG images', function () {
 it('shows the shed in the sidebar and on the sign-in page', function () {
     $this->actingAs(User::factory()->create());
 
-    $this->get(route('files'))->assertSee(asset('favicon.svg'), false);
+    $this->get(route('files'))
+        ->assertSee(asset('favicon.svg'), false)
+        ->assertSee('data-wordmark', false)
+        ->assertSee('sr-only">Shed<', false);
 
     auth()->logout();
     $this->get(route('login'))->assertSee('<img src="'.asset('favicon.svg').'"', false);
