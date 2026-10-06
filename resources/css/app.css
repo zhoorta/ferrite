@@ -51,12 +51,40 @@
 }
 
 @layer theme {
-    /* Optional dark palette: the original warm wood brown (Settings > Appearance). */
+    /* Optional dark palettes (Settings > Appearance); plum is the default above. */
     .dark[data-palette='wood'] {
         --color-zinc-700: #66533f;
         --color-zinc-800: #4a3a2e;
         --color-zinc-900: #3b2e24;
         --color-zinc-950: #1c1511;
+    }
+
+    .dark[data-palette='teal'] {
+        --color-zinc-700: #3f6b6d;
+        --color-zinc-800: #2a4e53;
+        --color-zinc-900: #204247;
+        --color-zinc-950: #15302f;
+    }
+
+    .dark[data-palette='forest'] {
+        --color-zinc-700: #4d6a45;
+        --color-zinc-800: #385436;
+        --color-zinc-900: #2c4329;
+        --color-zinc-950: #1e301c;
+    }
+
+    .dark[data-palette='midnight'] {
+        --color-zinc-700: #46618a;
+        --color-zinc-800: #314a72;
+        --color-zinc-900: #263b5d;
+        --color-zinc-950: #182940;
+    }
+
+    .dark[data-palette='olive'] {
+        --color-zinc-700: #6f6a3a;
+        --color-zinc-800: #555128;
+        --color-zinc-900: #443f1f;
+        --color-zinc-950: #2e2b13;
     }
 }
 
