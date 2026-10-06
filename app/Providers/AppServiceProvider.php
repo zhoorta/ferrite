@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -27,8 +29,27 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureTrustedProxies();
 
         Gate::define('admin', fn (User $user) => $user->isAdmin());
+    }
+
+    /**
+     * Believe the forwarding headers of the proxies listed in SHED's TRUSTED_PROXIES setting. Done
+     * here rather than in bootstrap/app.php because config is not available there.
+     */
+    protected function configureTrustedProxies(): void
+    {
+        $proxies = config('shed.trusted_proxies');
+
+        if (! is_string($proxies) || trim($proxies) === '') {
+            return;
+        }
+
+        TrustProxies::at($proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
+        TrustProxies::withHeaders(
+            Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO,
+        );
     }
 
     /**

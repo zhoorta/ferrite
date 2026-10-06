@@ -55,7 +55,7 @@ class ManageUser extends Command
         $role = match (true) {
             (bool) $this->option('admin') => UserRole::Admin,
             (bool) $this->option('user') => UserRole::User,
-            default => $user?->role ?? UserRole::User,
+            default => $user->role ?? UserRole::User,
         };
 
         $quota = $this->option('quota');
@@ -67,8 +67,8 @@ class ManageUser extends Command
 
         try {
             $saved = $save->save($user, [
-                'name' => $this->option('name') ?? $user?->name ?? strstr($email, '@', true),
-                'email' => $user?->email ?? $email,
+                'name' => $this->option('name') ?? $user->name ?? strstr($email, '@', true),
+                'email' => $user->email ?? $email,
                 'password' => $newPassword,
                 'role' => $role->value,
                 'quota_gb' => $quotaGb,

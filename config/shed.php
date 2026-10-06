@@ -4,6 +4,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Behind a reverse proxy
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated IPs/CIDRs of proxies whose X-Forwarded-* headers are believed (so https and
+    | the client IP are seen correctly), or "*" for any. Empty when reached directly.
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Registration
     |--------------------------------------------------------------------------
     |

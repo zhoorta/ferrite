@@ -17,14 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global, so error pages for unknown URLs carry the headers too.
         $middleware->append(SecurityHeaders::class);
         $middleware->web(append: [EnsureUserIsActive::class]);
-
-        // Read from the environment: config is not loaded yet at this point.
-        if (filled($proxies = env('TRUSTED_PROXIES'))) {
-            $middleware->trustProxies(
-                at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)),
-                headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO,
-            );
-        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
