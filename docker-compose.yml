@@ -1,0 +1,16 @@
+# Shed on a single host. Copy docker/shed.env.example to shed.env and fill it in, then:
+#   docker compose up -d --build
+# Put a reverse proxy with HTTPS in front of port 8080 (see docs/install.md).
+services:
+  shed:
+    build: .
+    image: shed:latest
+    restart: unless-stopped
+    env_file: shed.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - shed-data:/data
+
+volumes:
+  shed-data:
