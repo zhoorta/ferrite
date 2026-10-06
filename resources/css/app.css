@@ -132,6 +132,20 @@
         border-color: var(--color-zinc-700, currentColor);
     }
 
+    /* Every theme except Light is dark: native controls, scrollbars and defaults follow it. */
+    html {
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
+    }
+
+    /* <dialog> (Flux modals) resets its text colour; keep the page's. */
+    dialog {
+        color: inherit;
+    }
+
     h1, h2, h3,
     [data-flux-heading] {
         font-family: var(--font-serif);
