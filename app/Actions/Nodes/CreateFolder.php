@@ -5,6 +5,7 @@ namespace App\Actions\Nodes;
 use App\Enums\NodeType;
 use App\Models\Node;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -12,6 +13,7 @@ class CreateFolder
 {
     /**
      * @throws ValidationException
+     * @throws QueryException When a parallel request took the name between the check and the insert.
      */
     public function handle(User $actor, ?Node $parent, string $name): Node
     {

@@ -55,4 +55,27 @@ class NodeName
             ->when($ignoreNodeId, fn ($query) => $query->whereKeyNot($ignoreNodeId))
             ->exists();
     }
+
+    /**
+     * The name itself if free, otherwise the first free "name (2)", "name (3)"... For files the
+     * suffix goes before the extension.
+     */
+    public static function available(int $ownerId, ?int $parentId, string $name, bool $isFile, ?int $ignoreNodeId = null): string
+    {
+        if (! self::taken($ownerId, $parentId, $name, $ignoreNodeId)) {
+            return $name;
+        }
+
+        [$base, $extension] = $isFile && str_contains($name, '.') && ! str_starts_with($name, '.')
+            ? [pathinfo($name, PATHINFO_FILENAME), '.'.pathinfo($name, PATHINFO_EXTENSION)]
+            : [$name, ''];
+
+        for ($i = 2; ; $i++) {
+            $candidate = "{$base} ({$i}){$extension}";
+
+            if (! self::taken($ownerId, $parentId, $candidate, $ignoreNodeId)) {
+                return $candidate;
+            }
+        }
+    }
 }
