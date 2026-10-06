@@ -4,7 +4,7 @@
         @include('partials.head')
         <meta name="robots" content="noindex, nofollow">
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-zinc-800">
+    <body class="cozy-bg min-h-screen antialiased">
         <div class="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-6 px-4 py-8">
             <div class="flex items-center gap-2 text-sm text-zinc-500">
                 <img src="{{ asset('favicon.svg') }}" alt="" class="size-6 rounded-md">

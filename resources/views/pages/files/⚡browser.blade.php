@@ -410,7 +410,7 @@ new #[Title('Files')] class extends Component {
     </div>
 
     <div x-show="items.length" x-cloak
-        class="fixed bottom-4 end-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+        class="fixed bottom-4 end-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-zinc-50 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
         <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
             <flux:heading>{{ __('Uploads') }}</flux:heading>
             <flux:button size="xs" variant="ghost" x-on:click="clear()" x-show="!active">{{ __('Clear') }}</flux:button>
