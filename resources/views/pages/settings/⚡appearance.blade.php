@@ -30,14 +30,12 @@ new #[Title('Appearance settings')] class extends Component {
 
     <flux:heading level="2" class="sr-only">{{ __('Appearance settings') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Appearance')" :subheading="__('Update the appearance settings for your account')">
+    <x-pages::settings.layout :heading="__('Appearance')" :subheading="__('Pick the look of your Shed.')">
         <div class="grid gap-2">
-            <flux:heading>{{ __('Theme') }}</flux:heading>
-            <flux:text>{{ __('Pick the look of your Shed.') }}</flux:text>
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('Theme') }}">
                 @foreach ([
-                    'light' => [__('Light'), '#f4ebdb'],
                     'plum' => [__('Plum'), '#4d2f4a'],
+                    'light' => [__('Light'), '#f4ebdb'],
                     'wood' => [__('Wood'), '#4a3a2e'],
                     'teal' => [__('Teal'), '#2a4e53'],
                     'forest' => [__('Forest'), '#385436'],
