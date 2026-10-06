@@ -1,6 +1,11 @@
 <?php
 
+use App\Enums\NodeType;
+use App\Models\Node;
+use App\Models\User;
+use App\Support\StorageManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /*
@@ -16,6 +21,12 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        // Keep blobs and temporary uploads of every feature test out of the real storage.
+        $this->storageBase = storage_path('framework/testing/shed-'.bin2hex(random_bytes(4)));
+        config(['shed.tmp_path' => "{$this->storageBase}/tmp", 'shed.local_root' => "{$this->storageBase}/blobs"]);
+    })
+    ->afterEach(fn () => File::deleteDirectory($this->storageBase))
     ->in('Feature');
 
 /*
@@ -44,7 +55,28 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A file node whose blob really exists on the default disk.
+ */
+function storedFile(User $owner, string $name, string $content, ?Node $parent = null, ?string $mime = 'text/plain'): Node
 {
-    // ..
+    $storage = app(StorageManager::class);
+    $disk = $storage->default();
+    $key = $storage->newKey();
+    $storage->filesystem($disk)->put($key, $content);
+
+    $node = new Node([
+        'parent_id' => $parent?->id,
+        'type' => NodeType::File,
+        'name' => $name,
+        'disk_id' => $disk->id,
+        'path' => $key,
+        'size' => strlen($content),
+        'mime' => $mime,
+        'sha256' => hash('sha256', $content),
+    ]);
+    $node->owner_id = $owner->id;
+    $node->save();
+
+    return $node;
 }

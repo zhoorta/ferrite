@@ -5,6 +5,9 @@ use App\Actions\Nodes\MoveNode;
 use App\Actions\Nodes\RenameNode;
 use App\Actions\Nodes\TrashNode;
 use App\Models\Node;
+use App\Support\FileKind;
+use App\Support\StorageManager;
+use App\Support\Thumbnailer;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +24,8 @@ new #[Title('Files')] class extends Component {
     public ?int $renameId = null;
 
     public ?int $moveId = null;
+
+    public ?int $previewId = null;
 
     /** Folder being browsed inside the move dialog; null is the root. */
     public ?int $moveBrowseId = null;
@@ -106,6 +111,65 @@ new #[Title('Files')] class extends Component {
     public function moveBrowseFolder(): ?Node
     {
         return $this->moveBrowseId === null ? null : Node::where('owner_id', Auth::id())->find($this->moveBrowseId);
+    }
+
+    #[Computed]
+    public function previewNode(): ?Node
+    {
+        return $this->previewId === null ? null : Node::find($this->previewId);
+    }
+
+    /**
+     * How the previewed file is shown: image, pdf, video, audio, text, or null for none.
+     */
+    #[Computed]
+    public function previewKind(): ?string
+    {
+        $node = $this->previewNode;
+
+        return $node !== null && FileKind::inlineType($node->mime) !== null ? FileKind::of($node->mime) : null;
+    }
+
+    /**
+     * The start of a text file, cut at a size that is comfortable to show.
+     *
+     * @return array{text: string, truncated: bool}
+     */
+    #[Computed]
+    public function previewText(): array
+    {
+        $node = $this->previewNode;
+        $limit = 64 * 1024;
+
+        if ($node === null || $node->disk === null || $node->path === null) {
+            return ['text' => '', 'truncated' => false];
+        }
+
+        $stream = app(StorageManager::class)->filesystem($node->disk)->readStream($node->path);
+        $text = $stream === null ? '' : (string) stream_get_contents($stream, $limit);
+
+        if ($stream !== null) {
+            fclose($stream);
+        }
+
+        return ['text' => mb_scrub($text, 'UTF-8'), 'truncated' => $node->size > $limit];
+    }
+
+    public function preview(int $id): void
+    {
+        $node = Node::findOrFail($id);
+        Gate::authorize('view', $node);
+
+        abort_unless($node->isFile() && ! $node->isTrashed(), 404);
+
+        $this->previewId = $node->id;
+        unset($this->previewNode, $this->previewKind, $this->previewText);
+        Flux::modal('preview')->show();
+    }
+
+    public function closePreview(): void
+    {
+        $this->previewId = null;
     }
 
     public function createFolder(CreateFolder $action): void
@@ -224,11 +288,19 @@ new #[Title('Files')] class extends Component {
                     <flux:table.row :key="$item->id" data-test="node-row">
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
-                                <flux:icon :name="$item->isFolder() ? 'folder' : 'document'" class="size-5 shrink-0 text-zinc-400" />
+                                @if ($item->isFile() && app(Thumbnailer::class)->supports($item))
+                                    <span x-data="{ failed: false }" class="flex size-8 shrink-0 items-center justify-center">
+                                        <img x-show="!failed" x-on:error="failed = true" loading="lazy" alt=""
+                                            src="{{ route('nodes.thumbnail', $item) }}" class="size-8 rounded object-cover">
+                                        <flux:icon x-show="failed" name="photo" class="size-5 text-zinc-400" />
+                                    </span>
+                                @else
+                                    <flux:icon :name="$item->isFolder() ? 'folder' : 'document'" class="size-5 shrink-0 text-zinc-400" />
+                                @endif
                                 @if ($item->isFolder())
                                     <flux:link :href="route('files', $item)" wire:navigate variant="ghost" class="font-medium">{{ $item->name }}</flux:link>
                                 @else
-                                    <span class="font-medium">{{ $item->name }}</span>
+                                    <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium hover:underline">{{ $item->name }}</button>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -241,6 +313,11 @@ new #[Title('Files')] class extends Component {
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" />
 
                                 <flux:menu>
+                                    @if ($item->isFolder())
+                                        <flux:menu.item icon="arrow-down-tray" :href="route('nodes.zip', $item)">{{ __('Download as ZIP') }}</flux:menu.item>
+                                    @else
+                                        <flux:menu.item icon="arrow-down-tray" :href="route('nodes.download', $item)">{{ __('Download') }}</flux:menu.item>
+                                    @endif
                                     @can('update', $item)
                                         <flux:menu.item icon="pencil" wire:click="startRename({{ $item->id }})">{{ __('Rename') }}</flux:menu.item>
                                     @endcan
@@ -257,6 +334,41 @@ new #[Title('Files')] class extends Component {
             </flux:table.rows>
         </flux:table>
     @endif
+
+    <flux:modal name="preview" class="w-full max-w-4xl" x-on:close="$wire.closePreview()">
+        @if ($this->previewNode)
+            <div class="space-y-4" wire:key="preview-{{ $this->previewNode->id }}">
+                <flux:heading size="lg" class="truncate pe-8">{{ $this->previewNode->name }}</flux:heading>
+
+                @switch($this->previewKind)
+                    @case('image')
+                        <img src="{{ route('nodes.preview', $this->previewNode) }}" alt="{{ $this->previewNode->name }}" class="mx-auto max-h-[70vh] max-w-full object-contain">
+                        @break
+                    @case('pdf')
+                        <iframe src="{{ route('nodes.preview', $this->previewNode) }}" title="{{ $this->previewNode->name }}" class="h-[70vh] w-full rounded border border-zinc-200 dark:border-zinc-700"></iframe>
+                        @break
+                    @case('video')
+                        <video src="{{ route('nodes.preview', $this->previewNode) }}" controls preload="metadata" class="mx-auto max-h-[70vh] w-full"></video>
+                        @break
+                    @case('audio')
+                        <audio src="{{ route('nodes.preview', $this->previewNode) }}" controls preload="metadata" class="w-full"></audio>
+                        @break
+                    @case('text')
+                        <pre class="max-h-[70vh] overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 text-sm dark:bg-zinc-900" data-test="preview-text">{{ $this->previewText['text'] }}</pre>
+                        @if ($this->previewText['truncated'])
+                            <flux:text size="sm">{{ __('Only the start of the file is shown.') }}</flux:text>
+                        @endif
+                        @break
+                    @default
+                        <flux:callout icon="document" :heading="__('No preview available for this file type')" />
+                @endswitch
+
+                <div class="flex justify-end">
+                    <flux:button icon="arrow-down-tray" :href="route('nodes.download', $this->previewNode)">{{ __('Download') }}</flux:button>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
 
     <flux:modal name="new-folder" class="w-full max-w-sm">
         <form wire:submit="createFolder" class="space-y-6">

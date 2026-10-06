@@ -118,3 +118,49 @@ it('does not let users act on other people\'s nodes', function () {
     Livewire::test('pages::files.browser')->call('startMove', $theirs->id)->assertForbidden();
     Livewire::test('pages::files.trash')->call('restore', $theirs->id)->assertForbidden();
 });
+
+it('previews text files and offers a download for the rest', function () {
+    $text = storedFile($this->user, 'notes.txt', 'remember the milk');
+    $binary = storedFile($this->user, 'app.exe', 'MZ', mime: 'application/x-msdownload');
+
+    Livewire::test('pages::files.browser')
+        ->call('preview', $text->id)
+        ->assertSet('previewId', $text->id)
+        ->assertSee('remember the milk')
+        ->assertSee(route('nodes.download', $text))
+        ->call('closePreview')
+        ->assertSet('previewId', null)
+        ->call('preview', $binary->id)
+        ->assertSee('No preview available')
+        ->assertDontSee('MZ');
+});
+
+it('escapes text in the preview', function () {
+    $node = storedFile($this->user, 'x.txt', '<script>alert(1)</script>');
+
+    Livewire::test('pages::files.browser')
+        ->call('preview', $node->id)
+        ->assertDontSeeHtml('<script>alert(1)</script>')
+        ->assertSeeHtml('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
+it('only previews files the user may view', function () {
+    $theirs = storedFile(User::factory()->create(), 'secret.txt', 'secret');
+    $trashed = storedFile($this->user, 'old.txt', 'old');
+    $trashed->forceFill(['trashed_at' => now()])->save();
+
+    Livewire::test('pages::files.browser')->call('preview', $theirs->id)->assertForbidden();
+    Livewire::test('pages::files.browser')->call('preview', $trashed->id)->assertNotFound();
+});
+
+it('links downloads, ZIPs and thumbnails from the list', function () {
+    $folder = Node::factory()->for($this->user, 'owner')->create();
+    $image = storedFile($this->user, 'p.png', 'x', mime: 'image/png');
+    $file = storedFile($this->user, 'a.txt', 'x');
+
+    $this->get(route('files'))
+        ->assertSee(route('nodes.zip', $folder))
+        ->assertSee(route('nodes.download', $file))
+        ->assertSee(route('nodes.thumbnail', $image))
+        ->assertDontSee(route('nodes.thumbnail', $file));
+});
