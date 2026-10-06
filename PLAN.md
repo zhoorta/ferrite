@@ -23,7 +23,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 ## Build order
 
 - [x] 0. Scaffold: Laravel 13, Livewire starter kit, Pest (34 tests passing)
-- [ ] 1. Schema, auth (2FA, passkeys), `nodes` tree, `NodePolicy`
+- [x] 1. Schema, auth (2FA, passkeys), `nodes` tree, `NodePolicy` (2FA and passkeys came with the starter kit; `shares`, `uploads`, `activity`, `favorites` tables land with their steps; 46 tests)
 - [ ] 2. Browser UI: list, create folder, rename, move, trash and restore
 - [ ] 3. Upload: simple, then chunked and resumable, with quota
 - [ ] 4. Download, streaming with Range, folder ZIP, previews and thumbnails
