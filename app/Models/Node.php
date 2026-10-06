@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NodeType;
 use App\Enums\Permission;
+use Carbon\CarbonInterface;
 use Database\Factories\NodeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,9 +29,9 @@ use Illuminate\Support\Facades\DB;
  * @property int $size
  * @property string|null $mime
  * @property string|null $sha256
- * @property Carbon|null $trashed_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonInterface|null $trashed_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  */
 #[Fillable(['parent_id', 'type', 'name', 'disk_id', 'path', 'size', 'mime', 'sha256'])]
 class Node extends Model

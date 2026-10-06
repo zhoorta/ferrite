@@ -6,7 +6,7 @@ use App\Http\Controllers\UploadController;
 use App\Http\Middleware\SharePageHeaders;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+Route::redirect('/', 'files')->name('home');
 
 // Public share links. Node ids must be numeric so they never clash with the action segments.
 Route::middleware(['throttle:120,1', SharePageHeaders::class])->prefix('s/{token}')->group(function () {
@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('nodes/{node}/thumbnail', [NodeFileController::class, 'thumbnail'])->name('nodes.thumbnail');
     Route::get('nodes/{node}/zip', [NodeFileController::class, 'zip'])->name('nodes.zip');
 
+    Route::livewire('admin/users', 'pages::admin.users')->middleware('can:admin')->name('admin.users');
     Route::livewire('admin/storage', 'pages::admin.disks')->middleware('can:admin')->name('admin.storage');
     Route::livewire('search', 'pages::files.search')->name('search');
     Route::livewire('activity', 'pages::files.activity')->name('activity');

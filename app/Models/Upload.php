@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * State of a chunked upload. The bytes received so far live in a temporary file named after the
@@ -19,8 +19,8 @@ use Illuminate\Support\Carbon;
  * @property int $size
  * @property int $offset
  * @property string|null $fingerprint
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  */
 #[Fillable(['name', 'size', 'fingerprint'])]
 class Upload extends Model

@@ -28,6 +28,9 @@
                     {{ __('Trash') }}
                 </flux:sidebar.item>
                 @can('admin')
+                    <flux:sidebar.item icon="user-group" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
+                        {{ __('Users') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="server-stack" :href="route('admin.storage')" :current="request()->routeIs('admin.storage')" wire:navigate>
                         {{ __('Storage') }}
                     </flux:sidebar.item>

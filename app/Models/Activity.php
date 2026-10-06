@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use App\Enums\ActivityAction;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * One line of the activity log. Rows are append-only and pruned by age (`activity:prune`).
@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $node_name
  * @property ActivityAction $action
  * @property array<string, mixed>|null $meta
- * @property Carbon $created_at
+ * @property CarbonInterface $created_at
  */
 class Activity extends Model
 {

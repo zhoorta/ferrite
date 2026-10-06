@@ -4,6 +4,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Registration
+    |--------------------------------------------------------------------------
+    |
+    | Open to everyone when true. When false, sign-up is only possible while there are no users
+    | at all (the first account becomes the admin); after that, admins add users.
+    |
+    */
+
+    'registration' => (bool) env('SHED_REGISTRATION', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Uploads
     |--------------------------------------------------------------------------
     |

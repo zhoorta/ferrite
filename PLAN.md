@@ -29,6 +29,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 4. Download, streaming with Range, folder ZIP, previews and thumbnails (see `docs/serving-files.md`; preview modal not yet checked by hand; added `maennchen/zipstream-php`; 159 tests)
 - [x] 5. Share links, then sharing with users (see `docs/sharing.md`; dialog and guest page not yet checked by hand; 206 tests)
 - [x] 6. Storage disks (SFTP, S3), name search, activity log (see `docs/storage-search-activity.md`; S3/SFTP only tested up to adapter and error handling, not against a real server; 263 tests)
+- [x] 6b. Admin users (quota, disable, delete), registration policy, permanent delete (see `docs/users.md`; 301 tests)
 - [ ] 7. Docker image, install docs, pre-publication security review
 
 ## Risks
