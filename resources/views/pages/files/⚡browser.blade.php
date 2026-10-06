@@ -6,7 +6,7 @@ use App\Actions\Nodes\RenameNode;
 use App\Actions\Nodes\TrashNode;
 use App\Models\Node;
 use App\Support\FileKind;
-use App\Support\StorageManager;
+use App\Support\TextPreview;
 use App\Support\Thumbnailer;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -131,28 +131,14 @@ new #[Title('Files')] class extends Component {
     }
 
     /**
-     * The start of a text file, cut at a size that is comfortable to show.
-     *
-     * @return array{text: string, truncated: bool}
+     * @return array{text: string, truncated: bool}|null
      */
     #[Computed]
-    public function previewText(): array
+    public function previewText(): ?array
     {
         $node = $this->previewNode;
-        $limit = 64 * 1024;
 
-        if ($node === null || $node->disk === null || $node->path === null) {
-            return ['text' => '', 'truncated' => false];
-        }
-
-        $stream = app(StorageManager::class)->filesystem($node->disk)->readStream($node->path);
-        $text = $stream === null ? '' : (string) stream_get_contents($stream, $limit);
-
-        if ($stream !== null) {
-            fclose($stream);
-        }
-
-        return ['text' => mb_scrub($text, 'UTF-8'), 'truncated' => $node->size > $limit];
+        return $node !== null && $this->previewKind === 'text' ? TextPreview::read($node) : null;
     }
 
     public function preview(int $id): void
@@ -247,7 +233,11 @@ new #[Title('Files')] class extends Component {
 >
     <div class="flex flex-wrap items-center justify-between gap-3">
         <flux:breadcrumbs>
-            <flux:breadcrumbs.item :href="route('files')" wire:navigate>{{ __('My files') }}</flux:breadcrumbs.item>
+            @if ($this->folder && $this->folder->owner_id !== auth()->id())
+                <flux:breadcrumbs.item :href="route('shared')" wire:navigate>{{ __('Shared with me') }}</flux:breadcrumbs.item>
+            @else
+                <flux:breadcrumbs.item :href="route('files')" wire:navigate>{{ __('My files') }}</flux:breadcrumbs.item>
+            @endif
             @foreach ($this->breadcrumbs as $crumb)
                 @if ($loop->last)
                     <flux:breadcrumbs.item>{{ $crumb->name }}</flux:breadcrumbs.item>
@@ -321,6 +311,9 @@ new #[Title('Files')] class extends Component {
                                     @can('update', $item)
                                         <flux:menu.item icon="pencil" wire:click="startRename({{ $item->id }})">{{ __('Rename') }}</flux:menu.item>
                                     @endcan
+                                    @can('share', $item)
+                                        <flux:menu.item icon="share" wire:click="$dispatch('share-node', { id: {{ $item->id }} })">{{ __('Share') }}</flux:menu.item>
+                                    @endcan
                                     @can('move', $item)
                                         <flux:menu.item icon="arrow-right-circle" wire:click="startMove({{ $item->id }})">{{ __('Move') }}</flux:menu.item>
                                         <flux:menu.separator />
@@ -335,33 +328,18 @@ new #[Title('Files')] class extends Component {
         </flux:table>
     @endif
 
+    <livewire:pages::files.share-dialog />
+
     <flux:modal name="preview" class="w-full max-w-4xl" x-on:close="$wire.closePreview()">
         @if ($this->previewNode)
             <div class="space-y-4" wire:key="preview-{{ $this->previewNode->id }}">
                 <flux:heading size="lg" class="truncate pe-8">{{ $this->previewNode->name }}</flux:heading>
 
-                @switch($this->previewKind)
-                    @case('image')
-                        <img src="{{ route('nodes.preview', $this->previewNode) }}" alt="{{ $this->previewNode->name }}" class="mx-auto max-h-[70vh] max-w-full object-contain">
-                        @break
-                    @case('pdf')
-                        <iframe src="{{ route('nodes.preview', $this->previewNode) }}" title="{{ $this->previewNode->name }}" class="h-[70vh] w-full rounded border border-zinc-200 dark:border-zinc-700"></iframe>
-                        @break
-                    @case('video')
-                        <video src="{{ route('nodes.preview', $this->previewNode) }}" controls preload="metadata" class="mx-auto max-h-[70vh] w-full"></video>
-                        @break
-                    @case('audio')
-                        <audio src="{{ route('nodes.preview', $this->previewNode) }}" controls preload="metadata" class="w-full"></audio>
-                        @break
-                    @case('text')
-                        <pre class="max-h-[70vh] overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 text-sm dark:bg-zinc-900" data-test="preview-text">{{ $this->previewText['text'] }}</pre>
-                        @if ($this->previewText['truncated'])
-                            <flux:text size="sm">{{ __('Only the start of the file is shown.') }}</flux:text>
-                        @endif
-                        @break
-                    @default
-                        <flux:callout icon="document" :heading="__('No preview available for this file type')" />
-                @endswitch
+                <x-file-preview
+                    :kind="$this->previewKind"
+                    :url="route('nodes.preview', $this->previewNode)"
+                    :name="$this->previewNode->name"
+                    :text="$this->previewText" />
 
                 <div class="flex justify-end">
                     <flux:button icon="arrow-down-tray" :href="route('nodes.download', $this->previewNode)">{{ __('Download') }}</flux:button>

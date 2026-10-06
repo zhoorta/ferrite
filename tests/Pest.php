@@ -80,3 +80,27 @@ function storedFile(User $owner, string $name, string $content, ?Node $parent = 
 
     return $node;
 }
+
+/**
+ * @return array<string, string|null> entry name => contents (null for directories)
+ */
+function zipEntries($response): array
+{
+    $path = tempnam(sys_get_temp_dir(), 'shed-zip');
+    file_put_contents($path, $response->streamedContent());
+
+    $zip = new ZipArchive;
+    expect($zip->open($path))->toBeTrue();
+
+    $entries = [];
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        $entries[$name] = str_ends_with($name, '/') ? null : $zip->getFromIndex($i);
+    }
+
+    $zip->close();
+    unlink($path);
+    ksort($entries);
+
+    return $entries;
+}
