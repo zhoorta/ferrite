@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 712 256" width="712" height="256" role="img" aria-label="Shed">
+  <rect x="158" y="48" width="24" height="50" rx="4" fill="#c2693f"/>
+  <rect x="154" y="42" width="32" height="12" rx="5" fill="#c2693f"/>
+  <path d="M170 34 C 158 27, 182 20, 170 12" fill="none" stroke="#78716c" stroke-width="6" stroke-linecap="round"/>
+  <path d="M190 30 C 183 25, 197 19, 192 13" fill="none" stroke="#78716c" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <rect x="64" y="116" width="128" height="90" rx="9" fill="#292524"/>
+  <path d="M34 114 L128 62 L222 114 Z" fill="#c2693f" stroke="#c2693f" stroke-width="16" stroke-linejoin="round"/>
+  <circle cx="128" cy="98" r="8.5" fill="#f59e0b"/>
+  <circle cx="98" cy="164" r="19" fill="#f59e0b"/>
+  <path d="M98 145 V183 M79 164 H117" stroke="#292524" stroke-width="4" stroke-linecap="round"/>
+  <path d="M138 206 V178 A19 19 0 0 1 176 178 V206 Z" fill="#f59e0b"/>
+  <circle cx="168" cy="190" r="3.2" fill="#292524"/>
+  <rect x="18" y="204" width="212" height="9" rx="4.5" fill="#292524"/>
+  <path d="M208 204 q-2 -14 -10 -18 M208 204 q2 -16 10 -22 M208 204 q6 -10 16 -12" fill="none" stroke="#292524" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="38" cy="195" r="14" fill="#292524"/><circle cx="51" cy="200" r="10" fill="#292524"/>
+  <g transform="translate(284 93) scale(1.4)" fill="none" stroke="#292524" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M49 15 C 45 7, 38 3, 29 3 C 16 3, 9 10, 9 18.5 C 9 28, 17 30.5, 29.5 33 C 43 35.5, 51 39.5, 51 48.5 C 51 57.5, 43 63, 30 63 C 19 63, 10 59, 6 50" transform="translate(0 0)"/>
+    <path d="M8 -40 V64 M8 36 C 8 10, 50 6, 50 34 V64" transform="translate(72 0)"/>
+    <path d="M5 32 H55 A26 26 0 1 0 49.5 48.5" transform="translate(144 0)"/>
+    <path d="M56 -40 V64 M30 6 A26 26 0 0 0 30 58 A26 26 0 0 0 30 6" transform="translate(216 0)"/>
+  </g>
+</svg>

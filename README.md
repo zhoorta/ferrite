@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.svg">
+    <img src="docs/img/logo.svg" alt="Shed" width="360">
+  </picture>
+</p>
+
 # Shed
 
 Self-hosted file storage for one person or a small team: a Google Drive replacement that runs on your own server. Web only, built with Laravel, Livewire and Flux. No sync clients and no WebDAV, by design.
