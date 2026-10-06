@@ -81,6 +81,8 @@ class NodeResponder
         $path = (string) $node->path;
 
         return new StreamedResponse(function () use ($filesystem, $path, $start, $length) {
+            // Big files to slow connections outlast any default time limit.
+            set_time_limit(0);
             $this->copy($filesystem, $path, $start, $length);
         }, $status, $headers);
     }
@@ -111,6 +113,7 @@ class NodeResponder
     public function zip(Node $folder): StreamedResponse
     {
         return new StreamedResponse(function () use ($folder) {
+            set_time_limit(0);
             $zip = new ZipStream(
                 defaultCompressionMethod: CompressionMethod::STORE,
                 sendHttpHeaders: false,

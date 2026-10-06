@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Shed serves files itself, with its own checks; Laravel's signed /storage route is not needed.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
