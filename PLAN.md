@@ -31,6 +31,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 6. Storage disks (SFTP, S3), name search, activity log (see `docs/storage-search-activity.md`; S3/SFTP only tested up to adapter and error handling, not against a real server; 263 tests)
 - [x] 6b. Admin users (quota, disable, delete), registration policy, permanent delete (see `docs/users.md`; 301 tests)
 - [x] 7. Docker image, install docs, pre-publication security review (see `docs/install.md`, `docs/security.md`; Docker image written but not built/run end to end: no Docker on the dev machine; 318 tests)
+- [x] 8. Cosy design: warm cream and terracotta look, Nunito and Fraunces, eleven selectable themes with Plum as default (see `docs/themes.md`; 330 tests)
 
 ## Risks
 
