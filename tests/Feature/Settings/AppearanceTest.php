@@ -37,4 +37,17 @@ class AppearanceTest extends TestCase
 
         $this->assertSame('plum', $user->fresh()->palette);
     }
+
+    public function test_light_theme_drops_the_dark_class(): void
+    {
+        $this->actingAs($user = User::factory()->create());
+
+        $this->get(route('appearance.edit'))->assertSee('<html lang="en" class="dark"', false);
+
+        Livewire::test('pages::settings.appearance')->set('palette', 'light')->assertHasNoErrors();
+
+        $this->get(route('appearance.edit'))
+            ->assertSee('data-palette="light"', false)
+            ->assertDontSee('class="dark"', false);
+    }
 }

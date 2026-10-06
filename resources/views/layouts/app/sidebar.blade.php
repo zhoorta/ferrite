@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark" @auth data-palette="{{ auth()->user()->palette }}" @endauth>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => auth()->user()?->palette !== 'light']) @auth data-palette="{{ auth()->user()->palette }}" @endauth>
     <head>
         @include('partials.head')
     </head>

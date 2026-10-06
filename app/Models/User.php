@@ -43,8 +43,8 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
-    /** Dark-mode palettes a user can pick in the appearance settings. */
-    public const PALETTES = ['plum', 'wood', 'teal', 'forest', 'midnight', 'olive', 'berry', 'charcoal', 'sage', 'slate'];
+    /** Themes a user can pick in the appearance settings: the cream light theme and the dark palettes. */
+    public const PALETTES = ['light', 'plum', 'wood', 'teal', 'forest', 'midnight', 'olive', 'berry', 'charcoal', 'sage', 'slate'];
 
     /** @var array<string, mixed> */
     protected $attributes = ['palette' => 'plum'];

@@ -13,12 +13,12 @@
 @fonts
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
-@fluxAppearance
 <script>
-    // Signed-in pages carry the account's palette from the server; remember it for guest pages (sign-in, share links).
+    // Signed-in pages carry the account's theme from the server; remember it for guest pages (sign-in, share links).
     try {
         const root = document.documentElement;
         if (root.dataset.palette) localStorage.setItem('shed.palette', root.dataset.palette);
         else root.dataset.palette = localStorage.getItem('shed.palette') || 'plum';
+        root.classList.toggle('dark', root.dataset.palette !== 'light');
     } catch (e) {}
 </script>
