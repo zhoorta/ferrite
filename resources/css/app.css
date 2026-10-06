@@ -145,6 +145,7 @@
 
 /* Cosy paper background: soft glow from the top, faint grain over it. */
 .cozy-bg {
+    color: var(--color-zinc-800);
     background-color: var(--color-zinc-50);
     background-image:
         radial-gradient(ellipse 80% 50% at 50% -10%, rgb(251 191 36 / .30), transparent 65%),
@@ -154,6 +155,7 @@
 }
 
 .dark .cozy-bg {
+    color: var(--color-zinc-100);
     background-color: var(--color-zinc-800);
     background-image:
         radial-gradient(ellipse 80% 50% at 50% -10%, rgb(251 191 36 / .22), transparent 65%),
