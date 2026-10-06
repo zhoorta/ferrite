@@ -2,8 +2,10 @@
 
 namespace App\Actions\Nodes;
 
+use App\Enums\ActivityAction;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Illuminate\Support\Facades\Gate;
 
 class TrashNode
@@ -16,6 +18,8 @@ class TrashNode
         Gate::forUser($actor)->authorize('trash', $node);
 
         $node->forceFill(['trashed_at' => now()])->save();
+
+        ActivityLog::record(ActivityAction::Trashed, $node, $actor);
 
         return $node;
     }

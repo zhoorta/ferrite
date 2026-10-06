@@ -10,12 +10,19 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
+            <form method="GET" action="{{ route('search') }}" class="px-1" role="search">
+                <flux:input name="q" type="search" icon="magnifying-glass" size="sm" :placeholder="__('Search')" :aria-label="__('Search by name')" value="{{ request()->routeIs('search') ? request('q') : '' }}" />
+            </form>
+
             <flux:sidebar.nav>
                 <flux:sidebar.item icon="folder" :href="route('files')" :current="request()->routeIs('files')" wire:navigate>
                     {{ __('My files') }}
                 </flux:sidebar.item>
                 <flux:sidebar.item icon="users" :href="route('shared')" :current="request()->routeIs('shared')" wire:navigate>
                     {{ __('Shared with me') }}
+                </flux:sidebar.item>
+                <flux:sidebar.item icon="clock" :href="route('activity')" :current="request()->routeIs('activity')" wire:navigate>
+                    {{ __('Activity') }}
                 </flux:sidebar.item>
                 <flux:sidebar.item icon="trash" :href="route('trash')" :current="request()->routeIs('trash')" wire:navigate>
                     {{ __('Trash') }}

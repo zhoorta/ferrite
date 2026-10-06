@@ -2,9 +2,11 @@
 
 namespace App\Actions\Sharing;
 
+use App\Enums\ActivityAction;
 use App\Enums\Permission;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +32,8 @@ class ShareWithUser
         }
 
         $node->sharedWith()->syncWithoutDetaching([$recipient->id => ['permission' => $permission->value]]);
+
+        ActivityLog::record(ActivityAction::Shared, $node, $actor, ['user' => $recipient->name, 'permission' => $permission->value]);
 
         return $recipient;
     }

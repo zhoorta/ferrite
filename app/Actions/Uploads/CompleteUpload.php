@@ -3,10 +3,12 @@
 namespace App\Actions\Uploads;
 
 use App\Actions\Nodes\NodeName;
+use App\Enums\ActivityAction;
 use App\Enums\NodeType;
 use App\Models\Node;
 use App\Models\Upload;
 use App\Models\User;
+use App\Support\ActivityLog;
 use App\Support\StorageManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -90,6 +92,8 @@ class CompleteUpload
 
             throw $e;
         }
+
+        ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
 
         $upload->discard();
 

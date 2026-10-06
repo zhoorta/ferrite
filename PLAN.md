@@ -28,7 +28,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 3. Upload: chunked and resumable for all sizes, folder upload, quota (see `docs/uploads.md`; browser UI not yet checked by hand, multi-GB test open; 109 tests)
 - [x] 4. Download, streaming with Range, folder ZIP, previews and thumbnails (see `docs/serving-files.md`; preview modal not yet checked by hand; added `maennchen/zipstream-php`; 159 tests)
 - [x] 5. Share links, then sharing with users (see `docs/sharing.md`; dialog and guest page not yet checked by hand; 206 tests)
-- [ ] 6. Storage disks (SFTP, S3), name search, activity log
+- [x] 6. Storage disks (SFTP, S3), name search, activity log (see `docs/storage-search-activity.md`; S3/SFTP only tested up to adapter and error handling, not against a real server; 263 tests)
 - [ ] 7. Docker image, install docs, pre-publication security review
 
 ## Risks

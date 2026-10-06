@@ -2,9 +2,11 @@
 
 namespace App\Actions\Sharing;
 
+use App\Enums\ActivityAction;
 use App\Models\Node;
 use App\Models\Share;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -30,6 +32,8 @@ class CreateShareLink
         $share->token = Str::random(40);
         $share->password_hash = $password === null || $password === '' ? null : Hash::make($password);
         $share->save();
+
+        ActivityLog::record(ActivityAction::LinkCreated, $node, $actor, ['share_id' => $share->id]);
 
         return $share;
     }

@@ -2,8 +2,10 @@
 
 namespace App\Actions\Nodes;
 
+use App\Enums\ActivityAction;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Illuminate\Support\Facades\Gate;
 
 class RestoreNode
@@ -26,6 +28,8 @@ class RestoreNode
         $name = NodeName::available($node->owner_id, $parentId, $node->name, $node->isFile(), $node->id);
 
         $node->forceFill(['parent_id' => $parentId, 'name' => $name, 'trashed_at' => null])->save();
+
+        ActivityLog::record(ActivityAction::Restored, $node, $actor);
 
         return $node;
     }

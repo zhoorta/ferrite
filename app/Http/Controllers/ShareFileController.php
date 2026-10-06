@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActivityAction;
 use App\Models\Node;
 use App\Models\Share;
+use App\Support\ActivityLog;
 use App\Support\FileKind;
 use App\Support\NodeResponder;
 use App\Support\ShareAccess;
@@ -23,7 +25,13 @@ class ShareFileController extends Controller
         $share = $this->authorizeShare($token);
         abort_unless($share->allow_download, 403);
 
-        return $this->responder->file($request, $this->file($share, $node));
+        $file = $this->file($share, $node);
+
+        if (NodeResponder::startsDownload($request)) {
+            ActivityLog::record(ActivityAction::LinkDownloaded, $file, null, ['share_id' => $share->id]);
+        }
+
+        return $this->responder->file($request, $file);
     }
 
     /**
@@ -46,13 +54,15 @@ class ShareFileController extends Controller
         return $this->responder->thumbnail($request, $this->file($share, $node)) ?? abort(404);
     }
 
-    public function zip(string $token, ?Node $node = null): Response
+    public function zip(Request $request, string $token, ?Node $node = null): Response
     {
         $share = $this->authorizeShare($token);
         abort_unless($share->allow_download, 403);
 
         $folder = $node ?? $share->node;
         abort_unless($folder->isFolder() && $this->access->reaches($share, $folder), 404);
+
+        ActivityLog::record(ActivityAction::LinkDownloaded, $folder, null, ['share_id' => $share->id]);
 
         return $this->responder->zip($folder);
     }

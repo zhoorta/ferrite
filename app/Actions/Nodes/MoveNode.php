@@ -2,8 +2,10 @@
 
 namespace App\Actions\Nodes;
 
+use App\Enums\ActivityAction;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -39,6 +41,8 @@ class MoveNode
         }
 
         $node->update(['parent_id' => $destination?->id]);
+
+        ActivityLog::record(ActivityAction::Moved, $node, $actor, ['to' => $destination !== null ? $destination->name : __('My files')]);
 
         return $node;
     }

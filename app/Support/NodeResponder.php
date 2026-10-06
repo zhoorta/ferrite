@@ -26,6 +26,16 @@ class NodeResponder
     public function __construct(private StorageManager $storage, private Thumbnailer $thumbnails) {}
 
     /**
+     * Whether this request starts a download, as opposed to continuing one with a later Range.
+     */
+    public static function startsDownload(Request $request): bool
+    {
+        $range = $request->header('Range');
+
+        return $range === null || str_starts_with(trim($range), 'bytes=0-');
+    }
+
+    /**
      * Stream a file with Range and ETag support, as an attachment or, when allowed, inline.
      */
     public function file(Request $request, Node $node, bool $inline = false): Response
