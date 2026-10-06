@@ -232,3 +232,7 @@ it('shows the upload controls only where the user can write', function () {
 
     $this->get(route('files', $shared))->assertDontSee('Upload folder');
 });
+
+it('gives the page uploader the application base URL, so its requests hit /uploads and not /uploads/uploads', function () {
+    $this->get(route('files'))->assertSee("baseUrl: '".str_replace('/', '\\/', url('/'))."'", false);
+});

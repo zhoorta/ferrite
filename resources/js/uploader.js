@@ -4,11 +4,13 @@ const MAX_RETRIES = 5;
  * Alpine component for the file browser: uploads files and folders in chunks, one file at a time.
  * A failed chunk is retried after asking the server how much it already has.
  */
-export default function uploader({ parentId, url }) {
+export default function uploader({ parentId, baseUrl }) {
+    const base = baseUrl.replace(/\/+$/, '');
+
     const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
 
     const request = (method, path, { json, body, headers = {} } = {}) =>
-        fetch(`${url}${path}`, {
+        fetch(`${base}${path}`, {
             method,
             credentials: 'same-origin',
             headers: {
