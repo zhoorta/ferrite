@@ -14,3 +14,6 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance
+<script>
+    try { document.documentElement.dataset.palette = localStorage.getItem('shed.palette') || 'plum'; } catch (e) {}
+</script>

@@ -50,6 +50,16 @@
     }
 }
 
+@layer theme {
+    /* Optional dark palette: the original warm wood brown (Settings > Appearance). */
+    .dark[data-palette='wood'] {
+        --color-zinc-700: #66533f;
+        --color-zinc-800: #4a3a2e;
+        --color-zinc-900: #3b2e24;
+        --color-zinc-950: #1c1511;
+    }
+}
+
 @layer base {
 
     *,
