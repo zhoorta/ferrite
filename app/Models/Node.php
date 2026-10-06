@@ -175,4 +175,28 @@ class Node extends Model
 
         return $permissions->isNotEmpty() ? Permission::View : null;
     }
+
+    /**
+     * IDs of the user's trashed nodes that are not inside another trashed node: what the trash
+     * view lists, since restoring or purging a folder covers everything in it.
+     *
+     * @return list<int>
+     */
+    public static function trashRootIds(User $user): array
+    {
+        $rows = DB::select(
+            'with recursive up (origin, id, parent_id) as (
+                select id, id, parent_id from nodes where owner_id = ? and trashed_at is not null
+                union all
+                select up.origin, n.id, n.parent_id from nodes n join up on n.id = up.parent_id
+            ) select id from nodes where owner_id = ? and trashed_at is not null
+            and id not in (
+                select up.origin from up join nodes a on a.id = up.id
+                where up.id <> up.origin and a.trashed_at is not null
+            )',
+            [$user->id, $user->id],
+        );
+
+        return array_values(array_map(fn ($row) => (int) $row->id, $rows));
+    }
 }

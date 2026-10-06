@@ -19,12 +19,26 @@ class NodePolicy
     }
 
     /**
-     * Rename, move, upload into, and trash.
+     * Rename and upload into.
      */
     public function update(User $user, Node $node): bool
     {
         return $this->owns($user, $node)
             || (! $node->isTrashed() && $node->sharedPermissionFor($user) === Permission::Edit);
+    }
+
+    /**
+     * Moving and trashing stay with the owner, so a share recipient cannot pull things
+     * out of the owner's tree.
+     */
+    public function move(User $user, Node $node): bool
+    {
+        return $this->owns($user, $node) && ! $node->isTrashed();
+    }
+
+    public function trash(User $user, Node $node): bool
+    {
+        return $this->move($user, $node);
     }
 
     public function share(User $user, Node $node): bool
