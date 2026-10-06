@@ -20,6 +20,11 @@
                 <flux:sidebar.item icon="trash" :href="route('trash')" :current="request()->routeIs('trash')" wire:navigate>
                     {{ __('Trash') }}
                 </flux:sidebar.item>
+                @can('admin')
+                    <flux:sidebar.item icon="server-stack" :href="route('admin.storage')" :current="request()->routeIs('admin.storage')" wire:navigate>
+                        {{ __('Storage') }}
+                    </flux:sidebar.item>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />

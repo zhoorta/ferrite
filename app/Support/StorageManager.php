@@ -25,9 +25,13 @@ class StorageManager
     {
         $config = ['driver' => $disk->driver, 'throw' => true, ...($disk->config ?? [])];
 
-        if ($disk->driver === 'local') {
-            $config['root'] ??= config('shed.local_root');
-        }
+        match ($disk->driver) {
+            'local' => $config['root'] ??= config('shed.local_root'),
+            // Fail fast when the service is unreachable; there is no overall timeout, uploads can be large.
+            's3' => $config += ['http' => ['connect_timeout' => 10], 'retries' => 2],
+            'sftp' => $config += ['port' => 22, 'timeout' => 10],
+            default => null,
+        };
 
         return Storage::build($config);
     }

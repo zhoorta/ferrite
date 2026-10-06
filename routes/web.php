@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('nodes/{node}/thumbnail', [NodeFileController::class, 'thumbnail'])->name('nodes.thumbnail');
     Route::get('nodes/{node}/zip', [NodeFileController::class, 'zip'])->name('nodes.zip');
 
+    Route::livewire('admin/storage', 'pages::admin.disks')->middleware('can:admin')->name('admin.storage');
     Route::livewire('shared', 'pages::files.shared')->name('shared');
     Route::livewire('trash', 'pages::files.trash')->name('trash');
 });
