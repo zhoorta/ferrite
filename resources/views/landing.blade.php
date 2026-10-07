@@ -80,7 +80,7 @@ docker compose up -d --build</code></pre>
 
         <footer class="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800">
             Ferrite is free software under the <a class="underline" href="{{ $repo }}/blob/main/LICENSE">AGPL-3.0</a>.
-            Made by <a class="underline" href="https://stackcare.pt">StackCare</a>.
+            Made by <a class="underline" href="https://stackcare.pt/en">StackCare</a>.
         </footer>
     </body>
 </html>
