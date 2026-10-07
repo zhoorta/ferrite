@@ -318,3 +318,17 @@ it('selects and clears everything', function () {
         ->call('toggleAll')
         ->assertSet('selected', []);
 });
+
+it('loads a folder a page at a time', function () {
+    foreach (['a', 'b', 'c', 'd', 'e'] as $name) {
+        Node::factory()->file()->for($this->user, 'owner')->create(['name' => "{$name}.txt"]);
+    }
+
+    Livewire::test('pages::files.browser')
+        ->set('limit', 2)
+        ->assertSee('a.txt')->assertSee('b.txt')->assertDontSee('c.txt')
+        ->assertSeeHtml('data-test="load-more"')
+        ->call('loadMore')
+        ->assertSee('c.txt')
+        ->assertDontSeeHtml('data-test="load-more"');
+});

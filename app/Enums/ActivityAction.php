@@ -8,6 +8,7 @@ enum ActivityAction: string
     case CreatedFolder = 'created_folder';
     case Renamed = 'renamed';
     case Moved = 'moved';
+    case Copied = 'copied';
     case Trashed = 'trashed';
     case Restored = 'restored';
     case Purged = 'purged';

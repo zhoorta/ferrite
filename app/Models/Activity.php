@@ -61,6 +61,7 @@ class Activity extends Model
             ActivityAction::CreatedFolder => __(':who created the folder :name', ['who' => $who, 'name' => $name]),
             ActivityAction::Renamed => __(':who renamed :from to :name', ['who' => $who, 'from' => $meta['from'] ?? '?', 'name' => $name]),
             ActivityAction::Moved => __(':who moved :name to :to', ['who' => $who, 'name' => $name, 'to' => $meta['to'] ?? __('My files')]),
+            ActivityAction::Copied => __(':who copied :from to :to', ['who' => $who, 'from' => $meta['from'] ?? $name, 'to' => $meta['to'] ?? __('My files')]),
             ActivityAction::Trashed => __(':who moved :name to the trash', ['who' => $who, 'name' => $name]),
             ActivityAction::Restored => __(':who restored :name from the trash', ['who' => $who, 'name' => $name]),
             ActivityAction::Purged => __(':who permanently deleted :name', ['who' => $who, 'name' => $name]),

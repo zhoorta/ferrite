@@ -17,6 +17,9 @@
                 <flux:sidebar.item icon="folder" :href="route('files')" :current="request()->routeIs('files')" wire:navigate>
                     {{ __('My files') }}
                 </flux:sidebar.item>
+                <flux:sidebar.item icon="star" :href="route('favorites')" :current="request()->routeIs('favorites')" wire:navigate>
+                    {{ __('Favorites') }}
+                </flux:sidebar.item>
                 <flux:sidebar.item icon="users" :href="route('shared')" :current="request()->routeIs('shared')" wire:navigate>
                     {{ __('Shared with me') }}
                 </flux:sidebar.item>

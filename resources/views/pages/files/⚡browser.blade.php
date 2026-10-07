@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Nodes\CopyNode;
 use App\Actions\Nodes\CreateFolder;
 use App\Actions\Nodes\MoveNode;
 use App\Actions\Nodes\RenameNode;
@@ -9,6 +10,7 @@ use App\Support\FileKind;
 use App\Support\TextPreview;
 use App\Support\Thumbnailer;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -36,10 +38,23 @@ new #[Title('Files')] class extends Component {
     /** @var array<int, int> Nodes the move dialog is about. */
     public array $moveIds = [];
 
+    /** What the destination dialog does with them: move or copy. */
+    public string $moveMode = 'move';
+
+    /** Sort column (name, size, modified) and direction; folders always come first. Remembered for the session. */
+    #[Session]
+    public string $sort = 'name';
+
+    #[Session]
+    public string $direction = 'asc';
+
     public ?int $previewId = null;
 
     /** Folder being browsed inside the move dialog; null is the root. */
     public ?int $moveBrowseId = null;
+
+    /** How many items of the folder are loaded; grows by a page each time the end of the list scrolls into view. */
+    public int $limit = 100;
 
     public function mount(?Node $folder = null): void
     {
@@ -108,13 +123,44 @@ new #[Title('Files')] class extends Component {
     #[Computed]
     public function items(): Collection
     {
+        return $this->itemsQuery()->limit($this->limit)->get();
+    }
+
+    #[Computed]
+    public function hasMore(): bool
+    {
+        return $this->itemsQuery()->offset($this->limit)->limit(1)->exists();
+    }
+
+    public function loadMore(): void
+    {
+        $this->limit += 100;
+        unset($this->items, $this->hasMore);
+    }
+
+    private function itemsQuery(): Builder
+    {
         return Node::query()
             ->where('parent_id', $this->folderId)
             ->when($this->folderId === null, fn ($query) => $query->where('owner_id', Auth::id()))
             ->notTrashed()
             ->orderByDesc('type')
-            ->orderBy('name')
-            ->get();
+            ->when($this->sort === 'size', fn ($query) => $query->orderBy('size', $this->direction))
+            ->when($this->sort === 'modified', fn ($query) => $query->orderBy('updated_at', $this->direction))
+            ->orderBy('name', $this->sort === 'name' ? $this->direction : 'asc')
+            ->orderBy('id');
+    }
+
+    public function sortBy(string $sort, ?string $direction = null): void
+    {
+        $sort = in_array($sort, ['name', 'size', 'modified'], true) ? $sort : 'name';
+
+        $this->direction = $direction !== null
+            ? ($direction === 'desc' ? 'desc' : 'asc')
+            : ($sort === $this->sort && $this->direction === 'asc' ? 'desc' : 'asc');
+        $this->sort = $sort;
+        $this->limit = 100;
+        unset($this->items, $this->hasMore, $this->selection);
     }
 
     /**
@@ -280,6 +326,7 @@ new #[Title('Files')] class extends Component {
         Gate::authorize('move', $node);
 
         $this->moveIds = [$node->id];
+        $this->moveMode = 'move';
         $this->moveBrowseId = $node->parent_id;
         $this->resetErrorBag();
         Flux::modal('move')->show();
@@ -294,9 +341,82 @@ new #[Title('Files')] class extends Component {
         }
 
         $this->moveIds = $nodes->pluck('id')->all();
+        $this->moveMode = 'move';
         $this->moveBrowseId = $this->folderId;
         $this->resetErrorBag();
         Flux::modal('move')->show();
+    }
+
+    public function startCopy(int $id): void
+    {
+        $node = Node::findOrFail($id);
+        Gate::authorize('view', $node);
+
+        $this->openCopy([$node->id]);
+    }
+
+    public function startCopySelection(): void
+    {
+        $this->openCopy($this->selection->pluck('id')->all());
+    }
+
+    /** @param  array<int, int>  $ids */
+    private function openCopy(array $ids): void
+    {
+        if ($ids === []) {
+            return;
+        }
+
+        $this->moveIds = $ids;
+        $this->moveMode = 'copy';
+        // Copies go into the user's own folders; start where they are, or at the root when browsing something shared.
+        $this->moveBrowseId = $this->folder?->owner_id === Auth::id() ? $this->folderId : null;
+        $this->resetErrorBag();
+        Flux::modal('move')->show();
+    }
+
+    public function copy(CopyNode $action): void
+    {
+        $destination = $this->moveBrowseFolder;
+
+        if (count($this->moveIds) === 1) {
+            $action->handle(Auth::user(), Node::findOrFail($this->moveIds[0]), $destination);
+            $failed = [];
+        } else {
+            $failed = $this->each($this->moveIds, fn (Node $node) => $action->handle(Auth::user(), $node, $destination));
+        }
+
+        if ($failed !== [] && count($failed) === count($this->moveIds)) {
+            $this->addError('destination', $failed[0]);
+
+            return;
+        }
+
+        $this->reset('moveIds', 'moveBrowseId');
+        $this->clearSelection();
+        unset($this->items, $this->hasMore);
+        Flux::modal('move')->close();
+        $this->report(__('Copied.'), $failed);
+    }
+
+    /**
+     * Ids of the listed nodes the user has starred.
+     *
+     * @return array<int, int>
+     */
+    #[Computed]
+    public function favoriteIds(): array
+    {
+        return Auth::user()->favorites()->whereIn('nodes.id', $this->items->pluck('id'))->pluck('nodes.id')->all();
+    }
+
+    public function toggleFavorite(int $id): void
+    {
+        $node = Node::findOrFail($id);
+        Gate::authorize('view', $node);
+
+        Auth::user()->favorites()->toggle($node->id);
+        unset($this->favoriteIds);
     }
 
     public function browseMove(?int $id): void
@@ -430,8 +550,9 @@ new #[Title('Files')] class extends Component {
         x-on:drop="dragging = false; if ($event.dataTransfer.types.includes('Files')) { $event.preventDefault(); $store.uploads.drop($event, target) }"
     @endif
 >
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <flux:breadcrumbs>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        {{-- The path takes the room the buttons leave and wraps inside it; the buttons stay on the right. --}}
+        <flux:breadcrumbs class="min-w-0 flex-1 basis-64 flex-wrap">
             @if ($this->folder && $this->folder->owner_id !== auth()->id())
                 <flux:breadcrumbs.item :href="route('shared')" wire:navigate>{{ __('Shared with me') }}</flux:breadcrumbs.item>
             @else
@@ -446,14 +567,32 @@ new #[Title('Files')] class extends Component {
             @endforeach
         </flux:breadcrumbs>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="ms-auto flex flex-wrap items-center justify-end gap-2">
+        <flux:dropdown position="bottom" align="end">
+            <flux:button size="sm" variant="ghost" icon="arrows-up-down" icon-trailing="chevron-down" data-test="sort-button">
+                {{ ['name' => __('Name'), 'size' => __('Size'), 'modified' => __('Modified')][$sort] }}
+            </flux:button>
+
+            <flux:menu>
+                @foreach (['name' => __('Name'), 'size' => __('Size'), 'modified' => __('Modified')] as $key => $label)
+                    <flux:menu.item wire:click="sortBy('{{ $key }}', '{{ $direction }}')" data-test="sort-{{ $key }}">
+                        <span class="flex w-full items-center justify-between gap-4">{{ $label }} @if ($sort === $key) <flux:icon name="check" class="size-4" /> @endif</span>
+                    </flux:menu.item>
+                @endforeach
+                <flux:menu.separator />
+                <flux:menu.item :icon="$direction === 'asc' ? 'arrow-up' : 'arrow-down'" wire:click="sortBy('{{ $sort }}', '{{ $direction === 'asc' ? 'desc' : 'asc' }}')" data-test="sort-direction">
+                    {{ $direction === 'asc' ? __('Ascending') : __('Descending') }}
+                </flux:menu.item>
+            </flux:menu>
+        </flux:dropdown>
+
         <flux:button.group>
             <flux:button size="sm" icon="list-bullet" wire:click="setView('list')" :variant="$view === 'list' ? 'filled' : 'ghost'" :aria-label="__('List view')" data-test="view-list" />
             <flux:button size="sm" icon="squares-2x2" wire:click="setView('grid')" :variant="$view === 'grid' ? 'filled' : 'ghost'" :aria-label="__('Grid view')" data-test="view-grid" />
         </flux:button.group>
 
         @if ($this->canCreate)
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap justify-end gap-2">
                 <input type="file" multiple class="hidden" x-ref="files" x-on:change="$store.uploads.pick($event.target.files, target); $event.target.value = ''" data-test="upload-input">
                 <input type="file" webkitdirectory class="hidden" x-ref="folder" x-on:change="$store.uploads.pick($event.target.files, target); $event.target.value = ''">
 
@@ -474,6 +613,7 @@ new #[Title('Files')] class extends Component {
             <span class="me-auto text-sm font-medium" data-test="bulk-count">{{ __(':count selected', ['count' => count($this->selection)]) }}</span>
 
             <flux:button size="sm" icon="arrow-down-tray" :href="route('nodes.zip-selection', ['ids' => $this->selection->pluck('id')->implode(',')])" data-test="bulk-download">{{ __('Download') }}</flux:button>
+            <flux:button size="sm" icon="document-duplicate" wire:click="startCopySelection" data-test="bulk-copy">{{ __('Copy') }}</flux:button>
             @if ($this->canCreate)
                 <flux:button size="sm" icon="arrow-right-circle" wire:click="startMoveSelection" data-test="bulk-move">{{ __('Move') }}</flux:button>
                 <flux:button size="sm" icon="trash" variant="danger" wire:click="trashSelection" data-test="bulk-trash">{{ __('Move to trash') }}</flux:button>
@@ -513,19 +653,24 @@ new #[Title('Files')] class extends Component {
                             <flux:icon :name="$item->isFolder() ? 'folder' : 'document'" class="size-10 text-zinc-400" />
                         @endif
                     </div>
-                    <span class="truncate px-1 text-sm font-medium" title="{{ $item->name }}">{{ $item->name }}</span>
+                    <span class="flex items-center gap-1 px-1 text-sm font-medium">
+                        <span class="truncate" title="{{ $item->name }}">{{ $item->name }}</span>
+                        @if (in_array($item->id, $this->favoriteIds))
+                            <flux:icon name="star" variant="solid" class="size-4 shrink-0 text-amber-500" data-test="favorite-mark" :aria-label="__('Favorite')" />
+                        @endif
+                    </span>
 
                     <div class="absolute end-3 top-3">
                         <flux:dropdown position="bottom" align="end">
                             <flux:button variant="filled" size="xs" icon="ellipsis-horizontal" :aria-label="__('Actions')" />
 
-                            <x-node-menu :item="$item" />
+                            <x-node-menu :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
                         </flux:dropdown>
 
                         <flux:dropdown position="bottom" align="start" class="fixed" data-test="row-context">
                             <button type="button" class="size-0" tabindex="-1" aria-hidden="true"></button>
 
-                            <x-node-menu :item="$item" />
+                            <x-node-menu :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
                         </flux:dropdown>
                     </div>
                 </div>
@@ -588,6 +733,9 @@ new #[Title('Files')] class extends Component {
                                 @else
                                     <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 @endif
+                                @if (in_array($item->id, $this->favoriteIds))
+                                    <flux:icon name="star" variant="solid" class="size-4 shrink-0 text-amber-500" data-test="favorite-mark" :aria-label="__('Favorite')" />
+                                @endif
                             </div>
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
@@ -598,20 +746,26 @@ new #[Title('Files')] class extends Component {
                             <flux:dropdown position="bottom" align="end">
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" />
 
-                                <x-node-menu :item="$item" />
+                                <x-node-menu :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
                             </flux:dropdown>
 
                             {{-- Same menu, anchored to the cursor: a zero-size trigger is moved to the click point on right-click. --}}
                             <flux:dropdown position="bottom" align="start" class="fixed" data-test="row-context">
                                 <button type="button" class="size-0" tabindex="-1" aria-hidden="true"></button>
 
-                                <x-node-menu :item="$item" />
+                                <x-node-menu :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
                             </flux:dropdown>
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach
             </flux:table.rows>
         </flux:table>
+    @endif
+
+    @if ($this->hasMore)
+        <div wire:key="load-more" x-intersect="$wire.loadMore()" class="flex justify-center py-4" data-test="load-more">
+            <flux:icon name="arrow-path" class="size-5 animate-spin text-zinc-400" />
+        </div>
     @endif
 
     <livewire:pages::files.share-dialog />
@@ -689,7 +843,7 @@ new #[Title('Files')] class extends Component {
 
     <flux:modal name="move" class="w-full max-w-md">
         <div class="space-y-4">
-            <flux:heading size="lg">{{ __('Move to') }}</flux:heading>
+            <flux:heading size="lg">{{ $moveMode === 'copy' ? __('Copy to') : __('Move to') }}</flux:heading>
 
             <div class="flex items-center gap-2 text-sm">
                 @if ($this->moveBrowseFolder)
@@ -716,7 +870,7 @@ new #[Title('Files')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="filled">{{ __('Cancel') }}</flux:button></flux:modal.close>
-                <flux:button variant="primary" wire:click="move">{{ __('Move here') }}</flux:button>
+                <flux:button variant="primary" wire:click="{{ $moveMode === 'copy' ? 'copy' : 'move' }}" data-test="move-confirm">{{ $moveMode === 'copy' ? __('Copy here') : __('Move here') }}</flux:button>
             </div>
         </div>
     </flux:modal>

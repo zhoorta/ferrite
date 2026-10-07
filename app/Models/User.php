@@ -113,6 +113,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * Nodes the user starred. Any node they can view may be starred.
+     *
+     * @return BelongsToMany<Node, $this>
+     */
+    public function favorites(): BelongsToMany
+    {
+        return $this->belongsToMany(Node::class, 'favorites')->withTimestamps();
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string

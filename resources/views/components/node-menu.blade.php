@@ -1,4 +1,4 @@
-@props(['item'])
+@props(['item', 'favorite' => false])
 
 <flux:menu>
     @if ($item->isFolder())
@@ -6,6 +6,8 @@
     @else
         <flux:menu.item icon="arrow-down-tray" :href="route('nodes.download', $item)">{{ __('Download') }}</flux:menu.item>
     @endif
+    <flux:menu.item icon="star" wire:click="toggleFavorite({{ $item->id }})" data-test="favorite-toggle">{{ $favorite ? __('Remove from favorites') : __('Add to favorites') }}</flux:menu.item>
+    <flux:menu.item icon="document-duplicate" wire:click="startCopy({{ $item->id }})">{{ __('Copy') }}</flux:menu.item>
     @can('update', $item)
         <flux:menu.item icon="pencil" wire:click="startRename({{ $item->id }})">{{ __('Rename') }}</flux:menu.item>
     @endcan
