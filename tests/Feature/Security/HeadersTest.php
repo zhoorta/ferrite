@@ -34,6 +34,6 @@ it('covers file responses and error pages too', function () {
 });
 
 it('does not expose Laravel\'s signed /storage routes', function () {
-    $this->get('/storage/shed/anything')->assertNotFound();
-    $this->put('/storage/shed/anything')->assertNotFound();
+    $this->get('/storage/ferrite/anything')->assertNotFound();
+    $this->put('/storage/ferrite/anything')->assertNotFound();
 });

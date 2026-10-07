@@ -30,4 +30,4 @@ Admins manage disks under **Storage** (`/admin/storage`, gate `admin`, i.e. `use
 - Entries copy the node name, so they stay readable after a rename or deletion. Deleting a user keeps their entries as "Someone".
 - Owners' own downloads are not logged, and neither are the follow-up Range requests of a media player; only the start of a download counts.
 - Guests are logged without an identity and **without an IP address**, on purpose. Adding one is a one-line change in `ActivityLog` if you want it, with the privacy implications that come with it.
-- Entries are removed after `SHED_ACTIVITY_DAYS` (default 90) by the daily `activity:prune`.
+- Entries are removed after `FERRITE_ACTIVITY_DAYS` (default 90) by the daily `activity:prune`.

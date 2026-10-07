@@ -121,7 +121,7 @@ export default function uploader() {
             this.running = false;
 
             // Lets a file browser that is on screen reload its list.
-            if (uploaded) window.dispatchEvent(new CustomEvent('shed-uploaded'));
+            if (uploaded) window.dispatchEvent(new CustomEvent('ferrite-uploaded'));
         },
 
         async send(item) {

@@ -26,23 +26,21 @@ it('has a valid multi-size favicon.ico with PNG images', function () {
     }
 });
 
-it('shows the shed in the sidebar and on the sign-in page', function () {
+it('shows the logo in the sidebar and on the sign-in page', function () {
     $this->actingAs(User::factory()->create());
 
     $this->get(route('files'))
-        ->assertSee(asset('favicon.svg'), false)
         ->assertSee('data-wordmark', false)
-        ->assertSee('sr-only">Shed<', false);
+        ->assertSee('sr-only">Ferrite<', false);
 
     auth()->logout();
     $this->get(route('login'))->assertSee('<img src="'.asset('favicon.svg').'"', false);
 });
 
-it('has a single-colour mark that follows the text colour', function () {
+it('has a mark that follows the text colour and the theme accent', function () {
     $svg = Blade::render('<x-app-logo-icon class="size-5 text-white" />');
 
-    expect($svg)->toContain('fill="currentColor"', 'viewBox="14 0 228 218"', 'class="size-5 text-white"')
-        ->and($svg)->not->toContain('#');
+    expect($svg)->toContain('stroke="currentColor"', 'viewBox="0 0 128 120"', 'class="size-5 text-white"', 'var(--color-accent');
 });
 
 it('keeps the logo files used by the README', function () {

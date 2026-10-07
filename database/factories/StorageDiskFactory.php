@@ -18,7 +18,7 @@ class StorageDiskFactory extends Factory
         return [
             'name' => fake()->unique()->slug(2),
             'driver' => 'local',
-            'config' => ['root' => storage_path('app/shed')],
+            'config' => ['root' => storage_path('app/ferrite')],
             'is_default' => false,
         ];
     }

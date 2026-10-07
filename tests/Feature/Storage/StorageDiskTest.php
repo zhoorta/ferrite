@@ -78,7 +78,7 @@ describe('saving', function () {
     it('creates an SFTP disk with a key and a numeric port', function () {
         $disk = app(SaveStorageDisk::class)->handle($this->admin, null, [
             'name' => 'nas', 'driver' => 'sftp',
-            'config' => ['host' => 'nas.local', 'port' => '2222', 'username' => 'shed', 'privateKey' => 'PEM', 'root' => '/srv/shed'],
+            'config' => ['host' => 'nas.local', 'port' => '2222', 'username' => 'ferrite', 'privateKey' => 'PEM', 'root' => '/srv/ferrite'],
         ]);
 
         expect($disk->config['port'])->toBe(2222)->and($disk->config['privateKey'])->toBe('PEM');
@@ -87,7 +87,7 @@ describe('saving', function () {
     it('requires a password or key for SFTP', function () {
         app(SaveStorageDisk::class)->handle($this->admin, null, [
             'name' => 'nas', 'driver' => 'sftp',
-            'config' => ['host' => 'nas.local', 'username' => 'shed', 'root' => '/srv/shed'],
+            'config' => ['host' => 'nas.local', 'username' => 'ferrite', 'root' => '/srv/ferrite'],
         ]);
     })->throws(ValidationException::class);
 
@@ -129,7 +129,7 @@ describe('manager', function () {
         $s3 = app(SaveStorageDisk::class)->handle($this->admin, null, s3Data(['endpoint' => 'http://127.0.0.1:9']));
         $sftp = app(SaveStorageDisk::class)->handle($this->admin, null, [
             'name' => 'nas', 'driver' => 'sftp',
-            'config' => ['host' => 'nas.local', 'username' => 'shed', 'password' => 'pw', 'root' => '/srv/shed'],
+            'config' => ['host' => 'nas.local', 'username' => 'ferrite', 'password' => 'pw', 'root' => '/srv/ferrite'],
         ]);
 
         $manager = app(StorageManager::class);
@@ -148,7 +148,7 @@ describe('testing a disk', function () {
     });
 
     it('reports a folder that cannot be written', function () {
-        $disk = new StorageDisk(['name' => 'bad', 'driver' => 'local', 'config' => ['root' => '/proc/shed-nope']]);
+        $disk = new StorageDisk(['name' => 'bad', 'driver' => 'local', 'config' => ['root' => '/proc/ferrite-nope']]);
 
         expect(app(TestStorageDisk::class)->handle($this->admin, $disk))->toBeString()->not->toBeEmpty();
     });

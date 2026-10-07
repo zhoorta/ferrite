@@ -11,7 +11,7 @@ node_modules
 vendor
 .env
 .env.*
-shed.env
+ferrite.env
 storage/*
 !storage/.gitignore
 bootstrap/cache/*.php

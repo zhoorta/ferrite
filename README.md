@@ -1,13 +1,15 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.svg">
-    <img src="docs/img/logo.svg" alt="Shed" width="360">
+    <img src="docs/img/logo.svg" alt="Ferrite" width="360">
   </picture>
 </p>
 
-# Shed
+# Ferrite
 
 Self-hosted file storage for one person or a small team: a Google Drive replacement that runs on your own server. Web only, built with Laravel, Livewire and Flux. No sync clients and no WebDAV, by design.
+
+Not to be confused with other projects of the same name, such as the Rust Markdown editor Ferrite. This one is a Laravel file-storage app, named after the magnetic coating on tape.
 
 ## What it does
 
@@ -26,17 +28,17 @@ Not included (on purpose, for now): sync clients, WebDAV, office document previe
 You need a server with Docker and a domain name pointing at it.
 
 ```sh
-git clone <this repository> shed && cd shed
-cp docker/shed.env.example shed.env
-docker compose run --rm shed php artisan key:generate --show   # copy the output into APP_KEY in shed.env
-$EDITOR shed.env                                               # set APP_KEY and APP_URL at least
+git clone <this repository> ferrite && cd ferrite
+cp docker/ferrite.env.example ferrite.env
+docker compose run --rm ferrite php artisan key:generate --show   # copy the output into APP_KEY in ferrite.env
+$EDITOR ferrite.env                                               # set APP_KEY and APP_URL at least
 docker compose up -d --build
 ```
 
 Put a reverse proxy with HTTPS in front of port 8080 (examples in [docs/install.md](docs/install.md)), open your `APP_URL`, and **register**: the first account becomes the admin, and registration closes afterwards. Add everyone else under **Users**. To create or recover accounts from the command line:
 
 ```sh
-docker compose exec shed php artisan shed:user you@example.com --admin
+docker compose exec ferrite php artisan ferrite:user you@example.com --admin
 ```
 
 Everything that changes lives in one volume, `/data`. Back it up, and keep `APP_KEY` safe: see [docs/install.md](docs/install.md) for backups, upgrades and configuration.
@@ -68,7 +70,7 @@ vendor/bin/pint && vendor/bin/phpstan analyse
 
 ## Security
 
-Shed serves files uploaded by users from its own origin, so read [docs/security.md](docs/security.md) before exposing an instance to people you do not trust. Report vulnerabilities privately to the maintainer rather than in a public issue.
+Ferrite serves files uploaded by users from its own origin, so read [docs/security.md](docs/security.md) before exposing an instance to people you do not trust. Report vulnerabilities privately to the maintainer rather than in a public issue.
 
 ## License
 

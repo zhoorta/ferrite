@@ -53,7 +53,7 @@ new #[Title('Trash')] class extends Component {
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <flux:heading size="xl" level="1">{{ __('Trash') }}</flux:heading>
-            <flux:text>{{ __('Items are deleted for good after :days days.', ['days' => config('shed.trash_days')]) }}</flux:text>
+            <flux:text>{{ __('Items are deleted for good after :days days.', ['days' => config('ferrite.trash_days')]) }}</flux:text>
         </div>
 
         @if ($this->items->isNotEmpty())

@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
-    $base = storage_path('framework/testing/shed-'.bin2hex(random_bytes(4)));
-    config(['shed.tmp_path' => "{$base}/tmp", 'shed.local_root' => "{$base}/blobs", 'shed.chunk_size' => 4]);
+    $base = storage_path('framework/testing/ferrite-'.bin2hex(random_bytes(4)));
+    config(['ferrite.tmp_path' => "{$base}/tmp", 'ferrite.local_root' => "{$base}/blobs", 'ferrite.chunk_size' => 4]);
     $this->base = $base;
 
     $this->user = User::factory()->create();
@@ -74,7 +74,7 @@ it('stores a file received in chunks', function () {
         ->and($disk->filesystem($node->disk)->get($node->path))->toBe('hello world')
         ->and($this->user->fresh()->used_bytes)->toBe(11)
         ->and(Upload::count())->toBe(0)
-        ->and(File::files(config('shed.tmp_path')))->toBeEmpty();
+        ->and(File::files(config('ferrite.tmp_path')))->toBeEmpty();
 });
 
 it('stores an empty file', function () {
@@ -159,7 +159,7 @@ it('checks the quota again when completing', function () {
     expect(Node::count())->toBe(0)
         ->and(Upload::count())->toBe(0)
         ->and($this->user->fresh()->used_bytes)->toBe(0)
-        ->and(File::allFiles(config('shed.local_root')))->toBeEmpty();
+        ->and(File::allFiles(config('ferrite.local_root')))->toBeEmpty();
 });
 
 it('counts uploads towards the quota', function () {
@@ -209,7 +209,7 @@ it('cancels an upload and removes its data', function () {
     $this->deleteJson(route('uploads.destroy', $id))->assertNoContent();
 
     expect(Upload::count())->toBe(0)
-        ->and(File::files(config('shed.tmp_path')))->toBeEmpty();
+        ->and(File::files(config('ferrite.tmp_path')))->toBeEmpty();
 });
 
 it('prunes stale unfinished uploads', function () {
@@ -221,7 +221,7 @@ it('prunes stale unfinished uploads', function () {
     $this->artisan('uploads:prune')->assertSuccessful();
 
     expect(Upload::pluck('id')->all())->toBe([$fresh])
-        ->and(file_exists(config('shed.tmp_path')."/{$stale}"))->toBeFalse();
+        ->and(file_exists(config('ferrite.tmp_path')."/{$stale}"))->toBeFalse();
 });
 
 it('shows the upload controls only where the user can write', function () {
@@ -245,7 +245,7 @@ it('stores identical content of one owner once but charges each file', function 
 
     expect($b->path)->toBe($a->path)
         ->and($b->id)->not->toBe($a->id)
-        ->and(File::allFiles(config('shed.local_root')))->toHaveCount(1)
+        ->and(File::allFiles(config('ferrite.local_root')))->toHaveCount(1)
         ->and($this->user->fresh()->used_bytes)->toBe(24);
 });
 
@@ -256,12 +256,12 @@ it('does not share blobs between owners', function () {
     uploadAll('b.txt', 'same content')->assertOk();
 
     expect(Node::firstWhere('name', 'b.txt')->path)->not->toBe(Node::firstWhere('name', 'a.txt')->path)
-        ->and(File::allFiles(config('shed.local_root')))->toHaveCount(2);
+        ->and(File::allFiles(config('ferrite.local_root')))->toHaveCount(2);
 });
 
 it('keeps separate blobs for different content of the same size', function () {
     uploadAll('a.txt', 'aaaa')->assertOk();
     uploadAll('b.txt', 'bbbb')->assertOk();
 
-    expect(File::allFiles(config('shed.local_root')))->toHaveCount(2);
+    expect(File::allFiles(config('ferrite.local_root')))->toHaveCount(2);
 });

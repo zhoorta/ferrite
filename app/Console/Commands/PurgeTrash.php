@@ -17,7 +17,7 @@ class PurgeTrash extends Command
         $count = 0;
 
         Node::query()
-            ->where('trashed_at', '<', now()->subDays(config('shed.trash_days')))
+            ->where('trashed_at', '<', now()->subDays(config('ferrite.trash_days')))
             ->pluck('id')
             ->each(function (int $id) use ($purge, &$count) {
                 // Deleting a folder removes what is inside it, which may include later ids.

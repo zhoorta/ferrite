@@ -34,7 +34,7 @@ class SaveUser
 
     /**
      * Validate and store a user without any permission check; for the admin action above and the
-     * `shed:user` command. Accounts made this way are trusted, so e-mail is marked verified. On edit
+     * `ferrite:user` command. Accounts made this way are trusted, so e-mail is marked verified. On edit
      * a blank password keeps the current one and a blank quota means unlimited.
      *
      * @param  array{name?: mixed, email?: mixed, password?: mixed, role?: mixed, quota_gb?: mixed}  $data

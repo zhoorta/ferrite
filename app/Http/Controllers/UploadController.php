@@ -100,7 +100,7 @@ class UploadController extends Controller
             'id' => $upload->id,
             'offset' => $upload->offset,
             'size' => $upload->size,
-            'chunk_size' => config('shed.chunk_size'),
+            'chunk_size' => config('ferrite.chunk_size'),
         ];
     }
 

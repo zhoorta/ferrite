@@ -281,7 +281,7 @@ new #[Title('Files')] class extends Component {
 
 <div class="mx-auto flex w-full max-w-5xl flex-col gap-6"
     x-data="{ dragging: false, target: { parentId: @js($folderId), baseUrl: @js(url('/')) } }"
-    x-on:shed-uploaded.window="$wire.$refresh()"
+    x-on:ferrite-uploaded.window="$wire.$refresh()"
     @if ($this->canCreate)
         x-on:dragover.prevent="dragging = true"
         x-on:dragleave.self="dragging = false"

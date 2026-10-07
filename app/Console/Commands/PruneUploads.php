@@ -16,7 +16,7 @@ class PruneUploads extends Command
         $count = 0;
 
         Upload::query()
-            ->where('updated_at', '<', now()->subHours(config('shed.upload_ttl_hours')))
+            ->where('updated_at', '<', now()->subHours(config('ferrite.upload_ttl_hours')))
             ->each(function (Upload $upload) use (&$count) {
                 $upload->discard();
                 $count++;

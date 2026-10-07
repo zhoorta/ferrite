@@ -21,7 +21,7 @@ new #[Title('Appearance settings')] class extends Component {
 
         Auth::user()->forceFill(['palette' => $this->palette])->save();
 
-        $this->js('document.documentElement.dataset.palette = '.Js::from($this->palette).'; document.documentElement.classList.toggle("dark", '.Js::from(User::isDarkPalette($this->palette)).'); try { localStorage.setItem("shed.palette", '.Js::from($this->palette).'); } catch (e) {}');
+        $this->js('document.documentElement.dataset.palette = '.Js::from($this->palette).'; document.documentElement.classList.toggle("dark", '.Js::from(User::isDarkPalette($this->palette)).'); try { localStorage.setItem("ferrite.palette", '.Js::from($this->palette).'); } catch (e) {}');
     }
 }; ?>
 
@@ -30,7 +30,7 @@ new #[Title('Appearance settings')] class extends Component {
 
     <flux:heading level="2" class="sr-only">{{ __('Appearance settings') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Appearance')" :subheading="__('Pick the look of your Shed.')">
+    <x-pages::settings.layout :heading="__('Appearance')" :subheading="__('Pick the look of your Ferrite.')">
         <div class="grid gap-2">
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('Theme') }}">
                 @foreach ([

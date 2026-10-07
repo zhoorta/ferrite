@@ -23,8 +23,8 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () {
         // Keep blobs and temporary uploads of every feature test out of the real storage.
-        $this->storageBase = storage_path('framework/testing/shed-'.bin2hex(random_bytes(4)));
-        config(['shed.tmp_path' => "{$this->storageBase}/tmp", 'shed.local_root' => "{$this->storageBase}/blobs"]);
+        $this->storageBase = storage_path('framework/testing/ferrite-'.bin2hex(random_bytes(4)));
+        config(['ferrite.tmp_path' => "{$this->storageBase}/tmp", 'ferrite.local_root' => "{$this->storageBase}/blobs"]);
     })
     ->afterEach(fn () => File::deleteDirectory($this->storageBase))
     ->in('Feature');
@@ -86,7 +86,7 @@ function storedFile(User $owner, string $name, string $content, ?Node $parent = 
  */
 function zipEntries($response): array
 {
-    $path = tempnam(sys_get_temp_dir(), 'shed-zip');
+    $path = tempnam(sys_get_temp_dir(), 'ferrite-zip');
     file_put_contents($path, $response->streamedContent());
 
     $zip = new ZipArchive;

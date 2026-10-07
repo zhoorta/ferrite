@@ -1,4 +1,4 @@
-# Installing Shed
+# Installing Ferrite
 
 ## Requirements
 
@@ -9,22 +9,22 @@ Without Docker: PHP 8.3+ with the `gd`, `exif`, `zip`, `intl`, `bcmath` and `pdo
 ## Docker
 
 ```sh
-cp docker/shed.env.example shed.env
-docker compose run --rm shed php artisan key:generate --show
+cp docker/ferrite.env.example ferrite.env
+docker compose run --rm ferrite php artisan key:generate --show
 ```
 
-Edit `shed.env`: paste the key into `APP_KEY` and set `APP_URL` to the public address (with `https://`), and `TRUSTED_PROXIES` to your proxy's address. Then:
+Edit `ferrite.env`: paste the key into `APP_KEY` and set `APP_URL` to the public address (with `https://`), and `TRUSTED_PROXIES` to your proxy's address. Then:
 
 ```sh
 docker compose up -d --build
-docker compose logs -f shed
+docker compose logs -f ferrite
 ```
 
 On start the container creates the database, runs migrations, caches the configuration and starts the scheduler (trash purge, upload cleanup, log pruning). The first person to open the site and register becomes the admin.
 
 ### The data volume
 
-`/data` (the `shed-data` volume) holds everything that changes:
+`/data` (the `ferrite-data` volume) holds everything that changes:
 
 | Path | Contents |
 | --- | --- |
@@ -37,13 +37,13 @@ The container runs as `www-data` (uid 33). If you replace the volume with a bind
 
 ### Reverse proxy
 
-Shed listens on plain HTTP, port 8080. The proxy must allow request bodies of at least the upload chunk size (5 MB by default), pass `Range` requests through, and not buffer or compress downloads.
+Ferrite listens on plain HTTP, port 8080. The proxy must allow request bodies of at least the upload chunk size (5 MB by default), pass `Range` requests through, and not buffer or compress downloads.
 
 Caddy:
 
 ```
 files.example.com {
-    reverse_proxy shed:8080
+    reverse_proxy ferrite:8080
 }
 ```
 
@@ -68,11 +68,11 @@ server {
 }
 ```
 
-Set `TRUSTED_PROXIES` to the proxy's address (or `*` if only the proxy can reach port 8080, for example when the port is not published), and `SESSION_SECURE_COOKIE=true`. Shed adds `Strict-Transport-Security` itself on HTTPS requests.
+Set `TRUSTED_PROXIES` to the proxy's address (or `*` if only the proxy can reach port 8080, for example when the port is not published), and `SESSION_SECURE_COOKIE=true`. Ferrite adds `Strict-Transport-Security` itself on HTTPS requests.
 
 ### Configuration
 
-Set in `shed.env` (or `.env` without Docker):
+Set in `ferrite.env` (or `.env` without Docker):
 
 | Variable | Default | |
 | --- | --- | --- |
@@ -80,10 +80,10 @@ Set in `shed.env` (or `.env` without Docker):
 | `APP_URL` | | Public address. All generated links use it |
 | `TRUSTED_PROXIES` | | Proxy IPs/CIDRs, or `*` |
 | `SESSION_SECURE_COOKIE` | | `true` over HTTPS |
-| `SHED_REGISTRATION` | `false` | Let anyone register (not recommended) |
-| `SHED_TRASH_DAYS` | `30` | Days before trashed items are deleted for good |
-| `SHED_ACTIVITY_DAYS` | `90` | Days of activity log kept |
-| `SHED_CHUNK_SIZE` | `5242880` | Upload chunk size in bytes |
+| `FERRITE_REGISTRATION` | `false` | Let anyone register (not recommended) |
+| `FERRITE_TRASH_DAYS` | `30` | Days before trashed items are deleted for good |
+| `FERRITE_ACTIVITY_DAYS` | `90` | Days of activity log kept |
+| `FERRITE_CHUNK_SIZE` | `5242880` | Upload chunk size in bytes |
 | `MAIL_*` | log | SMTP settings, for password reset e-mails |
 | `DB_*` | SQLite | Use MySQL/MariaDB for larger installs |
 
@@ -92,7 +92,7 @@ Set in `shed.env` (or `.env` without Docker):
 Add people under **Users**, set quotas, and connect S3 or SFTP under **Storage** (use "Test" after adding a disk). With no mail configured, reset a forgotten password in the Users screen or:
 
 ```sh
-docker compose exec shed php artisan shed:user someone@example.com --password='...'
+docker compose exec ferrite php artisan ferrite:user someone@example.com --password='...'
 ```
 
 ## Backups
@@ -114,5 +114,5 @@ Migrations run on start. Take a backup first. Rolling back means restoring the b
 
 - **"The page has expired" or login loops behind a proxy**: set `APP_URL` to the exact public address, `TRUSTED_PROXIES`, and `SESSION_SECURE_COOKIE` matching your scheme.
 - **Uploads fail at some size**: the proxy's body limit is smaller than the chunk size, or its timeouts are too short.
-- **Logs**: `docker compose logs shed`. Set `LOG_LEVEL=debug` in `shed.env` temporarily if needed; never `APP_DEBUG=true` on a public server.
+- **Logs**: `docker compose logs ferrite`. Set `LOG_LEVEL=debug` in `ferrite.env` temporarily if needed; never `APP_DEBUG=true` on a public server.
 - **Health check**: `GET /up`.

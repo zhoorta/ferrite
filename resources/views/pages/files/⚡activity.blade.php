@@ -31,7 +31,7 @@ new #[Title('Activity')] class extends Component {
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-6">
     <div>
         <flux:heading size="xl" level="1">{{ __('Activity') }}</flux:heading>
-        <flux:text>{{ __('What happened to your files, kept for :days days.', ['days' => config('shed.activity_days')]) }}</flux:text>
+        <flux:text>{{ __('What happened to your files, kept for :days days.', ['days' => config('ferrite.activity_days')]) }}</flux:text>
     </div>
 
     @if ($this->entries->isEmpty())

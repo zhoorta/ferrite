@@ -1,4 +1,4 @@
-# Shed: plan
+# Ferrite: plan
 
 Self-hosted, web-only file storage. Folders, chunked upload, previews, share links, trash, multiple users with quotas, Flysystem disks (local, S3, SFTP). Laravel 13 + Livewire + Flux. Intended to replace Google Drive for personal use, and possibly be published as open source (no other Livewire/Flux project of this kind found, Oct 2026; closest: gyaaniguy/personal-drive, Laravel + React).
 
@@ -39,7 +39,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out
   - [ ] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100%
   - [ ] Real seeking for Range requests on SFTP (offset reads) instead of reading and discarding up to the offset
-  - [ ] Document temp disk need (`SHED_TMP_PATH`: largest file x concurrent uploads) and proxy/PHP timeouts in `docs/install.md`
+  - [ ] Document temp disk need (`FERRITE_TMP_PATH`: largest file x concurrent uploads) and proxy/PHP timeouts in `docs/install.md`
   - [ ] Test S3 and SFTP against a real server with a multi-GB file
 
 ## Risks

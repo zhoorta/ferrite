@@ -13,7 +13,7 @@ class PruneActivity extends Command
 {
     public function handle(): int
     {
-        $count = Activity::query()->where('created_at', '<', now()->subDays(config('shed.activity_days')))->delete();
+        $count = Activity::query()->where('created_at', '<', now()->subDays(config('ferrite.activity_days')))->delete();
 
         $this->info("Pruned {$count} activity entr".($count === 1 ? 'y' : 'ies').'.');
 

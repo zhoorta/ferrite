@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# ---- PHP runtime base: FrankenPHP (Caddy + PHP in one process) with the extensions Shed needs
+# ---- PHP runtime base: FrankenPHP (Caddy + PHP in one process) with the extensions Ferrite needs
 FROM dunglas/frankenphp:1-php8.4-bookworm AS base
 
 RUN install-php-extensions gd exif zip intl bcmath pcntl opcache pdo_mysql pdo_sqlite \
@@ -43,9 +43,9 @@ RUN composer dump-autoload --no-dev --optimize --classmap-authoritative --no-int
     && chown -R www-data:www-data /data /app/bootstrap/cache
 
 COPY docker/Caddyfile /etc/caddy/Caddyfile
-COPY docker/php.ini /usr/local/etc/php/conf.d/zz-shed.ini
-COPY docker/entrypoint.sh /usr/local/bin/shed-entrypoint
-RUN chmod +x /usr/local/bin/shed-entrypoint
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-ferrite.ini
+COPY docker/entrypoint.sh /usr/local/bin/ferrite-entrypoint
+RUN chmod +x /usr/local/bin/ferrite-entrypoint
 
 # Everything that changes lives in /data: database, files, uploads in progress, logs and caches.
 ENV APP_ENV=production \
@@ -55,8 +55,8 @@ ENV APP_ENV=production \
     DB_CONNECTION=sqlite \
     DB_DATABASE=/data/database.sqlite \
     LARAVEL_STORAGE_PATH=/data/storage \
-    SHED_LOCAL_ROOT=/data/files \
-    SHED_TMP_PATH=/data/tmp \
+    FERRITE_LOCAL_ROOT=/data/files \
+    FERRITE_TMP_PATH=/data/tmp \
     SESSION_DRIVER=database \
     CACHE_STORE=database \
     QUEUE_CONNECTION=sync \
@@ -72,5 +72,5 @@ USER www-data
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8080/up >/dev/null || exit 1
 
-ENTRYPOINT ["shed-entrypoint"]
+ENTRYPOINT ["ferrite-entrypoint"]
 CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]

@@ -26,9 +26,9 @@ it('closes registration once there is a user', function () {
     expect(User::count())->toBe(1);
 });
 
-it('can be opened with SHED_REGISTRATION, creating ordinary unverified users', function () {
+it('can be opened with FERRITE_REGISTRATION, creating ordinary unverified users', function () {
     User::factory()->create();
-    config(['shed.registration' => true]);
+    config(['ferrite.registration' => true]);
 
     $this->get(route('login'))->assertSee('Sign up');
     $this->post(route('register.store'), registration())->assertSessionHasNoErrors();

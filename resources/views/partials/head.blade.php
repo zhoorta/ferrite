@@ -17,8 +17,8 @@
     // Signed-in pages carry the account's theme from the server; remember it for guest pages (sign-in, share links).
     try {
         const root = document.documentElement;
-        if (root.dataset.palette) localStorage.setItem('shed.palette', root.dataset.palette);
-        else root.dataset.palette = localStorage.getItem('shed.palette') || 'plum';
+        if (root.dataset.palette) localStorage.setItem('ferrite.palette', root.dataset.palette);
+        else root.dataset.palette = localStorage.getItem('ferrite.palette') || 'plum';
         root.classList.toggle('dark', !{{ \Illuminate\Support\Js::from(\App\Models\User::LIGHT_PALETTES) }}.includes(root.dataset.palette));
     } catch (e) {}
 </script>

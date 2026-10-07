@@ -20,8 +20,8 @@ class TestStorageDisk
     {
         Gate::forUser($actor)->authorize('admin');
 
-        $key = '.shed-probe-'.bin2hex(random_bytes(6));
-        $content = 'shed '.bin2hex(random_bytes(8));
+        $key = '.ferrite-probe-'.bin2hex(random_bytes(6));
+        $content = 'ferrite '.bin2hex(random_bytes(8));
 
         try {
             $filesystem = $this->storage->filesystem($disk);

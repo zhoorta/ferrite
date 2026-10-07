@@ -56,7 +56,7 @@ class Upload extends Model
 
     public function tmpPath(): string
     {
-        return rtrim(config('shed.tmp_path'), '/').'/'.$this->id;
+        return rtrim(config('ferrite.tmp_path'), '/').'/'.$this->id;
     }
 
     public function isComplete(): bool

@@ -24,7 +24,7 @@ return [
     |
     */
 
-    'registration' => (bool) env('SHED_REGISTRATION', false),
+    'registration' => (bool) env('FERRITE_REGISTRATION', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -37,11 +37,11 @@ return [
     |
     */
 
-    'chunk_size' => (int) env('SHED_CHUNK_SIZE', 5 * 1024 * 1024),
+    'chunk_size' => (int) env('FERRITE_CHUNK_SIZE', 5 * 1024 * 1024),
 
-    'upload_ttl_hours' => (int) env('SHED_UPLOAD_TTL_HOURS', 24),
+    'upload_ttl_hours' => (int) env('FERRITE_UPLOAD_TTL_HOURS', 24),
 
-    'tmp_path' => env('SHED_TMP_PATH', storage_path('app/private/shed-tmp')),
+    'tmp_path' => env('FERRITE_TMP_PATH', storage_path('app/private/ferrite-tmp')),
 
     /*
     |--------------------------------------------------------------------------
@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'trash_days' => (int) env('SHED_TRASH_DAYS', 30),
+    'trash_days' => (int) env('FERRITE_TRASH_DAYS', 30),
 
     /*
     |--------------------------------------------------------------------------
@@ -63,7 +63,7 @@ return [
     |
     */
 
-    'activity_days' => (int) env('SHED_ACTIVITY_DAYS', 90),
+    'activity_days' => (int) env('FERRITE_ACTIVITY_DAYS', 90),
 
     /*
     |--------------------------------------------------------------------------
@@ -74,6 +74,6 @@ return [
     |
     */
 
-    'local_root' => env('SHED_LOCAL_ROOT', storage_path('app/private/shed')),
+    'local_root' => env('FERRITE_LOCAL_ROOT', storage_path('app/private/ferrite')),
 
 ];

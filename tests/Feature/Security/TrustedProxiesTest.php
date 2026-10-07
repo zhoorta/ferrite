@@ -7,7 +7,7 @@ afterEach(fn () => TrustProxies::flushState());
 
 function applyTrustedProxies(?string $setting): void
 {
-    config(['shed.trusted_proxies' => $setting]);
+    config(['ferrite.trusted_proxies' => $setting]);
     (new AppServiceProvider(app()))->boot();
 }
 

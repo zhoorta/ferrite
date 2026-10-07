@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\password;
 
-#[Signature('shed:user {email : E-mail address of the user}
+#[Signature('ferrite:user {email : E-mail address of the user}
     {--name= : Display name (new users; defaults to the part before the @)}
     {--password= : Password (prefer the prompt: this ends up in your shell history)}
     {--admin : Make the user an admin}

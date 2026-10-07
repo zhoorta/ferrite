@@ -1,10 +1,10 @@
 # Security review
 
-A review of Shed before publication, done by reading the code and testing the behaviour. It lists what was checked, what was found and fixed, and what is still a limitation. It is not a third-party audit.
+A review of Ferrite before publication, done by reading the code and testing the behaviour. It lists what was checked, what was found and fixed, and what is still a limitation. It is not a third-party audit.
 
 ## The main risk
 
-Users upload files and Shed serves them from its own origin. Anything a browser renders inline (HTML, SVG, scripts) could run with the viewer's session. How this is handled:
+Users upload files and Ferrite serves them from its own origin. Anything a browser renders inline (HTML, SVG, scripts) could run with the viewer's session. How this is handled:
 
 - Files only display inline for an allowlist (common images, PDF, video, audio, text). Everything else, SVG and HTML included, is a download. Text-like files, HTML too, are sent as `text/plain`. See [serving-files.md](serving-files.md).
 - MIME types come from server-side content sniffing at upload, never from the client; every file response has `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy: same-origin`, and inline responses (except PDF) a `sandbox` Content-Security-Policy.

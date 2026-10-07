@@ -35,12 +35,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Believe the forwarding headers of the proxies listed in SHED's TRUSTED_PROXIES setting. Done
+     * Believe the forwarding headers of the proxies listed in FERRITE's TRUSTED_PROXIES setting. Done
      * here rather than in bootstrap/app.php because config is not available there.
      */
     protected function configureTrustedProxies(): void
     {
-        $proxies = config('shed.trusted_proxies');
+        $proxies = config('ferrite.trusted_proxies');
 
         if (! is_string($proxies) || trim($proxies) === '') {
             return;

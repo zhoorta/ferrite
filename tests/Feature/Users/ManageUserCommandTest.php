@@ -4,7 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 it('creates a verified user from options', function () {
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--password' => 'a-good-password', '--quota' => '5'])
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--password' => 'a-good-password', '--quota' => '5'])
         ->expectsOutputToContain('Created ana@example.com (user, quota 5 GB)')
         ->assertSuccessful();
 
@@ -18,7 +18,7 @@ it('creates a verified user from options', function () {
 });
 
 it('creates an admin with a name', function () {
-    $this->artisan('shed:user', ['email' => 'boss@example.com', '--password' => 'a-good-password', '--admin' => true, '--name' => 'The Boss'])
+    $this->artisan('ferrite:user', ['email' => 'boss@example.com', '--password' => 'a-good-password', '--admin' => true, '--name' => 'The Boss'])
         ->assertSuccessful();
 
     $user = User::firstWhere('email', 'boss@example.com');
@@ -26,7 +26,7 @@ it('creates an admin with a name', function () {
 });
 
 it('prompts for the password when none is given', function () {
-    $this->artisan('shed:user', ['email' => 'ana@example.com'])
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com'])
         ->expectsQuestion('Password', 'a-good-password')
         ->expectsQuestion('Confirm password', 'a-good-password')
         ->assertSuccessful();
@@ -35,7 +35,7 @@ it('prompts for the password when none is given', function () {
 });
 
 it('refuses mismatching prompted passwords', function () {
-    $this->artisan('shed:user', ['email' => 'ana@example.com'])
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com'])
         ->expectsQuestion('Password', 'a-good-password')
         ->expectsQuestion('Confirm password', 'something-else')
         ->expectsOutputToContain('do not match')
@@ -48,7 +48,7 @@ it('updates an existing user, changing only what is asked', function () {
     $user = User::factory()->create(['email' => 'Ana@Example.com', 'name' => 'Ana']);
     $hash = $user->password;
 
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--admin' => true, '--quota' => 'unlimited'])
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--admin' => true, '--quota' => 'unlimited'])
         ->expectsConfirmation('Set a new password?', 'no')
         ->expectsOutputToContain('Updated Ana@Example.com (admin, quota unlimited)')
         ->assertSuccessful();
@@ -56,7 +56,7 @@ it('updates an existing user, changing only what is asked', function () {
     $user->refresh();
     expect($user->isAdmin())->toBeTrue()->and($user->password)->toBe($hash)->and($user->name)->toBe('Ana')->and(User::count())->toBe(1);
 
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--user' => true, '--password' => 'brand-new-password'])->assertSuccessful();
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--user' => true, '--password' => 'brand-new-password'])->assertSuccessful();
     $user->refresh();
     expect($user->isAdmin())->toBeFalse()->and(Hash::check('brand-new-password', $user->password))->toBeTrue();
 });
@@ -64,7 +64,7 @@ it('updates an existing user, changing only what is asked', function () {
 it('can re-enable a disabled account, to recover a locked-out admin', function () {
     $user = User::factory()->admin()->create(['email' => 'ana@example.com', 'disabled_at' => now()]);
 
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--enable' => true])
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--enable' => true])
         ->expectsConfirmation('Set a new password?', 'no')
         ->assertSuccessful();
 
@@ -72,15 +72,15 @@ it('can re-enable a disabled account, to recover a locked-out admin', function (
 });
 
 it('reports validation problems', function () {
-    $this->artisan('shed:user', ['email' => 'not-an-email', '--password' => 'a-good-password'])->assertFailed();
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--password' => 'a-good-password', '--quota' => 'lots'])->assertFailed();
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--password' => 'a-good-password', '--admin' => true, '--user' => true])->assertFailed();
+    $this->artisan('ferrite:user', ['email' => 'not-an-email', '--password' => 'a-good-password'])->assertFailed();
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--password' => 'a-good-password', '--quota' => 'lots'])->assertFailed();
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--password' => 'a-good-password', '--admin' => true, '--user' => true])->assertFailed();
 
     expect(User::count())->toBe(0);
 });
 
 it('needs a password when not interactive', function () {
-    $this->artisan('shed:user', ['email' => 'ana@example.com', '--no-interaction' => true])
+    $this->artisan('ferrite:user', ['email' => 'ana@example.com', '--no-interaction' => true])
         ->expectsOutputToContain('Pass --password')
         ->assertFailed();
 });

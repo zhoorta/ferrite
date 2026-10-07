@@ -149,7 +149,7 @@ describe('deleting', function () {
 
         expect(User::find($user->id))->toBeNull()
             ->and(Node::pluck('id')->all())->toBe([$keep->id])
-            ->and(File::allFiles(config('shed.local_root')))->toHaveCount(1)
+            ->and(File::allFiles(config('ferrite.local_root')))->toHaveCount(1)
             ->and(app(StorageManager::class)->filesystem($keep->disk)->exists($keep->path))->toBeTrue()
             ->and($mine->path)->not->toBeNull();
     });

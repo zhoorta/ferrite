@@ -7,8 +7,8 @@
     <body class="cozy-bg min-h-screen antialiased">
         <div class="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-6 px-4 py-8">
             <div class="flex items-center gap-2 text-sm text-zinc-500">
-                <img src="{{ asset('favicon.svg') }}" alt="" class="size-6 rounded-md">
-                <x-app-wordmark class="h-5 w-auto text-zinc-700 dark:text-zinc-200" />
+                <x-app-logo-icon class="h-5 w-auto text-zinc-700 dark:text-zinc-200" />
+                <x-app-wordmark class="text-xl text-zinc-700 dark:text-zinc-200" />
                 <span class="sr-only">{{ config('app.name') }}</span>
             </div>
 

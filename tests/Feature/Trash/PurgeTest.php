@@ -61,7 +61,7 @@ it('deletes a folder with everything inside, shares included', function () {
     expect(Node::pluck('id')->all())->toBe([$keep->id])
         ->and(Share::count())->toBe(0)
         ->and(blobExists($keep))->toBeTrue()
-        ->and(File::allFiles(config('shed.local_root')))->toHaveCount(1)
+        ->and(File::allFiles(config('ferrite.local_root')))->toHaveCount(1)
         ->and($this->user->fresh()->used_bytes)->toBe(1)
         ->and($a->path)->not->toBeNull();
 });
