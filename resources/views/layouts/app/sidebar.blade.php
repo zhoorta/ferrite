@@ -100,7 +100,7 @@
 
         {{-- Persisted, so an upload carries on while you navigate (state lives in the `uploads` store). --}}
         @persist('uploads')
-        <div x-show="$store.uploads.items.length" x-cloak
+        <div x-data x-show="$store.uploads.items.length" x-cloak
             class="fixed bottom-4 end-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-zinc-50 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
             <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
                 <flux:heading>{{ __('Uploads') }}</flux:heading>
