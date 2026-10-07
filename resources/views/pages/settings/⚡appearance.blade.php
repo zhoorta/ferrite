@@ -39,6 +39,7 @@ new #[Title('Appearance settings')] class extends Component {
                     'mac' => [__('Classic Mac'), 'computer-desktop'],
                     'desk95' => [__('Desktop 95'), 'window'],
                     'zine' => [__('Plain page'), 'newspaper'],
+                    'bubblegum' => [__('Bubblegum 98'), 'sparkles'],
                     'amber' => [__('Amber terminal'), 'terminal'],
                     'phosphor' => [__('Green phosphor'), 'tv'],
                     'commodore' => [__('Commodore'), 'gamepad-2'],

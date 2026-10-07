@@ -71,6 +71,72 @@
     }
 }
 
+@layer theme {
+    /* Bubblegum 98 (light, late-90s): pastel pink and lilac, bubbly rounded shapes, hot pink accent. */
+    html:not(.dark)[data-palette='bubblegum'] {
+        --font-sans: 'Quicksand', ui-rounded, 'Nunito', system-ui, sans-serif;
+        --font-serif: 'Fredoka', 'Quicksand', ui-rounded, system-ui, sans-serif;
+        --font-ui: 'Fredoka', 'Quicksand', ui-rounded, system-ui, sans-serif;
+
+        --color-zinc-50: #fff5fa;
+        --color-zinc-100: #ffe9f4;
+        --color-zinc-200: #f6d3e6;
+        --color-zinc-300: #e3b8d6;
+        --color-zinc-400: #b58aae;
+        --color-zinc-500: #8d628a;
+        --color-zinc-600: #6e4a72;
+        --color-zinc-700: #55345e;
+        --color-zinc-800: #3f2549;
+        --color-zinc-900: #321c3b;
+        --color-zinc-950: #25142c;
+
+        --color-accent: #d6338a;
+        --color-accent-content: #b81f72;
+        --color-accent-foreground: #ffffff;
+
+        --radius-xs: 0.5rem;
+        --radius-sm: 0.75rem;
+        --radius-md: 1rem;
+        --radius-lg: 1.25rem;
+        --radius-xl: 1.5rem;
+        --radius-2xl: 2rem;
+        --radius-3xl: 2.5rem;
+
+        --shadow-xs: 0 1px 2px rgb(214 51 138 / .12);
+        --shadow-sm: 0 2px 6px rgb(214 51 138 / .14);
+        --shadow-md: 0 4px 12px rgb(214 51 138 / .16);
+        --shadow-lg: 0 8px 22px rgb(214 51 138 / .18);
+        --shadow-xl: 0 12px 30px rgb(214 51 138 / .2);
+        --shadow-2xl: 0 18px 44px rgb(214 51 138 / .22);
+    }
+}
+
+html:not(.dark)[data-palette='bubblegum'] .cozy-bg {
+    color: var(--color-zinc-800);
+    background-color: var(--color-zinc-50);
+    background-image:
+        radial-gradient(ellipse 70% 45% at 0% 0%, rgb(255 190 224 / .55), transparent 70%),
+        radial-gradient(ellipse 60% 45% at 100% 100%, rgb(200 190 255 / .5), transparent 70%);
+    background-attachment: fixed;
+}
+
+html:not(.dark)[data-palette='bubblegum'] ::selection {
+    background: rgb(214 51 138 / .25);
+}
+
+html:not(.dark)[data-palette='bubblegum'] .upload-bar {
+    height: 0.75rem;
+    border: 2px solid #fff;
+    border-radius: 9999px;
+    background: var(--color-zinc-200);
+    box-shadow: 0 0 0 1px var(--color-zinc-300);
+}
+
+html:not(.dark)[data-palette='bubblegum'] .upload-fill {
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #ff7ac0, #b79bff);
+}
+
 @layer base {
 
     *,

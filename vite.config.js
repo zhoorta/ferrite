@@ -52,6 +52,14 @@ export default defineConfig({
                     weights: [400, 700],
                     preload: false,
                 }),
+                bunny('Quicksand', {
+                    weights: [400, 500, 600, 700],
+                    preload: false,
+                }),
+                bunny('Fredoka', {
+                    weights: [500, 600, 700],
+                    preload: false,
+                }),
                 bunny('Pixelify Sans', {
                     weights: [500, 600, 700],
                     preload: false,
