@@ -87,7 +87,8 @@ class StorageUsage
             }
         };
 
-        $kinds = array_fill_keys(self::KINDS, ['bytes' => 0, 'count' => 0]);
+        $kindBytes = array_fill_keys(self::KINDS, 0);
+        $kindCounts = array_fill_keys(self::KINDS, 0);
         $folderBytes = [];
         $active = 0;
         $trash = 0;
@@ -112,8 +113,8 @@ class StorageUsage
             $active += $node->size;
 
             $kind = self::kind($node->mime);
-            $kinds[$kind]['bytes'] += $node->size;
-            $kinds[$kind]['count']++;
+            $kindBytes[$kind] += $node->size;
+            $kindCounts[$kind]++;
 
             // Files that sit directly at the top are not part of any folder.
             if ($root[$node->id] === $node->id) {
@@ -127,6 +128,12 @@ class StorageUsage
 
         usort($largest, fn (Node $a, Node $b) => $b->size <=> $a->size);
         arsort($folderBytes);
+
+        $kinds = [];
+
+        foreach (self::KINDS as $kind) {
+            $kinds[$kind] = ['bytes' => $kindBytes[$kind], 'count' => $kindCounts[$kind]];
+        }
 
         return [
             'used' => $user->used_bytes,
@@ -142,11 +149,10 @@ class StorageUsage
                 'size' => $node->size,
                 'mime' => $node->mime,
             ], array_slice($largest, 0, 10)),
-            'folders' => collect($folderBytes)
+            'folders' => array_values(collect($folderBytes)
                 ->take(8)
                 ->map(fn (int $bytes, int $id) => ['id' => $id, 'name' => $nodes[$id]->name, 'bytes' => $bytes])
-                ->values()
-                ->all(),
+                ->all()),
             'loose' => $loose,
             'saved' => $this->dedupSaved($nodes->all()),
         ];

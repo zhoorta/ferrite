@@ -12,7 +12,6 @@ use App\Support\StorageManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 use Throwable;
 
 class CopyNode
@@ -165,12 +164,12 @@ class CopyNode
                     continue;
                 }
 
-                $disk = $disks[$file->disk_id] ??= $this->storage->filesystem(StorageDisk::query()->findOrFail($file->disk_id));
-                $stream = $disk->readStream($file->path) ?? throw new RuntimeException('Cannot read the file to copy.');
+                $source = $disks[$file->disk_id] ??= StorageDisk::query()->findOrFail($file->disk_id);
+                $stream = $this->storage->openStream($source, $file->path, $file->size);
                 $key = $this->storage->newKey();
 
                 try {
-                    $disk->writeStream($key, $stream);
+                    $this->storage->filesystem($source)->writeStream($key, $stream);
                 } finally {
                     fclose($stream);
                 }

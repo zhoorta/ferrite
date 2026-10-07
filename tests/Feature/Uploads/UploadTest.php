@@ -1,10 +1,15 @@
 <?php
 
+use App\Actions\Uploads\CompleteUpload;
+use App\Actions\Uploads\FailUpload;
+use App\Jobs\FinalizeUpload;
 use App\Models\Node;
 use App\Models\Upload;
 use App\Models\User;
 use App\Support\StorageManager;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
@@ -264,4 +269,141 @@ it('keeps separate blobs for different content of the same size', function () {
     uploadAll('b.txt', 'bbbb')->assertOk();
 
     expect(File::allFiles(config('ferrite.local_root')))->toHaveCount(2);
+});
+
+describe('finalizing in the background', function () {
+    function receivedUpload(string $content = 'abcdefgh', string $path = 'big.bin'): string
+    {
+        $id = startUpload(['path' => $path, 'size' => strlen($content)])->json('id');
+
+        foreach (str_split($content, 4) as $i => $chunk) {
+            $response = sendChunk($id, $i * 4, $chunk);
+        }
+
+        test()->lastChunk = $response;
+
+        return $id;
+    }
+
+    function runFinalizer(string $id): void
+    {
+        (new FinalizeUpload($id))->handle(app(CompleteUpload::class), app(FailUpload::class));
+    }
+
+    it('answers the last chunk at once and stores the file in the job', function () {
+        Queue::fake();
+
+        $id = receivedUpload();
+
+        $this->lastChunk->assertStatus(202)->assertJson(['status' => 'processing']);
+        Queue::assertPushed(FinalizeUpload::class, fn ($job) => $job->uploadId === $id);
+
+        expect(Node::count())->toBe(0)
+            ->and(Upload::find($id)->status)->toBe('processing')
+            ->and(is_file(config('ferrite.tmp_path')."/{$id}"))->toBeTrue();
+
+        $this->getJson(route('uploads.show', $id))->assertJson(['status' => 'processing'])->assertJsonMissingPath('node');
+
+        runFinalizer($id);
+
+        $node = Node::firstWhere('name', 'big.bin');
+        expect($node)->not->toBeNull()
+            ->and($this->user->fresh()->used_bytes)->toBe(8)
+            ->and(is_file(config('ferrite.tmp_path')."/{$id}"))->toBeFalse();
+
+        $this->getJson(route('uploads.show', $id))->assertJson(['status' => 'done', 'node' => ['id' => $node->id, 'name' => 'big.bin']]);
+    });
+
+    it('does not take more chunks or a cancel while processing', function () {
+        Queue::fake();
+        $id = receivedUpload();
+
+        sendChunk($id, 8, 'x')->assertStatus(409)->assertJson(['status' => 'processing']);
+        $this->deleteJson(route('uploads.destroy', $id))->assertStatus(409);
+
+        expect(Upload::find($id))->not->toBeNull();
+    });
+
+    it('marks the upload failed and cleans up when the quota no longer fits', function () {
+        Queue::fake();
+        $id = receivedUpload();
+        $this->user->forceFill(['quota_bytes' => 5])->save();
+
+        runFinalizer($id);
+
+        $upload = Upload::find($id);
+        expect($upload->status)->toBe('failed')
+            ->and($upload->error)->toContain('Not enough storage')
+            ->and(Node::count())->toBe(0)
+            ->and(is_file(config('ferrite.tmp_path')."/{$id}"))->toBeFalse()
+            ->and(File::allFiles(config('ferrite.local_root')))->toBeEmpty();
+
+        $this->getJson(route('uploads.show', $id))->assertJson(['status' => 'failed'])->assertJsonPath('error', $upload->error);
+        $this->deleteJson(route('uploads.destroy', $id))->assertNoContent();
+    });
+
+    it('removes a half-written blob when the disk fails and reports a failure', function () {
+        Queue::fake();
+        $id = receivedUpload();
+
+        $filesystem = Mockery::mock(Filesystem::class);
+        $filesystem->shouldReceive('writeStream')->once()->andThrow(new RuntimeException('connection lost'));
+        $filesystem->shouldReceive('delete')->atLeast()->once();
+        $storage = Mockery::mock(StorageManager::class)->makePartial();
+        $storage->shouldReceive('filesystem')->andReturn($filesystem);
+        $this->app->instance(StorageManager::class, $storage);
+
+        $job = new FinalizeUpload($id);
+
+        expect(fn () => $job->handle(app(CompleteUpload::class), app(FailUpload::class)))->toThrow(RuntimeException::class);
+
+        $job->failed(new RuntimeException('connection lost'));
+
+        $upload = Upload::find($id);
+        expect($upload->status)->toBe('failed')
+            ->and($upload->blob_key)->not->toBeNull()
+            ->and(Node::count())->toBe(0)
+            ->and(is_file(config('ferrite.tmp_path')."/{$id}"))->toBeFalse();
+    });
+
+    it('reports a failed job to the chunk request when the queue is synchronous', function () {
+        $id = startUpload(['size' => 8])->json('id');
+        sendChunk($id, 0, 'abcd');
+        $this->user->forceFill(['quota_bytes' => 5])->save();
+
+        sendChunk($id, 4, 'efgh')->assertUnprocessable()->assertJsonValidationErrors('size');
+
+        expect(Upload::count())->toBe(0);
+    });
+
+    it('starts a new upload for a file that is being stored or has failed', function () {
+        Queue::fake();
+        $first = receivedUpload('abcdefgh', 'same.bin');
+
+        $second = startUpload(['path' => 'same.bin', 'size' => 8])->assertCreated()->json('id');
+
+        expect($second)->not->toBe($first);
+    });
+
+    it('gives up on uploads stuck in processing and drops old records when pruning', function () {
+        Queue::fake();
+        $stuck = receivedUpload('abcdefgh', 'stuck.bin');
+        Upload::whereKey($stuck)->update(['updated_at' => now()->subHours(13)]);
+
+        $recent = receivedUpload('abcdefgh', 'recent.bin');
+
+        $done = new Upload(['name' => 'old.bin', 'size' => 1]);
+        $done->user_id = $this->user->id;
+        $done->offset = 1;
+        $done->status = 'done';
+        $done->save();
+        Upload::whereKey($done->id)->update(['updated_at' => now()->subHours(2)]);
+
+        $this->artisan('uploads:prune')->assertSuccessful();
+
+        expect(Upload::find($stuck)->status)->toBe('failed')
+            ->and(is_file(config('ferrite.tmp_path')."/{$stuck}"))->toBeFalse()
+            ->and(Upload::find($recent)->status)->toBe('processing')
+            ->and(Upload::find($done->id))->toBeNull();
+    });
 });

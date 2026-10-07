@@ -19,11 +19,7 @@ class TextPreview
             return ['text' => '', 'truncated' => false];
         }
 
-        $stream = app(StorageManager::class)->filesystem($node->disk)->readStream($node->path);
-
-        if ($stream === null) {
-            return ['text' => '', 'truncated' => false];
-        }
+        $stream = app(StorageManager::class)->openStream($node->disk, $node->path, $node->size);
 
         $text = (string) stream_get_contents($stream, self::LIMIT);
         fclose($stream);

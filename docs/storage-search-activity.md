@@ -16,8 +16,8 @@ Admins manage disks under **Storage** (`/admin/storage`, gate `admin`, i.e. `use
 - A disk that is the default, or still holds files, cannot be removed. Removing a disk never touches the remote storage.
 - If the folder or bucket settings of a disk that holds files are changed, the files are no longer found. There is no data migration between disks yet.
 - **SFTP:** set the host fingerprint, otherwise nothing stops someone impersonating the server.
-- **S3 and seeking:** Range requests on S3 or SFTP read from the start and skip to the offset, so seeking far into a large video is slow on those disks. Not optimized yet.
-- Remote drivers are covered by tests only up to adapter construction and "unreachable server" errors; there is no test against a real S3 or SFTP server, so try yours with **Test** and a real upload.
+- **Seeking:** `StorageManager::openStream()` opens every read. On SFTP (`App\Support\SftpStream`) data is fetched in 4 MiB blocks at the requested offset, so a Range request or a video seek does not read what comes before (Flysystem's own SFTP stream would download the whole file into a temp stream first). On S3 a Range is sent to the server (`GetObject` with `Range`). The same stream is used for ZIPs, text previews and copies, so none of them spool a whole remote file to a temp file first.
+- Remote drivers are covered by the normal tests only up to adapter construction and "unreachable server" errors. `tests/Feature/Remote/SftpDiskTest.php` runs against a real SFTP server when `FERRITE_TEST_SFTP_*` is set (see the header of the file): it uploads a file of `FERRITE_TEST_SFTP_MB` MB through the queued path and checks the hash, the size on the server and Range reads. Run once against a local OpenSSH server with 3000 MB (see `docs/uploads.md`); not yet against a Hetzner Storage Box or an S3 service, so try yours with **Test** and a real upload.
 
 ## Search
 

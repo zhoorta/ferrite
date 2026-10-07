@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Models\Node;
 use App\Models\StorageDisk;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -23,8 +22,8 @@ class NodeResponder
 {
     private const CHUNK = 1024 * 1024;
 
-    /** @var array<int, Filesystem> */
-    private array $zipFilesystems = [];
+    /** @var array<int, StorageDisk> */
+    private array $zipDisks = [];
 
     public function __construct(private StorageManager $storage, private Thumbnailer $thumbnails) {}
 
@@ -43,7 +42,7 @@ class NodeResponder
      */
     public function file(Request $request, Node $node, bool $inline = false): Response
     {
-        $filesystem = $this->filesystemFor($node);
+        $this->assertServable($node);
         $inlineType = $inline ? FileKind::inlineType($node->mime) : null;
         $size = $node->size;
 
@@ -81,12 +80,11 @@ class NodeResponder
         }
 
         $headers['Content-Length'] = (string) $length;
-        $path = (string) $node->path;
 
-        return new StreamedResponse(function () use ($filesystem, $path, $start, $length) {
+        return new StreamedResponse(function () use ($node, $start, $length) {
             // Big files to slow connections outlast any default time limit.
             set_time_limit(0);
-            $this->copy($filesystem, $path, $start, $length);
+            $this->copy($node, $start, $length);
         }, $status, $headers);
     }
 
@@ -188,12 +186,8 @@ class NodeResponder
             return;
         }
 
-        $filesystem = $this->zipFilesystems[$file->disk_id] ??= $this->storage->filesystem(StorageDisk::query()->findOrFail($file->disk_id));
-        $stream = $filesystem->readStream($file->path);
-
-        if ($stream === null) {
-            return;
-        }
+        $disk = $this->zipDisks[$file->disk_id] ??= StorageDisk::query()->findOrFail($file->disk_id);
+        $stream = $this->storage->openStream($disk, $file->path, $file->size);
 
         try {
             $zip->addFileFromStream("{$prefix}{$file->name}", $stream, lastModificationDateTime: $file->updated_at);
@@ -205,32 +199,15 @@ class NodeResponder
     /**
      * Write $length bytes starting at $start to the output.
      */
-    private function copy(Filesystem $filesystem, string $path, int $start, int $length): void
+    private function copy(Node $node, int $start, int $length): void
     {
         if ($length === 0) {
             return;
         }
 
-        $stream = $filesystem->readStream($path);
-
-        if ($stream === null) {
-            return;
-        }
+        $stream = $this->storage->openStream($node->disk, (string) $node->path, $node->size, $start);
 
         try {
-            if ($start > 0 && (! stream_get_meta_data($stream)['seekable'] || fseek($stream, $start) !== 0)) {
-                // Remote streams may not seek: read and drop the bytes before the range.
-                for ($toSkip = $start; $toSkip > 0 && ! feof($stream);) {
-                    $read = strlen((string) fread($stream, min(self::CHUNK, $toSkip)));
-
-                    if ($read === 0) {
-                        break;
-                    }
-
-                    $toSkip -= $read;
-                }
-            }
-
             for ($remaining = $length; $remaining > 0 && ! feof($stream) && ! connection_aborted();) {
                 $chunk = fread($stream, min(self::CHUNK, $remaining));
 
@@ -276,11 +253,9 @@ class NodeResponder
         return $start >= $size || $start > $end ? false : [$start, $end];
     }
 
-    private function filesystemFor(Node $node): Filesystem
+    private function assertServable(Node $node): void
     {
         abort_unless($node->isFile() && $node->disk !== null && $node->path !== null, 404);
-
-        return $this->storage->filesystem($node->disk);
     }
 
     private function etag(Node $node): string

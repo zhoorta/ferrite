@@ -4,7 +4,7 @@
 
 A server with Docker and Docker Compose, a domain name, and a reverse proxy that terminates HTTPS (Caddy, nginx, Traefik...). 512 MB of RAM is enough for a small team; disk space depends on what you store.
 
-Without Docker: PHP 8.3+ with the `gd`, `exif`, `zip`, `intl`, `bcmath` and `pdo_sqlite` or `pdo_mysql` extensions, Composer, Node (to build assets), a web server pointing at `public/`, and a cron entry running `php artisan schedule:run` every minute.
+Without Docker: PHP 8.3+ with the `gd`, `exif`, `zip`, `intl`, `bcmath` and `pdo_sqlite` or `pdo_mysql` extensions, Composer, Node (to build assets), a web server pointing at `public/`, a cron entry running `php artisan schedule:run` every minute, and a queue worker kept alive by systemd or Supervisor: `php artisan queue:work --tries=1 --timeout=0` (with `QUEUE_CONNECTION=database`, the default; `sync` runs uploads' final step inside the request instead, fine for small files on a local disk).
 
 ## Docker
 
@@ -20,7 +20,7 @@ docker compose up -d --build
 docker compose logs -f ferrite
 ```
 
-On start the container creates the database, runs migrations, caches the configuration and starts the scheduler (trash purge, upload cleanup, log pruning). The first person to open the site and register becomes the admin.
+On start the container creates the database, runs migrations, caches the configuration and starts the scheduler (trash purge, upload cleanup, log pruning) and a queue worker (finishes uploads in the background; see "Large files" below). The first person to open the site and register becomes the admin.
 
 ### The data volume
 
@@ -84,6 +84,9 @@ Set in `ferrite.env` (or `.env` without Docker):
 | `FERRITE_TRASH_DAYS` | `30` | Days before trashed items are deleted for good |
 | `FERRITE_ACTIVITY_DAYS` | `90` | Days of activity log kept |
 | `FERRITE_CHUNK_SIZE` | `5242880` | Upload chunk size in bytes |
+| `FERRITE_TMP_PATH` | `/data/tmp` (Docker) | Where uploads in progress are assembled; see "Large files" |
+| `FERRITE_PROCESSING_TIMEOUT_HOURS` | `12` | An upload still being stored after this long is given up on |
+| `QUEUE_CONNECTION` | `database` | `sync` = no worker, uploads finish inside the last request |
 | `MAIL_*` | log | SMTP settings, for password reset e-mails |
 | `DB_*` | SQLite | Use MySQL/MariaDB for larger installs |
 
@@ -94,6 +97,16 @@ Add people under **Users**, set quotas, and connect S3 or SFTP under **Storage**
 ```sh
 docker compose exec ferrite php artisan ferrite:user someone@example.com --password='...'
 ```
+
+## Large files
+
+An upload is assembled in `FERRITE_TMP_PATH` chunk by chunk, then a background job hashes it and copies it to its disk. That second step is the slow one on a remote disk (SFTP, S3), so it never runs inside a web request: the browser shows "Storing the file…" and follows along.
+
+- **Temporary space:** the temp folder must hold the largest file you will upload times the uploads in flight (the browser sends one at a time). The target disk needs the file again. Without Docker, point `FERRITE_TMP_PATH` at a disk with room; the default is under `storage/`.
+- **Worker:** if the queue worker is not running, uploads stay at "Storing the file…" until it is (or `uploads:prune` gives up on them after `FERRITE_PROCESSING_TIMEOUT_HOURS`). In Docker, `docker compose logs ferrite` shows it.
+- **Timeouts:** the proxy only has to cover one 5 MB chunk request (`proxy_read_timeout` of a minute is plenty for uploads), not the copy to the remote disk. Downloads and ZIPs of big files do need long timeouts (3600 s in the nginx example above). PHP's `max_execution_time` is lifted for downloads by Ferrite itself.
+- **Failures:** if storing fails (disk unreachable, quota used up meanwhile) nothing is left on the disk or counted against the quota; the browser shows the reason and a Retry button.
+- **Seeking:** video seeking and resumed downloads read from the requested position on SFTP and S3 instead of from the start.
 
 ## Backups
 
@@ -113,6 +126,7 @@ Migrations run on start. Take a backup first. Rolling back means restoring the b
 ## Troubleshooting
 
 - **"The page has expired" or login loops behind a proxy**: set `APP_URL` to the exact public address, `TRUSTED_PROXIES`, and `SESSION_SECURE_COOKIE` matching your scheme.
+- **Uploads stay at "Storing the file…"**: the queue worker is not running. In Docker it starts with the container; otherwise start `php artisan queue:work --tries=1 --timeout=0` under systemd or Supervisor.
 - **Uploads fail at some size**: the proxy's body limit is smaller than the chunk size, or its timeouts are too short.
 - **Logs**: `docker compose logs ferrite`. Set `LOG_LEVEL=debug` in `ferrite.env` temporarily if needed; never `APP_DEBUG=true` on a public server.
 - **Health check**: `GET /up`.

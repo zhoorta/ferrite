@@ -4,6 +4,10 @@ const MAX_RETRIES = 5;
  * Alpine store (`$store.uploads`) that uploads files and folders in chunks, one file at a time.
  * It lives outside the pages, and its panel is persisted in the layout, so an upload carries on
  * while you navigate. A failed chunk is retried after asking the server how much it already has.
+ *
+ * Once the last chunk is in, the server copies the file to its disk in a background job (slow on
+ * remote disks). The item is then "processing": the next file starts uploading and a poll on
+ * `GET /uploads/{id}` reports done or failed.
  */
 export default function uploader() {
     const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
@@ -55,6 +59,8 @@ export default function uploader() {
     return {
         items: [],
         running: false,
+        // Something finished since the browsers on screen were last told to reload.
+        dirty: false,
 
         get active() {
             return this.items.some((item) => ['queued', 'uploading'].includes(item.status));
@@ -109,19 +115,70 @@ export default function uploader() {
             if (this.running) return;
             this.running = true;
 
-            let uploaded = false;
-
             for (const item of this.items) {
                 if (item.status !== 'queued') continue;
 
                 await this.send(item);
-                uploaded ||= item.status === 'done';
             }
 
             this.running = false;
+            this.finishBatch();
+        },
 
-            // Lets a file browser that is on screen reload its list.
-            if (uploaded) window.dispatchEvent(new CustomEvent('ferrite-uploaded'));
+        // Once nothing is left to send or store, lets a file browser on screen reload its list.
+        finishBatch() {
+            if (!this.dirty || this.items.some((item) => ['queued', 'uploading', 'processing'].includes(item.status))) return;
+
+            this.dirty = false;
+            window.dispatchEvent(new CustomEvent('ferrite-uploaded'));
+        },
+
+        // The server's word on an upload: still receiving, handed to the storing job, or stored.
+        settle(item, state) {
+            if (state.status === 'done') {
+                item.status = 'done';
+                this.dirty = true;
+            } else if (state.status === 'processing') {
+                item.status = 'processing';
+                this.watch(item);
+            }
+        },
+
+        // Polls a file that is being stored until the server reports the outcome.
+        async watch(item) {
+            let failures = 0;
+
+            for (let polls = 0; item.status === 'processing'; polls++) {
+                await sleep(Math.min(5000, 1000 + polls * 500));
+
+                try {
+                    const response = await request(item.base, 'GET', `/uploads/${item.uploadId}`);
+
+                    if (response.status === 404) throw { fatal: true, message: 'The server lost track of this upload. Check the folder or upload it again.' };
+                    if (!response.ok) throw new Error(`Error ${response.status}`);
+
+                    const state = await response.json();
+                    failures = 0;
+
+                    if (state.status === 'done') {
+                        item.status = 'done';
+                        this.dirty = true;
+                    } else if (state.status === 'failed') {
+                        item.status = 'error';
+                        item.error = state.error ?? 'The file could not be stored.';
+                    }
+
+                    // The record only exists for this answer.
+                    if (item.status !== 'processing') request(item.base, 'DELETE', `/uploads/${item.uploadId}`).catch(() => {});
+                } catch (error) {
+                    if (error.fatal || ++failures > 30) {
+                        item.status = 'error';
+                        item.error = error.fatal ? error.message : 'Lost contact with the server while it was storing the file. Reload to see whether it arrived.';
+                    }
+                }
+            }
+
+            this.finishBatch();
         },
 
         async send(item) {
@@ -155,9 +212,11 @@ export default function uploader() {
                         });
 
                         if (response.status === 409) {
-                            // Out of step with the server: carry on from where it is.
+                            // Out of step with the server: carry on from where it is (or, if it has
+                            // everything already, from its verdict).
                             state = { ...state, ...(await response.json()) };
                             item.sent = state.offset;
+                            this.settle(item, state);
                             continue;
                         }
 
@@ -170,16 +229,17 @@ export default function uploader() {
                         item.sent = state.offset;
                         failures = 0;
 
-                        if (state.offset >= item.file.size) {
-                            item.status = 'done';
-                        }
+                        this.settle(item, state);
                     } catch (error) {
                         if (error.fatal || ++failures > MAX_RETRIES) throw error;
 
                         await sleep(1000 * 2 ** (failures - 1));
 
                         const check = await request(item.base, 'GET', `/uploads/${state.id}`).catch(() => null);
-                        if (check?.ok) state = { ...state, ...(await check.json()) };
+                        if (check?.ok) {
+                            state = { ...state, ...(await check.json()) };
+                            this.settle(item, state);
+                        }
                     }
                 }
             } catch (error) {
@@ -211,7 +271,7 @@ export default function uploader() {
         },
 
         clear() {
-            this.items = this.items.filter((item) => ['queued', 'uploading'].includes(item.status));
+            this.items = this.items.filter((item) => ['queued', 'uploading', 'processing'].includes(item.status));
         },
     };
 }

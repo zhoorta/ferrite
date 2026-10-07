@@ -18,7 +18,7 @@ Rules that every response follows:
 - Trashed files, and files inside trashed folders, are not served, not even to the owner.
 - Permission is `NodePolicy::view` (owner, or a share on the node or an ancestor).
 
-Downloads support a single `Range` (`bytes=a-b`, `a-`, `-n`), answer `416` for unsatisfiable ranges, ignore multi-range requests, and use the SHA-256 as the `ETag` (`If-None-Match` gives `304`). Seekable streams (local disk) are seeked; others are read and skipped.
+Downloads support a single `Range` (`bytes=a-b`, `a-`, `-n`), answer `416` for unsatisfiable ranges, ignore multi-range requests, and use the SHA-256 as the `ETag` (`If-None-Match` gives `304`). The stream is opened at the start offset by `StorageManager::openStream()`: seeked on the local disk, fetched at that offset on SFTP, requested as a byte range on S3 (see `docs/storage-search-activity.md`).
 
 Thumbnails use GD. Images over 30 MB, over 40 megapixels, or that would not fit in `memory_limit` get none. Video thumbnails, and previews of Office files, are not supported.
 

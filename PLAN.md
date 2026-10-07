@@ -38,16 +38,16 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 11. Bulk actions: tick rows (list and grid, select all), then download as one ZIP, move or trash; dragging a ticked row moves all ticked rows (see `docs/ui-polish.md`; checked by hand)
 - [x] 12. Copy, sorting and favorites (see `docs/ui-polish.md`; checked by hand)
 - [x] 13. Usage page: quota, breakdown by type, biggest folders and files, trash, deduplication savings; stored vs counted bytes per disk for admins (see `docs/ui-polish.md`)
-- [ ] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23):
-  - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out
-  - [ ] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100%
-  - [ ] Real seeking for Range requests on SFTP (offset reads) instead of reading and discarding up to the offset
-  - [ ] Document temp disk need (`FERRITE_TMP_PATH`: largest file x concurrent uploads) and proxy/PHP timeouts in `docs/install.md`
-  - [ ] Test S3 and SFTP against a real server with a multi-GB file
+- [x] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23; see `docs/uploads.md`, `docs/storage-search-activity.md`, `docs/install.md`):
+  - [x] Uploads finish in a queued job (`FinalizeUpload`) with a "processing" state in the UI; the last chunk request answers at once (202). The Docker image runs a queue worker
+  - [x] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100% (`FailUpload`, `uploads:prune`, Retry in the UI)
+  - [x] Real seeking on SFTP (`SftpStream`, offset reads) and a byte range on S3, instead of reading and discarding up to the offset
+  - [x] Temp disk need and proxy/PHP timeouts documented in `docs/install.md`
+  - [ ] Test S3 and SFTP against a real server with a multi-GB file: SFTP done against a local OpenSSH server with 3000 MB (`tests/Feature/Remote/SftpDiskTest.php`, opt-in via `FERRITE_TEST_SFTP_*`); still to do: the real Storage Box, S3, and the Docker image end to end (queue worker included)
 
 ## Ideas (not scheduled)
 
-Suggested next: step 10 (large files on remote disks).
+Suggested next: run the remote test against the real Storage Box (rest of step 10), then the Docker image.
 
 - Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip).
 - Medium: upload-only drop-box links for guests; e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
@@ -56,7 +56,7 @@ Suggested next: step 10 (large files on remote disks).
 
 ## Risks
 
-- Large uploads: PHP and proxy limits, assembling chunks; test with multi-GB files. On a remote disk the final copy happens inside the last chunk request (see step 10).
+- Large uploads: PHP and proxy limits, assembling chunks; the final copy to a remote disk runs in a queue job, so it needs a worker and enough temp space (see `docs/install.md`).
 - Serving user files from the app's own domain (HTML/SVG scripts): `nosniff`, forced download except for an allowlist, ideally a separate domain.
 - Share tokens: long random, rate limits, constant-time password checks.
 - Moving a folder into itself, name collisions.

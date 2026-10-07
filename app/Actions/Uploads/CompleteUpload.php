@@ -24,7 +24,8 @@ class CompleteUpload
     /**
      * Move a fully received upload to its disk and create the file node, charging the owner's quota.
      * Permissions and quota are checked again because they may have changed since the upload started.
-     * The temporary file and upload row are removed on success.
+     * On success the temporary file is removed and the upload is marked done; on failure nothing is
+     * left behind on the disk (the caller marks the upload failed, see FailUpload).
      *
      * @throws ValidationException
      */
@@ -52,14 +53,14 @@ class CompleteUpload
         $filesystem = $this->storage->filesystem($disk);
         $key = $this->storage->newKey();
 
-        $sha256 = hash_file('sha256', $tmp);
+        $sha256 = hash_file('sha256', $tmp) ?: throw new RuntimeException('Cannot read the uploaded file.');
         $mime = mime_content_type($tmp) ?: 'application/octet-stream';
 
         // Identical content of the same owner shares one blob; see duplicateOf().
         $written = null;
 
         if ($this->duplicateOf($ownerId, $disk->id, $sha256, $upload->size) === null) {
-            $written = $this->write($filesystem, $key, $tmp);
+            $written = $this->write($upload, $disk->id, $filesystem, $key, $tmp);
         }
 
         try {
@@ -77,7 +78,7 @@ class CompleteUpload
                 if ($source !== null) {
                     $key = (string) $source->path;
                 } elseif ($written === null) {
-                    $written = $this->write($filesystem, $key, $tmp);
+                    $written = $this->write($upload, $disk->id, $filesystem, $key, $tmp);
                 }
 
                 $node = new Node([
@@ -110,9 +111,11 @@ class CompleteUpload
             $filesystem->delete($written);
         }
 
-        ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
+        // Done as soon as the node exists; what follows must not turn a stored file into a failure.
+        @unlink($tmp);
+        $upload->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
 
-        $upload->discard();
+        ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
 
         return $node;
     }
@@ -136,14 +139,27 @@ class CompleteUpload
     }
 
     /**
+     * Copy the file to the disk under $key. The key is noted on the upload first, so a crash
+     * halfway can still be cleaned up, and a failed copy removes what it left on the disk.
+     *
      * @return string the key written
      */
-    private function write(Filesystem $filesystem, string $key, string $tmp): string
+    private function write(Upload $upload, int $diskId, Filesystem $filesystem, string $key, string $tmp): string
     {
         $stream = fopen($tmp, 'rb') ?: throw new RuntimeException('Cannot read the uploaded file.');
 
+        $upload->forceFill(['disk_id' => $diskId, 'blob_key' => $key])->saveQuietly();
+
         try {
             $filesystem->writeStream($key, $stream);
+        } catch (Throwable $e) {
+            try {
+                $filesystem->delete($key);
+            } catch (Throwable) {
+                // The disk is probably unreachable; FailUpload tries again.
+            }
+
+            throw $e;
         } finally {
             fclose($stream);
         }

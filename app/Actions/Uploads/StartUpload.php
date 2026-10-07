@@ -19,6 +19,7 @@ class StartUpload
     /**
      * Register an upload of $path (a file name, or a relative path like "photos/2026/a.jpg")
      * into $parent. An unfinished upload of the same file is resumed instead of restarted.
+     * (One already being stored, or finished or failed, is not: that is a new upload.)
      *
      * @throws ValidationException
      */
@@ -50,6 +51,7 @@ class StartUpload
 
         $existing = Upload::query()
             ->where('user_id', $actor->id)
+            ->where('status', Upload::RECEIVING)
             ->where('parent_id', $folder?->id)
             ->where('name', $name)
             ->where('size', $size)

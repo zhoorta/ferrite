@@ -130,10 +130,11 @@
                             <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="['queued', 'uploading'].includes(item.status)" x-on:click="$store.uploads.cancel(item)">{{ __('Cancel') }}</button>
                             <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="item.status === 'error'" x-on:click="$store.uploads.retry(item)">{{ __('Retry') }}</button>
                         </div>
-                        <div class="upload-bar h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'done'].includes(item.status)">
+                        <div class="upload-bar h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'processing', 'done'].includes(item.status)">
                             <div class="upload-fill h-full bg-accent transition-all"
                                 :style="`width: ${item.file.size ? Math.round(item.sent / item.file.size * 100) : (item.status === 'done' ? 100 : 0)}%`"></div>
                         </div>
+                        <p class="text-xs text-zinc-500" x-show="item.status === 'processing'" data-test="upload-processing">{{ __('Sent. Storing the file…') }}</p>
                         <p class="text-xs text-red-600" x-show="item.status === 'error'" x-text="item.error"></p>
                         <p class="text-xs text-zinc-500" x-show="item.status === 'cancelled'">{{ __('Cancelled') }}</p>
                     </li>

@@ -1,7 +1,8 @@
 #!/bin/sh
 # Prepares /data and, when the web server is starting, migrates the database, caches the
-# configuration and starts the scheduler. Other commands (`docker run ... php artisan ...`)
-# only get the directories, so they work before APP_KEY exists (key:generate) and stay quick.
+# configuration and starts the scheduler and the queue worker. Other commands
+# (`docker run ... php artisan ...`) only get the directories, so they work before APP_KEY exists
+# (key:generate) and stay quick.
 set -eu
 
 mkdir -p /data/storage/framework/cache/data /data/storage/framework/sessions /data/storage/framework/views \
@@ -30,6 +31,10 @@ if [ "${1:-}" = "frankenphp" ]; then
 
     # Trash purge, upload cleanup and activity pruning run from Laravel's scheduler.
     php artisan schedule:work >/proc/1/fd/1 2>&1 &
+
+    # Finishes uploads in the background (hash, copy to the disk). The loop restarts the worker
+    # if it ever exits; --timeout=0 because the job sets its own limit (FinalizeUpload).
+    (while true; do php artisan queue:work --tries=1 --timeout=0 --sleep=1 --max-time=3600 >/proc/1/fd/1 2>&1; sleep 2; done) &
 fi
 
 exec "$@"

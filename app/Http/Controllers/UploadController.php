@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Uploads\AppendChunk;
-use App\Actions\Uploads\CompleteUpload;
+use App\Actions\Uploads\FailUpload;
 use App\Actions\Uploads\StartUpload;
+use App\Jobs\FinalizeUpload;
 use App\Models\Node;
 use App\Models\Upload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class UploadController extends Controller
 {
@@ -41,7 +42,7 @@ class UploadController extends Controller
      * Append one chunk. The client states the offset it is writing at; a mismatch returns 409 with
      * the real offset so the client can resume from there.
      */
-    public function update(Request $request, Upload $upload, AppendChunk $append, CompleteUpload $complete): JsonResponse
+    public function update(Request $request, Upload $upload, AppendChunk $append, FailUpload $fail): JsonResponse
     {
         $this->authorizeOwner($request, $upload);
 
@@ -56,7 +57,8 @@ class UploadController extends Controller
             $header = $request->header('Upload-Offset');
             $offset = is_numeric($header) ? (int) $header : -1;
 
-            if ($offset !== $upload->offset) {
+            // Already handed to the job (or finished): there is nothing left to receive.
+            if (! $upload->isReceiving() || $offset !== $upload->offset) {
                 return response()->json($this->state($upload), 409);
             }
 
@@ -68,15 +70,31 @@ class UploadController extends Controller
                 return response()->json($this->state($upload));
             }
 
-            try {
-                $node = $complete->handle($upload);
-            } catch (ValidationException $e) {
-                $upload->discard();
+            // The copy to the disk can take long on a remote disk, so a queued job does it. With the
+            // sync queue (no worker) it has already run when dispatch returns.
+            $upload->forceFill(['status' => Upload::PROCESSING])->save();
 
-                throw $e;
+            $dispatchFailed = false;
+
+            try {
+                FinalizeUpload::dispatch($upload->id);
+            } catch (Throwable $e) {
+                report($e);
+                $dispatchFailed = true;
             }
 
-            return response()->json($this->state($upload) + ['node' => ['id' => $node->id, 'name' => $node->name]]);
+            $upload->refresh();
+
+            // Not queued at all (queue unreachable): nothing will ever pick it up.
+            if ($dispatchFailed && $upload->status === Upload::PROCESSING) {
+                $fail->handle($upload, __('The file could not be queued for storing. Try uploading it again.'));
+            }
+
+            return match ($upload->status) {
+                Upload::DONE => $this->finished($upload),
+                Upload::FAILED => $this->failed($upload),
+                default => response()->json($this->state($upload), 202),
+            };
         } finally {
             $lock->release();
         }
@@ -86,13 +104,18 @@ class UploadController extends Controller
     {
         $this->authorizeOwner($request, $upload);
 
+        // Being stored: the job owns the temporary file until it reports back.
+        if ($upload->status === Upload::PROCESSING) {
+            return response()->json($this->state($upload), 409);
+        }
+
         $upload->discard();
 
         return response()->json(null, 204);
     }
 
     /**
-     * @return array{id: string, offset: int, size: int, chunk_size: int}
+     * @return array<string, mixed>
      */
     private function state(Upload $upload): array
     {
@@ -101,7 +124,26 @@ class UploadController extends Controller
             'offset' => $upload->offset,
             'size' => $upload->size,
             'chunk_size' => config('ferrite.chunk_size'),
-        ];
+            'status' => $upload->status,
+        ] + ($upload->status === Upload::DONE ? ['node' => ['id' => $upload->node_id, 'name' => $upload->node?->name]] : [])
+          + ($upload->status === Upload::FAILED ? ['error' => $upload->error] : []);
+    }
+
+    /** Stored while the chunk request waited (sync queue): report the node and drop the record. */
+    private function finished(Upload $upload): JsonResponse
+    {
+        $state = $this->state($upload);
+        $upload->delete();
+
+        return response()->json($state);
+    }
+
+    private function failed(Upload $upload): JsonResponse
+    {
+        $message = $upload->error ?? __('The file could not be stored.');
+        $upload->delete();
+
+        return response()->json(['message' => $message, 'errors' => ['size' => [$message]]], 422);
     }
 
     private function authorizeOwner(Request $request, Upload $upload): void
