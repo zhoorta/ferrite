@@ -137,6 +137,72 @@ html:not(.dark)[data-palette='bubblegum'] .upload-fill {
     background: linear-gradient(90deg, #ff7ac0, #b79bff);
 }
 
+@layer theme {
+    /* Memphis (light, 1980s): cream paper, pastel confetti, black outlines, hard offset shadows, geometric sans. */
+    html:not(.dark)[data-palette='memphis'] {
+        --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        --font-serif: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+
+        --color-zinc-50: #fffdf4;
+        --color-zinc-100: #fff1b8;
+        --color-zinc-200: #e4dcf5;
+        --color-zinc-300: #14141f;
+        --color-zinc-400: #6b6a85;
+        --color-zinc-500: #55546e;
+        --color-zinc-600: #3f3e57;
+        --color-zinc-700: #2b2a40;
+        --color-zinc-800: #1d1c30;
+        --color-zinc-900: #14141f;
+        --color-zinc-950: #0d0d16;
+
+        --color-accent: #ff6fae;
+        --color-accent-content: #d1246f;
+        --color-accent-foreground: #14141f;
+
+        --radius-xs: 0.125rem;
+        --radius-sm: 0.25rem;
+        --radius-md: 0.375rem;
+        --radius-lg: 0.5rem;
+        --radius-xl: 0.75rem;
+        --radius-2xl: 1rem;
+
+        --shadow-xs: 1px 1px 0 #14141f;
+        --shadow-sm: 2px 2px 0 #14141f;
+        --shadow-md: 3px 3px 0 #14141f;
+        --shadow-lg: 4px 4px 0 #14141f;
+        --shadow-xl: 5px 5px 0 #14141f;
+        --shadow-2xl: 6px 6px 0 #14141f;
+    }
+}
+
+/* Confetti: squiggles, triangles, plus signs and dots in pastels, tiled on cream. */
+html:not(.dark)[data-palette='memphis'] .cozy-bg {
+    color: var(--color-zinc-900);
+    background-color: var(--color-zinc-50);
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><circle cx='30' cy='40' r='9' fill='%23ff8fc2'/><circle cx='190' cy='210' r='7' fill='%237fe5c8'/><path d='M90 24l16 28H74z' fill='none' stroke='%2378c8ff' stroke-width='4' stroke-linejoin='round'/><path d='M170 60q10-14 20 0t20 0t20 0' fill='none' stroke='%23b9a2ff' stroke-width='4' stroke-linecap='round'/><path d='M40 150h22M51 139v22' stroke='%23ffd23f' stroke-width='5' stroke-linecap='round'/><path d='M120 140q10-14 20 0t20 0' fill='none' stroke='%23ff8fc2' stroke-width='4' stroke-linecap='round'/><rect x='200' y='128' width='20' height='20' fill='none' stroke='%237fe5c8' stroke-width='4' transform='rotate(18 210 138)'/><path d='M60 215l15 26H45z' fill='%23ffe066'/><circle cx='120' cy='225' r='5' fill='none' stroke='%2378c8ff' stroke-width='4'/><circle cx='235' cy='100' r='5' fill='%23ffd23f'/></svg>");
+}
+
+/* The sidebar is already veiled (translucent butter); give the page body a cream veil so the confetti stays quiet behind content. */
+html:not(.dark)[data-palette='memphis'] [data-flux-main] {
+    background: rgb(255 253 244 / .82);
+}
+
+html:not(.dark)[data-palette='memphis'] ::selection {
+    background: #ffe066;
+    color: #14141f;
+}
+
+html:not(.dark)[data-palette='memphis'] .upload-bar {
+    height: 0.75rem;
+    border: 2px solid #14141f;
+    border-radius: 0;
+    background: #fff;
+}
+
+html:not(.dark)[data-palette='memphis'] .upload-fill {
+    background: repeating-linear-gradient(135deg, #ff6fae 0 6px, #7fe5c8 6px 12px);
+}
+
 @layer base {
 
     *,
@@ -617,6 +683,119 @@ html:not(.dark)[data-palette='zine'] main a {
     color: #000;
 }
 
+/*
+ * Lotus 1-2-3: the DOS spreadsheet. Black screen, light grey text, a faint worksheet grid, the
+ * cell pointer as inverse video (selection) and a cyan menu accent. Square, flat, no shadows. Dark theme.
+ */
+@layer theme {
+    .dark[data-palette='lotus'] {
+        --font-sans: 'IBM Plex Mono', ui-monospace, monospace;
+        --font-serif: 'IBM Plex Mono', ui-monospace, monospace;
+
+        --color-zinc-700: #555555;
+        --color-zinc-800: #1a1a1a;
+        --color-zinc-900: #000000;
+        --color-zinc-950: #000000;
+
+        --color-zinc-100: #ffffff;
+        --color-zinc-200: #e4e4e4;
+        --color-zinc-300: #c8c8c8;
+        --color-zinc-400: #aaaaaa;
+        --color-zinc-500: #8a8a8a;
+
+        --color-accent: #55ffff;
+        --color-accent-content: #55ffff;
+        --color-accent-foreground: #000000;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        --shadow-xl: none;
+        --shadow-2xl: none;
+    }
+}
+
+/* Worksheet grid: thin lines like cell borders. */
+.dark[data-palette='lotus'] .cozy-bg {
+    background-color: #000;
+    background-image:
+        repeating-linear-gradient(to bottom, transparent 0 31px, rgb(170 170 170 / .1) 31px 32px),
+        repeating-linear-gradient(to right, transparent 0 119px, rgb(170 170 170 / .1) 119px 120px);
+}
+
+/* The cell pointer: inverse video. */
+.dark[data-palette='lotus'] ::selection {
+    background: #c8c8c8;
+    color: #000;
+}
+
+/*
+ * Wall Street: 1987 business look. Navy pinstripe suit, cream shirt text, gold cufflink accent,
+ * Libre Franklin (a news-gothic sans) throughout. Dark theme.
+ */
+@layer theme {
+    .dark[data-palette='wallstreet'] {
+        --font-sans: 'Libre Franklin', ui-sans-serif, system-ui, sans-serif;
+        --font-serif: 'Libre Franklin', ui-sans-serif, system-ui, sans-serif;
+
+        --color-zinc-700: #34456b;
+        --color-zinc-800: #172342;
+        --color-zinc-900: #0f1a33;
+        --color-zinc-950: #080f21;
+
+        --color-zinc-100: #f6f1e4;
+        --color-zinc-200: #e9e3d3;
+        --color-zinc-300: #d2ccbb;
+
+        --color-accent: #d4af37;
+        --color-accent-content: #e6c75a;
+        --color-accent-foreground: #17120a;
+
+        --radius-xs: 1px;
+        --radius-sm: 2px;
+        --radius-md: 3px;
+        --radius-lg: 4px;
+        --radius-xl: 6px;
+        --radius-2xl: 8px;
+
+        --shadow-sm: 0 1px 2px rgb(0 0 0 / .4);
+        --shadow-md: 0 2px 6px rgb(0 0 0 / .45);
+        --shadow-lg: 0 6px 14px rgb(0 0 0 / .5);
+    }
+}
+
+/* Navy with very faint pinstripes and a little light from above. */
+.dark[data-palette='wallstreet'] .cozy-bg {
+    background-color: var(--color-zinc-900);
+    background-image:
+        repeating-linear-gradient(90deg, transparent 0 27px, rgb(246 241 228 / .025) 27px 28px),
+        radial-gradient(ellipse 90% 50% at 50% 0%, rgb(212 175 55 / .06), transparent 70%);
+}
+
+.dark[data-palette='wallstreet'] ::selection {
+    background: #d4af37;
+    color: #17120a;
+}
+
+.dark[data-palette='wallstreet'] .upload-bar {
+    height: 0.5rem;
+    border: 1px solid var(--color-zinc-700);
+    background: var(--color-zinc-950);
+}
+
+.dark[data-palette='wallstreet'] .upload-fill {
+    background: linear-gradient(90deg, #a8861f, #e6c75a);
+}
+
 /* Upload progress bars follow the theme (the accent colour by default). */
 html:not(.dark)[data-palette='mac'] .upload-bar {
     height: 0.75rem;
@@ -630,14 +809,14 @@ html:not(.dark)[data-palette='mac'] .upload-fill {
 }
 
 /* Blocks, as on a terminal or the C64. */
-.dark:is([data-palette='amber'], [data-palette='phosphor'], [data-palette='commodore']) .upload-bar {
+.dark:is([data-palette='amber'], [data-palette='phosphor'], [data-palette='commodore'], [data-palette='lotus']) .upload-bar {
     height: 0.75rem;
     border: 1px solid var(--color-zinc-700);
     border-radius: 0;
     background: var(--color-zinc-950);
 }
 
-.dark:is([data-palette='amber'], [data-palette='phosphor'], [data-palette='commodore']) .upload-fill {
+.dark:is([data-palette='amber'], [data-palette='phosphor'], [data-palette='commodore'], [data-palette='lotus']) .upload-fill {
     background: repeating-linear-gradient(90deg, var(--color-accent) 0 6px, transparent 6px 8px);
 }
 

@@ -60,6 +60,14 @@ export default defineConfig({
                     weights: [500, 600, 700],
                     preload: false,
                 }),
+                bunny('Libre Franklin', {
+                    weights: [400, 500, 600, 700],
+                    preload: false,
+                }),
+                bunny('Poppins', {
+                    weights: [400, 500, 600, 700],
+                    preload: false,
+                }),
                 bunny('Pixelify Sans', {
                     weights: [500, 600, 700],
                     preload: false,

@@ -44,6 +44,9 @@ new #[Title('Appearance settings')] class extends Component {
                     'phosphor' => [__('Green phosphor'), 'tv'],
                     'commodore' => [__('Commodore'), 'gamepad-2'],
                     'amiga' => [__('Amiga'), 'save'],
+                    'wallstreet' => [__('Wall Street'), 'briefcase'],
+                    'lotus' => [__('Lotus 1-2-3'), 'table-cells'],
+                    'memphis' => [__('Memphis'), 'star'],
                 ] as $key => [$label, $icon])
                     <button type="button" role="radio" aria-checked="{{ $palette === $key ? 'true' : 'false' }}" wire:click="$set('palette', '{{ $key }}')"
                         class="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2.5 dark:border-zinc-700 text-start text-sm text-zinc-800 transition hover:border-accent aria-checked:border-accent aria-checked:ring-2 aria-checked:ring-accent/40 dark:text-white">

@@ -67,7 +67,7 @@ class AppearanceTest extends TestCase
             );
         }
 
-        $this->assertSame(['ferrite-light', 'mac', 'desk95', 'zine', 'bubblegum'], User::LIGHT_PALETTES);
+        $this->assertSame(['ferrite-light', 'mac', 'desk95', 'zine', 'bubblegum', 'memphis'], User::LIGHT_PALETTES);
     }
 
     public function test_unknown_palette_is_rejected(): void
