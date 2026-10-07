@@ -26,10 +26,13 @@ class PruneUploads extends Command
                 $stale++;
             });
 
-        // The job died (or the queue worker is not running) and never reported back.
+        // The job died and never reported back. One still waiting in the queue is left alone unless
+        // it has waited a week (no worker running); its temporary file is then given up too.
         Upload::query()
             ->where('status', Upload::PROCESSING)
-            ->where('updated_at', '<', now()->subHours(config('ferrite.processing_timeout_hours')))
+            ->where(fn ($query) => $query
+                ->where('started_at', '<', now()->subHours(config('ferrite.processing_timeout_hours')))
+                ->orWhere(fn ($query) => $query->whereNull('started_at')->where('updated_at', '<', now()->subDays(7))))
             ->each(function (Upload $upload) use ($fail, &$stuck) {
                 $fail->handle($upload, __('The file was not stored in time. Try uploading it again.'));
                 $stuck++;

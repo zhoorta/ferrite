@@ -44,6 +44,12 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [x] Real seeking on SFTP (`SftpStream`, offset reads) and a byte range on S3, instead of reading and discarding up to the offset
   - [x] Temp disk need and proxy/PHP timeouts documented in `docs/install.md`
   - [ ] Test S3 and SFTP against a real server with a multi-GB file: SFTP done against a local OpenSSH server with 3000 MB (`tests/Feature/Remote/SftpDiskTest.php`, opt-in via `FERRITE_TEST_SFTP_*`); still to do: the real Storage Box, S3, and the Docker image end to end (queue worker included)
+- [ ] 14. Content search (details in the list below; write `docs/content-search.md` when it lands):
+  - [ ] Extraction in a queued job on its own low-priority queue, once per blob (sha256): plain text, Markdown, code, CSV and JSON read directly (first 1-2 MB, valid UTF-8 only); PDF through `pdftotext` (add poppler-utils to the Docker image); remote disks are copied to temp first
+  - [ ] Index: SQLite FTS5 (`node_contents` table with blob key, text, status, extracted_at, plus the FTS5 virtual table), ranking and `snippet()`; Meilisearch/Typesense through Scout rejected for now (extra service)
+  - [ ] Search joins the index to `nodes`, limited to what the user may see (owned, shared directly or through an ancestor), trashed excluded; results with a highlighted snippet next to the name results
+  - [ ] Housekeeping: backfill command (`search:index`), reindex on content change, delete the index row with the last node of a blob, mark too-big/binary/failed files so they are not retried, admin switch to turn indexing off
+  - [ ] Docs: extracted text sits unencrypted in the database (`docs/security.md`); not in scope: OCR for scans and images, Office formats (DOCX/XLSX are zip+XML, possible later)
 
 ## Ideas (not scheduled)
 
@@ -58,7 +64,7 @@ php artisan test --compact tests/Feature/Remote
 
 - Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip).
 - Medium: upload-only drop-box links for guests; e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
-- Bigger: versioning (the thing most missed after a month); content search (needs an indexer); API tokens instead of WebDAV.
+- Bigger: versioning (the thing most missed after a month); API tokens instead of WebDAV. (Content search moved to step 14.)
 - Also: build the Docker image once to prove the install docs.
 - Follow-ups from the favorites and usage work: a "clean up" shortcut on the Usage page (select the biggest files and trash them, or link to the duplicate finder); sorting and bulk actions on the Favorites page; a per-disk bar for stored vs counted bytes on the admin Storage page; show uploads that failed while the tab was closed (today only a live tab sees the failure).
 

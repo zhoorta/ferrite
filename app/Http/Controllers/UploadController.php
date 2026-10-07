@@ -70,34 +70,31 @@ class UploadController extends Controller
                 return response()->json($this->state($upload));
             }
 
-            // The copy to the disk can take long on a remote disk, so a queued job does it. With the
-            // sync queue (no worker) it has already run when dispatch returns.
+            // From here the status keeps further chunks out, so the lock is not held while storing.
             $upload->forceFill(['status' => Upload::PROCESSING])->save();
-
-            $dispatchFailed = false;
-
-            try {
-                FinalizeUpload::dispatch($upload->id);
-            } catch (Throwable $e) {
-                report($e);
-                $dispatchFailed = true;
-            }
-
-            $upload->refresh();
-
-            // Not queued at all (queue unreachable): nothing will ever pick it up.
-            if ($dispatchFailed && $upload->status === Upload::PROCESSING) {
-                $fail->handle($upload, __('The file could not be queued for storing. Try uploading it again.'));
-            }
-
-            return match ($upload->status) {
-                Upload::DONE => $this->finished($upload),
-                Upload::FAILED => $this->failed($upload),
-                default => response()->json($this->state($upload), 202),
-            };
         } finally {
             $lock->release();
         }
+
+        // The copy to the disk can take long on a remote disk, so a queued job does it. With the
+        // sync queue (no worker) it has already run when dispatch returns.
+        try {
+            FinalizeUpload::dispatch($upload->id);
+        } catch (Throwable $e) {
+            report($e);
+
+            // Not queued at all (queue unreachable): nothing would ever pick it up.
+            $fail->handle($upload, __('The file could not be queued for storing. Try uploading it again.'));
+        }
+
+        $upload->refresh();
+
+        // The record stays until the browser has read the outcome (it then deletes it) or prune does.
+        return match ($upload->status) {
+            Upload::DONE => response()->json($this->state($upload)),
+            Upload::FAILED => response()->json(['message' => $upload->error, 'errors' => ['size' => [$upload->error]]] + $this->state($upload), 422),
+            default => response()->json($this->state($upload), 202),
+        };
     }
 
     public function destroy(Request $request, Upload $upload): JsonResponse
@@ -127,23 +124,6 @@ class UploadController extends Controller
             'status' => $upload->status,
         ] + ($upload->status === Upload::DONE ? ['node' => ['id' => $upload->node_id, 'name' => $upload->node?->name]] : [])
           + ($upload->status === Upload::FAILED ? ['error' => $upload->error] : []);
-    }
-
-    /** Stored while the chunk request waited (sync queue): report the node and drop the record. */
-    private function finished(Upload $upload): JsonResponse
-    {
-        $state = $this->state($upload);
-        $upload->delete();
-
-        return response()->json($state);
-    }
-
-    private function failed(Upload $upload): JsonResponse
-    {
-        $message = $upload->error ?? __('The file could not be stored.');
-        $upload->delete();
-
-        return response()->json(['message' => $message, 'errors' => ['size' => [$message]]], 422);
     }
 
     private function authorizeOwner(Request $request, Upload $upload): void

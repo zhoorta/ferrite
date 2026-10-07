@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $node_id
  * @property int|null $disk_id
  * @property string|null $blob_key
+ * @property CarbonInterface|null $started_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
@@ -49,6 +50,7 @@ class Upload extends Model
         return [
             'size' => 'integer',
             'offset' => 'integer',
+            'started_at' => 'datetime',
         ];
     }
 

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('node_id')->nullable()->after('error')->constrained('nodes')->nullOnDelete();
             $table->unsignedBigInteger('disk_id')->nullable()->after('node_id');
             $table->string('blob_key')->nullable()->after('disk_id');
+            // When the job picked it up; waiting in the queue does not count towards the timeout.
+            $table->timestamp('started_at')->nullable()->after('blob_key');
 
             $table->index(['status', 'updated_at']);
         });
@@ -29,7 +31,7 @@ return new class extends Migration
         Schema::table('uploads', function (Blueprint $table) {
             $table->dropIndex(['status', 'updated_at']);
             $table->dropConstrainedForeignId('node_id');
-            $table->dropColumn(['status', 'error', 'disk_id', 'blob_key']);
+            $table->dropColumn(['status', 'error', 'disk_id', 'blob_key', 'started_at']);
         });
     }
 };

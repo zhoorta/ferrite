@@ -65,6 +65,14 @@ class CompleteUpload
 
         try {
             $node = DB::transaction(function () use ($upload, $ownerId, $parent, $disk, $filesystem, $tmp, &$key, &$written, $sha256, $mime) {
+                // FailUpload (a timeout in uploads:prune) may have given up on it meanwhile and
+                // removed what it wrote; the same lock decides which of the two wins.
+                $current = Upload::query()->lockForUpdate()->find($upload->id);
+
+                if ($current === null || $current->status !== Upload::PROCESSING) {
+                    throw new RuntimeException('The upload is no longer being processed.');
+                }
+
                 $owner = User::query()->lockForUpdate()->findOrFail($ownerId);
 
                 if ($owner->quota_bytes !== null && $upload->size > $owner->remainingBytes()) {
@@ -95,6 +103,7 @@ class CompleteUpload
                 $node->save();
 
                 $owner->increment('used_bytes', $upload->size);
+                $current->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
 
                 return $node;
             });
@@ -113,7 +122,7 @@ class CompleteUpload
 
         // Done as soon as the node exists; what follows must not turn a stored file into a failure.
         @unlink($tmp);
-        $upload->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
+        $upload->refresh();
 
         ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
 

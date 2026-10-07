@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -32,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
         $this->configureTrustedProxies();
 
         Gate::define('admin', fn (User $user) => $user->isAdmin());
+
+        // `composer dev` only listens on the default queue; uploads are stored from their own one.
+        if ($this->app->runningInConsole()) {
+            DevCommands::artisan('queue:listen uploads --queue=uploads --tries=1 --timeout=0', 'uploads');
+        }
     }
 
     /**

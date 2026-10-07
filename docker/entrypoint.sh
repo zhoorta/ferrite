@@ -34,7 +34,9 @@ if [ "${1:-}" = "frankenphp" ]; then
 
     # Finishes uploads in the background (hash, copy to the disk). The loop restarts the worker
     # if it ever exits; --timeout=0 because the job sets its own limit (FinalizeUpload).
-    (while true; do php artisan queue:work --tries=1 --timeout=0 --sleep=1 --max-time=3600 >/proc/1/fd/1 2>&1; sleep 2; done) &
+    # Uploads have their own connection (long retry_after); everything else uses the default one.
+    (while true; do php artisan queue:work uploads --queue=uploads --tries=1 --timeout=0 --sleep=1 --max-time=3600 >/proc/1/fd/1 2>&1; sleep 2; done) &
+    (while true; do php artisan queue:work --tries=3 --sleep=3 --max-time=3600 >/proc/1/fd/1 2>&1; sleep 2; done) &
 fi
 
 exec "$@"

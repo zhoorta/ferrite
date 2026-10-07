@@ -78,7 +78,7 @@ it('stores a file received in chunks', function () {
         ->and($node->path)->toMatch('#^[0-9a-f]{2}/[0-9a-f]{38}$#')
         ->and($disk->filesystem($node->disk)->get($node->path))->toBe('hello world')
         ->and($this->user->fresh()->used_bytes)->toBe(11)
-        ->and(Upload::count())->toBe(0)
+        ->and(Upload::sole()->status)->toBe('done')
         ->and(File::files(config('ferrite.tmp_path')))->toBeEmpty();
 });
 
@@ -162,7 +162,7 @@ it('checks the quota again when completing', function () {
     sendChunk($id, 4, 'efgh')->assertUnprocessable()->assertJsonValidationErrors('size');
 
     expect(Node::count())->toBe(0)
-        ->and(Upload::count())->toBe(0)
+        ->and(Upload::sole()->status)->toBe('failed')
         ->and($this->user->fresh()->used_bytes)->toBe(0)
         ->and(File::allFiles(config('ferrite.local_root')))->toBeEmpty();
 });
@@ -371,8 +371,11 @@ describe('finalizing in the background', function () {
         sendChunk($id, 0, 'abcd');
         $this->user->forceFill(['quota_bytes' => 5])->save();
 
-        sendChunk($id, 4, 'efgh')->assertUnprocessable()->assertJsonValidationErrors('size');
+        sendChunk($id, 4, 'efgh')->assertUnprocessable()->assertJsonValidationErrors('size')->assertJson(['status' => 'failed']);
 
+        // Kept for the browser to read; it deletes it, or prune does an hour later.
+        expect(Upload::sole()->status)->toBe('failed');
+        $this->deleteJson(route('uploads.destroy', $id))->assertNoContent();
         expect(Upload::count())->toBe(0);
     });
 
@@ -388,7 +391,15 @@ describe('finalizing in the background', function () {
     it('gives up on uploads stuck in processing and drops old records when pruning', function () {
         Queue::fake();
         $stuck = receivedUpload('abcdefgh', 'stuck.bin');
-        Upload::whereKey($stuck)->update(['updated_at' => now()->subHours(13)]);
+        Upload::whereKey($stuck)->update(['started_at' => now()->subHours(13), 'updated_at' => now()->subHours(13)]);
+
+        // Waiting in the queue behind other files for as long does not count as stuck.
+        $waiting = receivedUpload('abcdefgh', 'waiting.bin');
+        Upload::whereKey($waiting)->update(['updated_at' => now()->subHours(13)]);
+
+        // ...unless no worker has picked it up for a week.
+        $abandoned = receivedUpload('abcdefgh', 'abandoned.bin');
+        Upload::whereKey($abandoned)->update(['updated_at' => now()->subDays(8)]);
 
         $recent = receivedUpload('abcdefgh', 'recent.bin');
 
@@ -403,7 +414,56 @@ describe('finalizing in the background', function () {
 
         expect(Upload::find($stuck)->status)->toBe('failed')
             ->and(is_file(config('ferrite.tmp_path')."/{$stuck}"))->toBeFalse()
+            ->and(Upload::find($waiting)->status)->toBe('processing')
+            ->and(Upload::find($abandoned)->status)->toBe('failed')
             ->and(Upload::find($recent)->status)->toBe('processing')
             ->and(Upload::find($done->id))->toBeNull();
+    });
+
+    it('queues the job on the uploads connection', function () {
+        Queue::fake();
+        $id = receivedUpload();
+
+        Queue::assertPushed(FinalizeUpload::class, fn ($job) => $job->uploadId === $id && $job->connection === 'uploads');
+    });
+
+    it('records when the job started and does not run twice', function () {
+        Queue::fake();
+        $id = receivedUpload();
+
+        runFinalizer($id);
+        runFinalizer($id);
+
+        expect(Upload::find($id)->started_at)->not->toBeNull()
+            ->and(Node::count())->toBe(1)
+            ->and($this->user->fresh()->used_bytes)->toBe(8);
+    });
+
+    it('lets a timeout that won the race keep the job from creating a node', function () {
+        Queue::fake();
+        $id = receivedUpload();
+
+        // Prune gives up on it while the job is still hashing and writing: the status is already
+        // failed by the time the job wants to create the node.
+        $complete = app(CompleteUpload::class);
+        $stale = Upload::find($id);
+        Upload::whereKey($id)->update(['status' => 'failed', 'error' => 'Timed out']);
+
+        expect(fn () => $complete->handle($stale))->toThrow(RuntimeException::class, 'no longer being processed');
+
+        expect(Upload::find($id)->status)->toBe('failed')
+            ->and(Node::count())->toBe(0)
+            ->and(File::allFiles(config('ferrite.local_root')))->toBeEmpty()
+            ->and($this->user->fresh()->used_bytes)->toBe(0);
+    });
+
+    it('does not fail an upload that has already finished', function () {
+        Queue::fake();
+        $id = receivedUpload();
+        runFinalizer($id);
+
+        expect(app(FailUpload::class)->handle(Upload::find($id), 'late'))->toBeFalse()
+            ->and(Upload::find($id)->status)->toBe('done')
+            ->and(Node::count())->toBe(1);
     });
 });

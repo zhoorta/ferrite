@@ -54,6 +54,8 @@ describe('favorites', function () {
 
         Livewire::test('pages::files.browser')
             ->assertSeeHtml('data-test="favorite-star"')
+            ->assertSeeHtml('aria-label="Add to favorites"')
+            ->assertDontSeeHtml(':aria-label')
             ->assertDontSeeHtml('data-test="favorite-mark"');
     });
 

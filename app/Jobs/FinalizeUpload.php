@@ -7,6 +7,7 @@ use App\Actions\Uploads\FailUpload;
 use App\Models\Upload;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -21,18 +22,32 @@ class FinalizeUpload implements ShouldQueue
     /** One try: a half-finished copy is cleaned up and the user retries from the browser. */
     public int $tries = 1;
 
-    /** Seconds. Keep `retry_after` of the queue connection above this, or the job is started twice. */
+    /** Seconds. The `uploads` queue connection's retry_after is above this, or the job would start twice. */
     public int $timeout = 21600;
 
     public bool $failOnTimeout = true;
 
-    public function __construct(public string $uploadId) {}
+    public function __construct(public string $uploadId)
+    {
+        $this->onConnection('uploads');
+    }
 
     public function handle(CompleteUpload $complete, FailUpload $fail): void
     {
-        $upload = Upload::query()->find($this->uploadId);
+        // Claim it: from now on the processing timeout runs (time waiting in the queue does not count).
+        $upload = DB::transaction(function () {
+            $upload = Upload::query()->lockForUpdate()->find($this->uploadId);
 
-        if ($upload === null || $upload->status !== Upload::PROCESSING) {
+            if ($upload === null || $upload->status !== Upload::PROCESSING || $upload->started_at !== null) {
+                return null;
+            }
+
+            $upload->forceFill(['started_at' => now()])->save();
+
+            return $upload;
+        });
+
+        if ($upload === null) {
             return;
         }
 
@@ -47,7 +62,7 @@ class FinalizeUpload implements ShouldQueue
     {
         $upload = Upload::query()->find($this->uploadId);
 
-        if ($upload !== null && $upload->status === Upload::PROCESSING) {
+        if ($upload !== null) {
             app(FailUpload::class)->handle($upload, __('The file could not be stored. Try uploading it again.'));
         }
     }

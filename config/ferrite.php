@@ -41,8 +41,9 @@ return [
 
     'upload_ttl_hours' => (int) env('FERRITE_UPLOAD_TTL_HOURS', 24),
 
-    // A file whose copy to its disk has not finished after this many hours is given up on by
-    // `uploads:prune` (the job itself is limited to six hours).
+    // A file whose copy to its disk has not finished this many hours after the job started is
+    // given up on by `uploads:prune` (the job itself is limited to six hours). One still waiting
+    // in the queue is given up after a week.
     'processing_timeout_hours' => (int) env('FERRITE_PROCESSING_TIMEOUT_HOURS', 12),
 
     'tmp_path' => env('FERRITE_TMP_PATH', storage_path('app/private/ferrite-tmp')),

@@ -157,6 +157,7 @@ class CopyNode
     {
         $written = [];
         $disks = [];
+        $filesystems = [];
 
         try {
             foreach ($files as $file) {
@@ -165,11 +166,12 @@ class CopyNode
                 }
 
                 $source = $disks[$file->disk_id] ??= StorageDisk::query()->findOrFail($file->disk_id);
+                $filesystem = $filesystems[$file->disk_id] ??= $this->storage->filesystem($source);
                 $stream = $this->storage->openStream($source, $file->path, $file->size);
                 $key = $this->storage->newKey();
 
                 try {
-                    $this->storage->filesystem($source)->writeStream($key, $stream);
+                    $filesystem->writeStream($key, $stream);
                 } finally {
                     fclose($stream);
                 }

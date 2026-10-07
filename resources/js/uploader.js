@@ -135,13 +135,25 @@ export default function uploader() {
 
         // The server's word on an upload: still receiving, handed to the storing job, or stored.
         settle(item, state) {
+            if (state.status === 'processing') {
+                item.status = 'processing';
+                this.watch(item);
+            } else if (['done', 'failed'].includes(state.status)) {
+                this.conclude(item, state);
+            }
+        },
+
+        // A final answer: show it, then drop the record, which only exists for this answer.
+        conclude(item, state) {
             if (state.status === 'done') {
                 item.status = 'done';
                 this.dirty = true;
-            } else if (state.status === 'processing') {
-                item.status = 'processing';
-                this.watch(item);
+            } else {
+                item.status = 'error';
+                item.error = state.error ?? 'The file could not be stored.';
             }
+
+            request(item.base, 'DELETE', `/uploads/${item.uploadId}`).catch(() => {});
         },
 
         // Polls a file that is being stored until the server reports the outcome.
@@ -160,16 +172,7 @@ export default function uploader() {
                     const state = await response.json();
                     failures = 0;
 
-                    if (state.status === 'done') {
-                        item.status = 'done';
-                        this.dirty = true;
-                    } else if (state.status === 'failed') {
-                        item.status = 'error';
-                        item.error = state.error ?? 'The file could not be stored.';
-                    }
-
-                    // The record only exists for this answer.
-                    if (item.status !== 'processing') request(item.base, 'DELETE', `/uploads/${item.uploadId}`).catch(() => {});
+                    if (['done', 'failed'].includes(state.status)) this.conclude(item, state);
                 } catch (error) {
                     if (error.fatal || ++failures > 30) {
                         item.status = 'error';
@@ -218,6 +221,15 @@ export default function uploader() {
                             item.sent = state.offset;
                             this.settle(item, state);
                             continue;
+                        }
+
+                        if (response.status === 422) {
+                            // Stored synchronously (no queue worker) and failed: a final answer like any other.
+                            const body = await response.clone().json().catch(() => ({}));
+                            if (body.status === 'failed') {
+                                this.conclude(item, { status: 'failed', error: body.message });
+                                continue;
+                            }
                         }
 
                         if (!response.ok) {
