@@ -68,6 +68,9 @@ Everything that changes lives in one volume, `/data`. Back it up, and keep `APP_
 
 ## Develop
 
+Contributions are welcome; read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+
 ```sh
 composer install && npm ci
 cp .env.example .env && php artisan key:generate
@@ -92,7 +95,7 @@ vendor/bin/pint && vendor/bin/phpstan analyse
 
 ## Security
 
-Ferrite serves files uploaded by users from its own origin, so read [docs/security.md](docs/security.md) before exposing an instance to people you do not trust. Report vulnerabilities privately to the maintainer rather than in a public issue.
+Ferrite serves files uploaded by users from its own origin, so read [docs/security.md](docs/security.md) before exposing an instance to people you do not trust. Report vulnerabilities privately (see [SECURITY.md](SECURITY.md)) rather than in a public issue.
 
 ## Licence
 
