@@ -140,7 +140,7 @@ Set `post_max_size = 32M` in the PHP-FPM `php.ini` (uploads are raw 5 MB request
 
 Both are required. The `uploads` worker finishes every upload (hash, copy to the disk); without it files stay at "Storing the file…". The scheduler purges the trash and old uploads and activity.
 
-Two systemd units (also in `deploy/`). `/etc/systemd/system/ferrite-uploads.service`:
+Two systemd units. `/etc/systemd/system/ferrite-uploads.service`:
 
 ```ini
 [Unit]

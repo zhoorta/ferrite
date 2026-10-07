@@ -25,4 +25,3 @@ pint.json
 Dockerfile
 docker-compose.yml
 .dockerignore
-deploy/*.env
