@@ -33,6 +33,24 @@ it('hides the demo button unless demo mode is on', function () {
     $this->get(route('login'))->assertSee('Try the demo');
 });
 
+it('shows only the demo button and its note on the demo sign-in page', function () {
+    config(['ferrite.demo.enabled' => true]);
+
+    $this->get(route('login'))->assertOk()
+        ->assertSee('Try the demo')
+        ->assertSee('A throwaway account with sample files, deleted after 60 minutes. Public demo: small images, PDFs and text only, no sharing.')
+        ->assertDontSee('data-test="login-button"', false)
+        ->assertDontSee('name="password"', false)
+        ->assertDontSee('Forgot your password?')
+        ->assertDontSee('Sign up');
+});
+
+it('keeps the full sign-in form outside the demo', function () {
+    User::factory()->create();
+
+    $this->get(route('login'))->assertOk()->assertSee('data-test="login-button"', false)->assertDontSee('Try the demo');
+});
+
 it('does not start a demo when demo mode is off', function () {
     $this->post(route('demo.start'))->assertNotFound();
 });

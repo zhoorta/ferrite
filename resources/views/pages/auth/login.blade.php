@@ -1,72 +1,75 @@
 <x-layouts::auth :title="__('Log in')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
-
-        <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
-
-        <x-passkey-verify />
-
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
-            @csrf
-
-            <!-- Email Address -->
-            <flux:input
-                name="email"
-                :label="__('Email address')"
-                :value="old('email')"
-                type="email"
-                required
-                autofocus
-                autocomplete="email"
-                placeholder="email@example.com"
-            />
-
-            <!-- Password -->
-            <div class="relative">
-                <flux:input
-                    name="password"
-                    :label="__('Password')"
-                    type="password"
-                    required
-                    autocomplete="current-password"
-                    :placeholder="__('Password')"
-                    viewable
-                />
-
-                @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </flux:link>
-                @endif
-            </div>
-
-            <!-- Remember Me -->
-            <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
-
-            <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
-                    {{ __('Log in') }}
-                </flux:button>
-            </div>
-        </form>
-
         @if (\App\Support\Demo::enabled())
+            {{-- A demo instance has no accounts to sign in to: only the throwaway one. --}}
+            <x-auth-header :title="__('Ferrite demo')" description="" />
+
             <form method="POST" action="{{ route('demo.start') }}" class="flex flex-col gap-2">
                 @csrf
                 @error('demo')
                     <flux:text class="text-center text-red-600 dark:text-red-400">{{ $message }}</flux:text>
                 @enderror
-                <flux:button type="submit" class="w-full" data-test="demo-button">{{ __('Try the demo') }}</flux:button>
+                <flux:button type="submit" variant="primary" class="w-full" data-test="demo-button">{{ __('Try the demo') }}</flux:button>
                 <flux:text class="text-center text-xs">{{ __('A throwaway account with sample files, deleted after :minutes minutes. Public demo: small images, PDFs and text only, no sharing.', ['minutes' => config('ferrite.demo.ttl_minutes')]) }}</flux:text>
             </form>
-        @endif
+        @else
+            <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
 
-        @if (\App\Support\Registration::open())
-            <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
-                <span>{{ __('Don\'t have an account?') }}</span>
-                <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
-            </div>
+            <!-- Session Status -->
+            <x-auth-session-status class="text-center" :status="session('status')" />
+
+            <x-passkey-verify />
+
+            <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
+                @csrf
+
+                <!-- Email Address -->
+                <flux:input
+                    name="email"
+                    :label="__('Email address')"
+                    :value="old('email')"
+                    type="email"
+                    required
+                    autofocus
+                    autocomplete="email"
+                    placeholder="email@example.com"
+                />
+
+                <!-- Password -->
+                <div class="relative">
+                    <flux:input
+                        name="password"
+                        :label="__('Password')"
+                        type="password"
+                        required
+                        autocomplete="current-password"
+                        :placeholder="__('Password')"
+                        viewable
+                    />
+
+                    @if (Route::has('password.request'))
+                        <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
+                            {{ __('Forgot your password?') }}
+                        </flux:link>
+                    @endif
+                </div>
+
+                <!-- Remember Me -->
+                <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
+
+                <div class="flex items-center justify-end">
+                    <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
+                        {{ __('Log in') }}
+                    </flux:button>
+                </div>
+            </form>
+
+            @if (\App\Support\Registration::open())
+                <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
+                    <span>{{ __('Don\'t have an account?') }}</span>
+                    <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
+                </div>
+            @endif
         @endif
     </div>
 </x-layouts::auth>
