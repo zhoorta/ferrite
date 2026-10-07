@@ -40,3 +40,5 @@ yarn-error.log
 
 /ferrite.env
 .DS_Store
+/deploy/ferrite.env
+/deploy/ferrite-demo.env

@@ -23,6 +23,8 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
 
 Not included (on purpose, for now): sync clients, WebDAV, office document previews, real-time collaboration, in-content search, versioning.
 
+Project page: https://ferrite.stackcare.pt · Live demo: https://demo.ferrite.stackcare.pt
+
 ## Run it with Docker
 
 You need a server with Docker and a domain name pointing at it.
@@ -75,3 +77,7 @@ Ferrite serves files uploaded by users from its own origin, so read [docs/securi
 ## License
 
 Not chosen yet.
+
+## Licence
+
+Ferrite is free software under the [GNU Affero General Public License v3.0](LICENSE) or later. If you run a modified version as a service for others, you must offer them its source.
