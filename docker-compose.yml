@@ -1,10 +1,11 @@
 # Ferrite on a single host. Copy docker/ferrite.env.example to ferrite.env and fill it in, then:
-#   docker compose up -d --build
+#   docker compose up -d
+# This pulls the prebuilt image. To build it from this checkout instead: docker compose up -d --build
 # Put a reverse proxy with HTTPS in front of port 8080 (see docs/install.md).
 services:
   ferrite:
+    image: ghcr.io/zhoorta/ferrite:latest
     build: .
-    image: ferrite:latest
     restart: unless-stopped
     env_file: ferrite.env
     ports:

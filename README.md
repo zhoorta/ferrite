@@ -53,8 +53,10 @@ git clone <this repository> ferrite && cd ferrite
 cp docker/ferrite.env.example ferrite.env
 docker compose run --rm ferrite php artisan key:generate --show   # copy the output into APP_KEY in ferrite.env
 $EDITOR ferrite.env                                               # set APP_KEY and APP_URL at least
-docker compose up -d --build
+docker compose up -d
 ```
+
+This pulls the prebuilt image (`ghcr.io/zhoorta/ferrite`, amd64 and arm64). Until a release exists, or to build from your checkout, use `docker compose up -d --build`.
 
 Put a reverse proxy with HTTPS in front of port 8080 (examples in [docs/install.md](docs/install.md)), open your `APP_URL`: a fresh install shows a **Welcome** page where you create the administrator account, and registration closes afterwards. Do this right after the first start, since whoever opens the page first becomes the admin. Add everyone else under **Users**. To create or recover accounts from the command line instead:
 

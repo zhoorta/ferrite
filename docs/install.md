@@ -19,11 +19,13 @@ docker compose run --rm ferrite php artisan key:generate --show
 Edit `ferrite.env`: paste the key into `APP_KEY` and set `APP_URL` to the public address (with `https://`), and `TRUSTED_PROXIES` to your proxy's address. Then:
 
 ```sh
-docker compose up -d --build
+docker compose up -d
 docker compose logs -f ferrite
 ```
 
-On start the container creates the database, runs migrations, caches the configuration and starts the scheduler (trash purge, upload cleanup, log pruning) and a queue worker (finishes uploads in the background; see "Large files" below). The first person to open the site and register becomes the admin.
+This pulls the prebuilt image from `ghcr.io/zhoorta/ferrite` (amd64 and arm64). If it is not available, or you want to build from the checkout, add `--build`. Image tags: `latest` and `1.2.3`/`1.2` for releases, `edge` for the current `main`. For production, pin a version in `docker-compose.yml` (`image: ghcr.io/zhoorta/ferrite:1.2`) so an upgrade is a decision you make.
+
+On start the container creates the database, runs migrations, caches the configuration and starts the scheduler (trash purge, upload cleanup, log pruning) and two queue workers (one finishes uploads in the background; see "Large files" below). Open the site and create the administrator account on the Welcome page.
 
 ### The data volume
 
@@ -234,9 +236,11 @@ Restore: put the data back, keep the same `APP_KEY`, start the container (or the
 Docker:
 
 ```sh
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
+
+(Built from the checkout instead: `git pull && docker compose up -d --build`.)
 
 Standard install:
 
