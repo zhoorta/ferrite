@@ -455,7 +455,7 @@ new #[Title('Files')] class extends Component {
         @if ($this->previewNode)
             {{-- Stable wrapper: it goes full screen, so it must survive stepping to another file. --}}
             <div x-data="{ full: false, labels: @js(['enter' => __('Full screen'), 'exit' => __('Exit full screen')]) }" x-on:fullscreenchange="full = document.fullscreenElement === $root"
-                class="[&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:justify-center [&:fullscreen]:overflow-auto [&:fullscreen]:bg-white [&:fullscreen]:p-6 dark:[&:fullscreen]:bg-zinc-900 [&:fullscreen_:is(img,video)]:max-h-[calc(100vh-10rem)] [&:fullscreen_iframe]:h-[calc(100vh-10rem)] [&:fullscreen_pre]:max-h-[calc(100vh-10rem)]">
+                class="[&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:justify-center [&:fullscreen]:overflow-auto [&:fullscreen]:bg-zinc-50 [&:fullscreen]:p-6 dark:[&:fullscreen]:bg-zinc-800 [&:fullscreen_:is(img,video)]:max-h-[calc(100vh-10rem)] [&:fullscreen_iframe]:h-[calc(100vh-10rem)] [&:fullscreen_pre]:max-h-[calc(100vh-10rem)]">
             <div class="space-y-4" wire:key="preview-{{ $this->previewNode->id }}"
                 x-on:keydown.left.window="if (!$event.target.closest('audio, video, input, textarea')) $wire.previewStep(-1)"
                 x-on:keydown.right.window="if (!$event.target.closest('audio, video, input, textarea')) $wire.previewStep(1)">
@@ -492,6 +492,7 @@ new #[Title('Files')] class extends Component {
                             x-on:click="full ? document.exitFullscreen() : $root.requestFullscreen()"
                             x-bind:aria-label="full ? labels.exit : labels.enter" data-test="preview-fullscreen" />
                         <flux:button icon="arrow-down-tray" :href="route('nodes.download', $this->previewNode)">{{ __('Download') }}</flux:button>
+                        <flux:modal.close><flux:button variant="filled" data-test="preview-close">{{ __('Close') }}</flux:button></flux:modal.close>
                     </div>
                 </div>
             </div>

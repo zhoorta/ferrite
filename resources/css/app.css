@@ -193,6 +193,15 @@ html:not(.dark)[data-palette='bubblegum'] .upload-fill {
     }
 }
 
+/* Modals follow the theme instead of Flux's fixed white (unlayered, so it wins over the utilities). */
+dialog[data-modal] {
+    background-color: var(--color-zinc-50);
+}
+
+.dark dialog[data-modal] {
+    background-color: var(--color-zinc-800);
+}
+
 /* Plain page background; the vintage themes draw their own below. */
 .cozy-bg {
     color: var(--color-zinc-800);
