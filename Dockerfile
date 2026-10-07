@@ -37,8 +37,11 @@ COPY . .
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=assets /app/public/build ./public/build
 
-RUN composer dump-autoload --no-dev --optimize --classmap-authoritative --no-interaction \
-    && rm /usr/bin/composer \
+# package:discover (run by dump-autoload) boots the app, which needs the view cache directory;
+# storage/* is excluded from the build context, so create it first.
+RUN mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions storage/logs bootstrap/cache \
+    && composer dump-autoload --no-dev --optimize --classmap-authoritative --no-interaction \
+    && rm -rf /usr/bin/composer storage/framework \
     && mkdir -p /data /app/bootstrap/cache \
     && chown -R www-data:www-data /data /app/bootstrap/cache
 
