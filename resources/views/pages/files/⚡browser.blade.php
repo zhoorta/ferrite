@@ -276,8 +276,10 @@ new #[Title('Files')] class extends Component {
 
             <flux:table.rows>
                 @foreach ($this->items as $item)
-                    <flux:table.row :key="$item->id" data-test="node-row" class="group/row"
-                        x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); $el.querySelector('[data-test=row-actions]')?.click()">
+                    <flux:table.row :key="$item->id" data-test="node-row" class="cursor-pointer transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
+                        :data-href="$item->isFolder() ? route('files', $item) : null" :data-preview="$item->isFile() ? $item->id : null"
+                        x-on:click="if ($event.target.closest('a, button, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
+                        x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
                                 @if ($item->isFile() && app(Thumbnailer::class)->supports($item))
@@ -302,27 +304,16 @@ new #[Title('Files')] class extends Component {
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->updated_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" data-test="row-actions"
-                                    class="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/row:opacity-100 [@media(hover:hover)]:group-focus-within/row:opacity-100" />
+                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" />
 
-                                <flux:menu>
-                                    @if ($item->isFolder())
-                                        <flux:menu.item icon="arrow-down-tray" :href="route('nodes.zip', $item)">{{ __('Download as ZIP') }}</flux:menu.item>
-                                    @else
-                                        <flux:menu.item icon="arrow-down-tray" :href="route('nodes.download', $item)">{{ __('Download') }}</flux:menu.item>
-                                    @endif
-                                    @can('update', $item)
-                                        <flux:menu.item icon="pencil" wire:click="startRename({{ $item->id }})">{{ __('Rename') }}</flux:menu.item>
-                                    @endcan
-                                    @can('share', $item)
-                                        <flux:menu.item icon="share" wire:click="$dispatch('share-node', { id: {{ $item->id }} })">{{ __('Share') }}</flux:menu.item>
-                                    @endcan
-                                    @can('move', $item)
-                                        <flux:menu.item icon="arrow-right-circle" wire:click="startMove({{ $item->id }})">{{ __('Move') }}</flux:menu.item>
-                                        <flux:menu.separator />
-                                        <flux:menu.item icon="trash" variant="danger" wire:click="trash({{ $item->id }})">{{ __('Move to trash') }}</flux:menu.item>
-                                    @endcan
-                                </flux:menu>
+                                <x-node-menu :item="$item" />
+                            </flux:dropdown>
+
+                            {{-- Same menu, anchored to the cursor: a zero-size trigger is moved to the click point on right-click. --}}
+                            <flux:dropdown position="bottom" align="start" class="fixed" data-test="row-context">
+                                <button type="button" class="size-0" tabindex="-1" aria-hidden="true"></button>
+
+                                <x-node-menu :item="$item" />
                             </flux:dropdown>
                         </flux:table.cell>
                     </flux:table.row>
