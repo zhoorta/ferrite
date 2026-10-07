@@ -29,6 +29,47 @@ class AppearanceTest extends TestCase
         $this->get(route('appearance.edit'))->assertSee('data-palette="wood"', false);
     }
 
+    public function test_classic_mac_is_a_light_theme(): void
+    {
+        $this->actingAs($user = User::factory()->create(['palette' => 'mac']));
+
+        Livewire::test('pages::settings.appearance')->assertSet('palette', 'mac');
+
+        $html = $this->get(route('appearance.edit'))->assertSee('data-palette="mac"', false)->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('/<html[^>]*class="[^"]*dark/', $html);
+        $this->assertFalse(User::isDarkPalette('mac'));
+        $this->assertTrue(User::isDarkPalette('plum'));
+    }
+
+    public function test_amber_terminal_is_a_dark_theme(): void
+    {
+        $this->actingAs(User::factory()->create(['palette' => 'amber']));
+
+        Livewire::test('pages::settings.appearance')->set('palette', 'amber')->assertHasNoErrors();
+
+        $this->get(route('appearance.edit'))->assertSee('data-palette="amber"', false)->assertSee('class="dark"', false);
+    }
+
+    public function test_every_palette_can_be_picked_and_gets_the_right_mode(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        foreach (User::PALETTES as $palette) {
+            Livewire::test('pages::settings.appearance')->set('palette', $palette)->assertHasNoErrors();
+
+            $html = $this->get(route('appearance.edit'))->assertSee('data-palette="'.$palette.'"', false)->getContent();
+
+            $this->assertSame(
+                User::isDarkPalette($palette),
+                (bool) preg_match('/<html[^>]*class="[^"]*dark/', $html),
+                "Wrong colour mode for {$palette}",
+            );
+        }
+
+        $this->assertSame(['light', 'mac', 'desk95', 'zine'], User::LIGHT_PALETTES);
+    }
+
     public function test_unknown_palette_is_rejected(): void
     {
         $this->actingAs($user = User::factory()->create());

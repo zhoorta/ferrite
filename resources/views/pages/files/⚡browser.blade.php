@@ -421,7 +421,7 @@ new #[Title('Files')] class extends Component {
                                 @if ($item->isFolder())
                                     <flux:link :href="route('files', $item)" wire:navigate variant="ghost" class="font-medium">{{ $item->name }}</flux:link>
                                 @else
-                                    <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium hover:underline">{{ $item->name }}</button>
+                                    <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -537,7 +537,7 @@ new #[Title('Files')] class extends Component {
             <div class="max-h-64 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
                 @forelse ($this->moveFolders as $candidate)
                     <button type="button" wire:key="move-{{ $candidate->id }}" wire:click="browseMove({{ $candidate->id }})"
-                        class="flex w-full items-center gap-3 px-3 py-2 text-start hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                        class="flex w-full items-center gap-3 px-3 py-2 text-start font-sans [font-size-adjust:none] hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
                         <flux:icon name="folder" class="size-5 text-zinc-400" />
                         {{ $candidate->name }}
                     </button>

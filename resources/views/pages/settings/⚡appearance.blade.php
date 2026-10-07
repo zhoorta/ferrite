@@ -21,7 +21,7 @@ new #[Title('Appearance settings')] class extends Component {
 
         Auth::user()->forceFill(['palette' => $this->palette])->save();
 
-        $this->js('document.documentElement.dataset.palette = '.Js::from($this->palette).'; document.documentElement.classList.toggle("dark", '.Js::from($this->palette).' !== "light"); try { localStorage.setItem("shed.palette", '.Js::from($this->palette).'); } catch (e) {}');
+        $this->js('document.documentElement.dataset.palette = '.Js::from($this->palette).'; document.documentElement.classList.toggle("dark", '.Js::from(User::isDarkPalette($this->palette)).'); try { localStorage.setItem("shed.palette", '.Js::from($this->palette).'); } catch (e) {}');
     }
 }; ?>
 
@@ -36,6 +36,13 @@ new #[Title('Appearance settings')] class extends Component {
                 @foreach ([
                     'plum' => [__('Plum'), '#4d2f4a'],
                     'light' => [__('Light'), '#f4ebdb'],
+                    'mac' => [__('Classic Mac'), '#ffffff'],
+                    'desk95' => [__('Desktop 95'), '#c0c0c0'],
+                    'zine' => [__('Plain page'), '#ffffff'],
+                    'amber' => [__('Amber terminal'), '#120b02'],
+                    'phosphor' => [__('Green phosphor'), '#020f06'],
+                    'commodore' => [__('Commodore'), '#352879'],
+                    'amiga' => [__('Amiga'), '#0055aa'],
                     'wood' => [__('Wood'), '#4a3a2e'],
                     'teal' => [__('Teal'), '#2a4e53'],
                     'forest' => [__('Forest'), '#385436'],

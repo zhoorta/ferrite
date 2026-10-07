@@ -167,7 +167,22 @@
     h1, h2, h3,
     [data-flux-heading] {
         font-family: var(--font-serif);
+        font-size-adjust: var(--font-ui-adjust, none);
         letter-spacing: -0.01em;
+    }
+
+    /* Interface chrome. A theme sets `--font-ui` to give it its own face; without it, inherit. */
+    button,
+    label,
+    th,
+    summary,
+    [role='menuitem'],
+    [role='tab'],
+    [data-flux-badge],
+    [data-flux-sidebar] a,
+    [data-flux-navlist] a {
+        font-family: var(--font-ui, inherit);
+        font-size-adjust: var(--font-ui-adjust, none);
     }
 
     ::selection {
@@ -198,6 +213,464 @@
 /* Black and white: a plain background, no warm glow or paper grain. */
 .dark[data-palette='bw'] .cozy-bg {
     background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgb(255 255 255 / .06), transparent 65%);
+}
+
+/*
+ * Classic Mac (System 6/7): a light theme. Pure black on white, 1px black
+ * borders, square corners, hard offset shadows, a dotted desktop, a pixel font for headings.
+ * The scoping `:not(.dark)` keeps it from leaking if a stale `dark` class is present.
+ */
+@layer theme {
+    html:not(.dark)[data-palette='mac'] {
+        --font-sans: 'Public Sans', 'Geneva', 'Verdana', ui-sans-serif, system-ui, sans-serif;
+        --font-serif: 'Pixelify Sans', 'Chicago', ui-monospace, monospace;
+        /* As on the original: Chicago-style for buttons, menus and labels, Geneva-style for the rest. */
+        --font-ui: 'Pixelify Sans', 'Chicago', ui-monospace, monospace;
+
+        --color-zinc-50: #ffffff;
+        --color-zinc-100: #f1f1f1;
+        --color-zinc-200: #d9d9d9;
+        --color-zinc-300: #b8b8b8;
+        --color-zinc-400: #7a7a7a;
+        --color-zinc-500: #555555;
+        --color-zinc-600: #333333;
+        --color-zinc-700: #1a1a1a;
+        --color-zinc-800: #000000;
+        --color-zinc-900: #000000;
+        --color-zinc-950: #000000;
+
+        --color-accent: #000000;
+        --color-accent-content: #000000;
+        --color-accent-foreground: #ffffff;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: 1px 1px 0 #000;
+        --shadow-md: 2px 2px 0 #000;
+        --shadow-lg: 3px 3px 0 #000;
+        --shadow-xl: 4px 4px 0 #000;
+        --shadow-2xl: 5px 5px 0 #000;
+    }
+}
+
+@layer base {
+    html:not(.dark)[data-palette='mac'] *,
+    html:not(.dark)[data-palette='mac'] ::after,
+    html:not(.dark)[data-palette='mac'] ::before {
+        border-color: #000;
+    }
+
+    html:not(.dark)[data-palette='mac'] dialog {
+        border: 1px solid #000;
+        box-shadow: 4px 4px 0 #000;
+    }
+
+    html:not(.dark)[data-palette='mac'] ::selection {
+        background: #000;
+        color: #fff;
+    }
+}
+
+/* The desktop: white with a fine dot grid, no glow or paper grain. */
+html:not(.dark)[data-palette='mac'] .cozy-bg {
+    color: #000;
+    background-color: #fff;
+    background-image: radial-gradient(#000 0.6px, transparent 0.7px);
+    background-size: 4px 4px;
+    background-attachment: fixed;
+}
+
+/*
+ * CRT monitors: Amber terminal and Green phosphor share their structure and differ in colour.
+ * Near-black surfaces, one phosphor colour in four strengths, square corners, glow instead of
+ * shadows, faint scanlines and a soft glow on the desktop. `--crt-glow` is the phosphor as an
+ * rgb triplet.
+ */
+@layer theme {
+    .dark:is([data-palette='amber'], [data-palette='phosphor']) {
+        --font-sans: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        --font-serif: 'VT323', 'IBM Plex Mono', ui-monospace, monospace;
+        --font-ui: 'VT323', 'IBM Plex Mono', ui-monospace, monospace;
+        /* VT323 has a small x-height; scale it up to match Plex Mono (about +30%). */
+        --font-ui-adjust: 0.52;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: 0 0 12px rgb(var(--crt-glow) / .18);
+        --shadow-xl: 0 0 16px rgb(var(--crt-glow) / .2);
+        --shadow-2xl: 0 0 20px rgb(var(--crt-glow) / .22);
+    }
+
+    .dark[data-palette='amber'] {
+        --crt-glow: 255 176 0;
+
+        --color-zinc-700: #4a3408;
+        --color-zinc-800: #1c1204;
+        --color-zinc-900: #120b02;
+        --color-zinc-950: #080500;
+
+        --color-zinc-100: #ffc861;
+        --color-zinc-200: #ffbd45;
+        --color-zinc-300: #e9a834;
+        --color-zinc-400: #c28a26;
+        --color-zinc-500: #a07020;
+
+        /* Flux and the markup use white for text and tints in dark mode (`dark:text-white`, `dark:bg-white/10`); on this screen white is the phosphor. */
+        --color-white: #ffc861;
+
+        --color-accent: #ffb000;
+        --color-accent-content: #ffc233;
+        --color-accent-foreground: #120b02;
+    }
+
+    .dark[data-palette='phosphor'] {
+        --crt-glow: 51 255 102;
+
+        --color-zinc-700: #0f4a22;
+        --color-zinc-800: #04170a;
+        --color-zinc-900: #020f06;
+        --color-zinc-950: #010802;
+
+        --color-zinc-100: #8dffa8;
+        --color-zinc-200: #66ff8a;
+        --color-zinc-300: #3fe468;
+        --color-zinc-400: #2fb24f;
+        --color-zinc-500: #258c3e;
+
+        --color-white: #8dffa8;
+
+        --color-accent: #33ff66;
+        --color-accent-content: #66ff8a;
+        --color-accent-foreground: #021408;
+    }
+}
+
+.dark:is([data-palette='amber'], [data-palette='phosphor']) .cozy-bg {
+    background-color: var(--color-zinc-900);
+    background-image:
+        repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgb(0 0 0 / .22) 3px),
+        radial-gradient(ellipse 90% 60% at 50% 0%, rgb(var(--crt-glow) / .09), transparent 70%);
+    text-shadow: 0 0 5px rgb(var(--crt-glow) / .3);
+}
+
+/*
+ * Desktop 95: silver surfaces, navy accent, square corners and raised/sunken bevels.
+ * Light theme. Raised: buttons with a background, dialogs and menus. Sunken: inputs.
+ */
+@layer theme {
+    html:not(.dark)[data-palette='desk95'] {
+        --font-sans: 'Public Sans', Tahoma, 'MS Sans Serif', ui-sans-serif, system-ui, sans-serif;
+        --font-serif: 'Public Sans', Tahoma, ui-sans-serif, sans-serif;
+
+        --color-zinc-50: #c0c0c0;
+        --color-zinc-100: #dfdfdf;
+        --color-zinc-200: #808080;
+        --color-zinc-300: #808080;
+        --color-zinc-400: #5a5a5a;
+        --color-zinc-500: #404040;
+        --color-zinc-600: #202020;
+        --color-zinc-700: #101010;
+        --color-zinc-800: #000000;
+        --color-zinc-900: #000000;
+        --color-zinc-950: #000000;
+
+        --color-accent: #000080;
+        --color-accent-content: #000080;
+        --color-accent-foreground: #ffffff;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        --shadow-xl: none;
+        --shadow-2xl: none;
+    }
+}
+
+html:not(.dark)[data-palette='desk95'] .cozy-bg {
+    color: #000;
+    background-color: #c0c0c0;
+    background-image: none;
+}
+
+html:not(.dark)[data-palette='desk95'] [data-flux-button]:not(.bg-transparent),
+html:not(.dark)[data-palette='desk95'] dialog,
+html:not(.dark)[data-palette='desk95'] [popover] {
+    border: 0;
+    box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+}
+
+html:not(.dark)[data-palette='desk95'] [data-flux-button]:not(.bg-transparent):active {
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+}
+
+html:not(.dark)[data-palette='desk95'] :is(input, textarea, select):not([type='checkbox'], [type='radio'], [type='file']) {
+    border: 0;
+    background: #fff;
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+}
+
+html:not(.dark)[data-palette='desk95'] ::selection {
+    background: #000080;
+    color: #fff;
+}
+
+/*
+ * Plain page: an early-web look. White page, black Times-style text, blue links, Courier for
+ * buttons, square corners, no shadows. Light theme.
+ */
+@layer theme {
+    html:not(.dark)[data-palette='zine'] {
+        --font-sans: 'Tinos', 'Times New Roman', Times, serif;
+        --font-serif: 'Tinos', 'Times New Roman', Times, serif;
+        --font-ui: 'Courier Prime', 'Courier New', Courier, monospace;
+
+        --color-zinc-50: #ffffff;
+        --color-zinc-100: #f2f2f2;
+        --color-zinc-200: #cccccc;
+        --color-zinc-300: #aaaaaa;
+        --color-zinc-400: #777777;
+        --color-zinc-500: #555555;
+        --color-zinc-600: #333333;
+        --color-zinc-700: #1a1a1a;
+        --color-zinc-800: #000000;
+        --color-zinc-900: #000000;
+        --color-zinc-950: #000000;
+
+        --color-accent: #0000ee;
+        --color-accent-content: #0000ee;
+        --color-accent-foreground: #ffffff;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        --shadow-xl: none;
+        --shadow-2xl: none;
+    }
+}
+
+html:not(.dark)[data-palette='zine'] .cozy-bg {
+    color: #000;
+    background-color: #fff;
+    background-image: none;
+}
+
+html:not(.dark)[data-palette='zine'] h1,
+html:not(.dark)[data-palette='zine'] h2,
+html:not(.dark)[data-palette='zine'] h3,
+html:not(.dark)[data-palette='zine'] [data-flux-heading] {
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+html:not(.dark)[data-palette='zine'] [data-flux-link],
+html:not(.dark)[data-palette='zine'] main a {
+    text-decoration: underline;
+}
+
+/*
+ * Commodore: the C64 start screen. Dark blue paper, light blue text, a light blue frame around
+ * the whole window, pixel fonts, square corners, no shadows. Dark theme.
+ */
+@layer theme {
+    .dark[data-palette='commodore'] {
+        --font-sans: 'DotGothic16', ui-monospace, monospace;
+        --font-serif: 'Press Start 2P', 'DotGothic16', ui-monospace, monospace;
+        --font-ui: 'Press Start 2P', 'DotGothic16', ui-monospace, monospace;
+        /* Press Start 2P is very large for its size; scale it down. */
+        --font-ui-adjust: 0.4;
+
+        --color-zinc-700: #6c5eb5;
+        --color-zinc-800: #352879;
+        --color-zinc-900: #2b2063;
+        --color-zinc-950: #1f1750;
+
+        --color-zinc-100: #d6d0ff;
+        --color-zinc-200: #c4bdff;
+        --color-zinc-300: #a59ef9;
+        --color-zinc-400: #8a82e0;
+        --color-zinc-500: #7a72d0;
+
+        --color-white: #d6d0ff;
+
+        --color-accent: #bfce72;
+        --color-accent-content: #bfce72;
+        --color-accent-foreground: #2b2063;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        --shadow-xl: none;
+        --shadow-2xl: none;
+    }
+}
+
+.dark[data-palette='commodore'] .cozy-bg {
+    background-color: var(--color-zinc-800);
+    background-image: none;
+}
+
+/* The border of the C64 screen, drawn over everything but never in the way. */
+.dark[data-palette='commodore']::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    border: 10px solid #6c5eb5;
+    pointer-events: none;
+}
+
+/*
+ * Amiga: Workbench 1.3. Blue screen, white text, orange highlights, black text on orange for
+ * selections, a Topaz-like monospace and pixel caps for headings. Dark theme.
+ */
+@layer theme {
+    .dark[data-palette='amiga'] {
+        --font-sans: 'Share Tech Mono', ui-monospace, monospace;
+        --font-serif: 'Silkscreen', 'Share Tech Mono', ui-monospace, monospace;
+        --font-ui: 'Silkscreen', 'Share Tech Mono', ui-monospace, monospace;
+
+        --color-zinc-700: #8fb4e0;
+        --color-zinc-800: #0055aa;
+        --color-zinc-900: #004488;
+        --color-zinc-950: #002f66;
+
+        --color-zinc-100: #ffffff;
+        --color-zinc-200: #f0f6ff;
+        --color-zinc-300: #d4e4f7;
+        --color-zinc-400: #b5cfee;
+        --color-zinc-500: #9dbde6;
+
+        --color-accent: #ff8800;
+        --color-accent-content: #ffa033;
+        --color-accent-foreground: #000000;
+
+        --radius-xs: 0;
+        --radius-sm: 0;
+        --radius-md: 0;
+        --radius-lg: 0;
+        --radius-xl: 0;
+        --radius-2xl: 0;
+        --radius-3xl: 0;
+
+        --shadow-xs: none;
+        --shadow-sm: 1px 1px 0 #000;
+        --shadow-md: 2px 2px 0 #000;
+        --shadow-lg: 3px 3px 0 #000;
+        --shadow-xl: 4px 4px 0 #000;
+        --shadow-2xl: 5px 5px 0 #000;
+    }
+}
+
+.dark[data-palette='amiga'] .cozy-bg {
+    background-color: var(--color-zinc-800);
+    background-image: none;
+}
+
+.dark[data-palette='amiga'] ::selection {
+    background: #ff8800;
+    color: #000;
+}
+
+/* Upload progress bars follow the theme (the accent colour by default). */
+html:not(.dark)[data-palette='mac'] .upload-bar {
+    height: 0.75rem;
+    border: 1px solid #000;
+    border-radius: 0;
+    background: #fff;
+}
+
+html:not(.dark)[data-palette='mac'] .upload-fill {
+    background: repeating-linear-gradient(135deg, #000 0 3px, #fff 3px 5px);
+}
+
+/* Blocks, as on a terminal or the C64. */
+.dark:is([data-palette='amber'], [data-palette='phosphor'], [data-palette='commodore']) .upload-bar {
+    height: 0.75rem;
+    border: 1px solid var(--color-zinc-700);
+    border-radius: 0;
+    background: var(--color-zinc-950);
+}
+
+.dark:is([data-palette='amber'], [data-palette='phosphor'], [data-palette='commodore']) .upload-fill {
+    background: repeating-linear-gradient(90deg, var(--color-accent) 0 6px, transparent 6px 8px);
+}
+
+html:not(.dark)[data-palette='desk95'] .upload-bar {
+    height: 1rem;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+}
+
+html:not(.dark)[data-palette='desk95'] .upload-fill {
+    margin: 2px;
+    height: calc(100% - 4px);
+    background: repeating-linear-gradient(90deg, #000080 0 8px, transparent 8px 10px);
+}
+
+html:not(.dark)[data-palette='zine'] .upload-bar {
+    height: 0.75rem;
+    border: 1px solid #000;
+    border-radius: 0;
+    background: #fff;
+}
+
+html:not(.dark)[data-palette='zine'] .upload-fill {
+    background: #000;
+}
+
+.dark[data-palette='amiga'] .upload-bar {
+    height: 0.75rem;
+    border: 2px solid #fff;
+    border-radius: 0;
+    background: #000;
+}
+
+.dark[data-palette='amiga'] .upload-fill {
+    background: #ff8800;
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => auth()->user()?->palette !== 'light']) @auth data-palette="{{ auth()->user()->palette }}" @endauth>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => \App\Models\User::isDarkPalette(auth()->user()?->palette)]) @auth data-palette="{{ auth()->user()->palette }}" @endauth>
     <head>
         @include('partials.head')
     </head>
@@ -112,8 +112,8 @@
                     <span x-text="`${$store.uploads.total.done} / ${$store.uploads.total.files} {{ __('files') }}`"></span>
                     <span x-text="`${$store.uploads.total.percent}%`"></span>
                 </div>
-                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-                    <div class="h-full bg-blue-500 transition-all" :style="`width: ${$store.uploads.total.percent}%`"></div>
+                <div class="upload-bar h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                    <div class="upload-fill h-full bg-accent transition-all" :style="`width: ${$store.uploads.total.percent}%`"></div>
                 </div>
             </div>
             <ul class="max-h-64 divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
@@ -124,8 +124,8 @@
                             <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="['queued', 'uploading'].includes(item.status)" x-on:click="$store.uploads.cancel(item)">{{ __('Cancel') }}</button>
                             <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="item.status === 'error'" x-on:click="$store.uploads.retry(item)">{{ __('Retry') }}</button>
                         </div>
-                        <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'done'].includes(item.status)">
-                            <div class="h-full bg-blue-500 transition-all" :class="item.status === 'done' && 'bg-green-500'"
+                        <div class="upload-bar h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'done'].includes(item.status)">
+                            <div class="upload-fill h-full bg-accent transition-all"
                                 :style="`width: ${item.file.size ? Math.round(item.sent / item.file.size * 100) : (item.status === 'done' ? 100 : 0)}%`"></div>
                         </div>
                         <p class="text-xs text-red-600" x-show="item.status === 'error'" x-text="item.error"></p>

@@ -19,6 +19,36 @@ export default defineConfig({
                 bunny('Fraunces', {
                     weights: [500, 600, 700],
                 }),
+                bunny('Public Sans', {
+                    weights: [400, 500, 600, 700],
+                }),
+                bunny('IBM Plex Mono', {
+                    weights: [400, 500, 700],
+                }),
+                bunny('VT323', {
+                    weights: [400],
+                }),
+                bunny('Tinos', {
+                    weights: [400, 700],
+                }),
+                bunny('Courier Prime', {
+                    weights: [400, 700],
+                }),
+                bunny('Press Start 2P', {
+                    weights: [400],
+                }),
+                bunny('DotGothic16', {
+                    weights: [400],
+                }),
+                bunny('Share Tech Mono', {
+                    weights: [400],
+                }),
+                bunny('Silkscreen', {
+                    weights: [400, 700],
+                }),
+                bunny('Pixelify Sans', {
+                    weights: [500, 600, 700],
+                }),
             ],
         }),
         tailwindcss(),

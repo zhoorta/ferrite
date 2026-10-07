@@ -19,6 +19,6 @@
         const root = document.documentElement;
         if (root.dataset.palette) localStorage.setItem('shed.palette', root.dataset.palette);
         else root.dataset.palette = localStorage.getItem('shed.palette') || 'plum';
-        root.classList.toggle('dark', root.dataset.palette !== 'light');
+        root.classList.toggle('dark', !{{ \Illuminate\Support\Js::from(\App\Models\User::LIGHT_PALETTES) }}.includes(root.dataset.palette));
     } catch (e) {}
 </script>
