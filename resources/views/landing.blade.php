@@ -1,6 +1,11 @@
 @php
     $repo = config('ferrite.repo_url');
     $demo = config('ferrite.demo_url');
+    $themes = [
+        'ferrite' => 'Ferrite', 'ferrite-light' => 'Ferrite light', 'mac' => 'Classic Mac', 'desk95' => 'Desktop 95', 'zine' => 'Plain page',
+        'bubblegum' => 'Bubblegum 98', 'amber' => 'Amber terminal', 'phosphor' => 'Green phosphor', 'commodore' => 'Commodore',
+        'amiga' => 'Amiga', 'wallstreet' => 'Wall Street', 'lotus' => 'Lotus 1-2-3', 'memphis' => 'Memphis',
+    ];
     $features = [
         ['Files and folders', 'Chunked, resumable uploads that cope with multi-gigabyte files and flaky connections. Drag in whole folders, rename, move, copy, download a folder as a ZIP.'],
         ['Previews', 'Images, PDF, video, audio and text open in the browser, with thumbnails and seeking in large videos.'],
@@ -16,7 +21,7 @@
         @include('partials.head', ['title' => 'Self-hosted file storage'])
         <meta name="description" content="Ferrite is a free, self-hosted file storage app built with Laravel and Livewire: a Google Drive replacement for one person or a small team.">
     </head>
-    <body class="cozy-bg min-h-screen bg-white antialiased dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200">
+    <body class="cozy-bg min-h-screen antialiased">
         <header class="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
             <a href="{{ route('home') }}" class="flex items-center gap-2">
                 <img src="{{ asset('favicon.svg') }}" alt="" class="size-8 rounded-lg">
@@ -46,7 +51,18 @@
             </section>
 
             <section class="pb-16">
-                <img src="{{ asset('img/ferrite-files.png') }}" alt="The Ferrite file browser: a sidebar, folders and files in a list with upload and new-folder buttons" width="1280" height="800" class="w-full rounded-xl border border-zinc-200 shadow-2xl dark:border-zinc-800">
+                <img id="app-shot" src="{{ asset('img/themes/ferrite.png') }}" alt="The Ferrite file browser: a sidebar, folders and files in a list with upload and new-folder buttons" width="1280" height="800" class="w-full rounded-xl border border-zinc-200 shadow-2xl dark:border-zinc-800">
+            </section>
+
+            <section class="pb-16 text-center">
+                <h2 class="font-serif text-2xl font-semibold">Pick a look</h2>
+                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Thirteen themes, from a calm dark default to Classic Mac, Amiga and green phosphor. Try one, this whole page changes. Every user picks their own.</p>
+                <div class="mt-6 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Theme">
+                    @foreach ($themes as $key => $label)
+                        <button type="button" role="radio" data-palette-choice="{{ $key }}" aria-checked="false"
+                            class="rounded-lg border border-zinc-300 px-3 py-2 text-sm transition hover:border-accent aria-checked:border-accent aria-checked:ring-2 aria-checked:ring-accent/40 dark:border-zinc-700">{{ $label }}</button>
+                    @endforeach
+                </div>
             </section>
 
             <section class="grid gap-4 pb-16 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,5 +98,21 @@ docker compose up -d --build</code></pre>
             Ferrite is free software under the <a class="underline" href="{{ $repo }}/blob/main/LICENSE">AGPL-3.0</a>.
             Made by <a class="underline" href="https://stackcare.pt/en">StackCare</a>.
         </footer>
+        <script>
+            const lightPalettes = {{ \Illuminate\Support\Js::from(\App\Models\User::LIGHT_PALETTES) }};
+            const shot = document.getElementById('app-shot');
+            const shotBase = {{ \Illuminate\Support\Js::from(asset('img/themes').'/') }};
+            const choices = document.querySelectorAll('[data-palette-choice]');
+            function setPalette(name) {
+                const root = document.documentElement;
+                root.dataset.palette = name;
+                root.classList.toggle('dark', !lightPalettes.includes(name));
+                shot.src = shotBase + name + '.png';
+                choices.forEach((b) => b.setAttribute('aria-checked', b.dataset.paletteChoice === name ? 'true' : 'false'));
+                try { localStorage.setItem('ferrite.palette', name); } catch (e) {}
+            }
+            choices.forEach((b) => b.addEventListener('click', () => setPalette(b.dataset.paletteChoice)));
+            setPalette(document.documentElement.dataset.palette || 'ferrite');
+        </script>
     </body>
 </html>

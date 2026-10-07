@@ -6,6 +6,8 @@ use App\Support\Demo;
 use Illuminate\Support\Facades\File;
 
 it('redirects guests to the sign-in form when the landing page is off', function () {
+    config(['ferrite.landing' => false]);
+
     $this->get('/')->assertRedirect(route('files'));
 });
 
