@@ -47,12 +47,20 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 
 ## Ideas (not scheduled)
 
-Suggested next: run the remote test against the real Storage Box (rest of step 10), then the Docker image.
+Suggested next: run the remote test against the real Storage Box (rest of step 10), then the Docker image. Command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
+
+```sh
+FERRITE_TEST_SFTP_HOST=u123.your-storagebox.de FERRITE_TEST_SFTP_PORT=23 \
+FERRITE_TEST_SFTP_USER=u123 FERRITE_TEST_SFTP_KEY=~/.ssh/id_ed25519 \
+FERRITE_TEST_SFTP_ROOT=/ferrite-test FERRITE_TEST_SFTP_MB=3000 \
+php artisan test --compact tests/Feature/Remote
+```
 
 - Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip).
 - Medium: upload-only drop-box links for guests; e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
 - Bigger: versioning (the thing most missed after a month); content search (needs an indexer); API tokens instead of WebDAV.
 - Also: build the Docker image once to prove the install docs.
+- Follow-ups from the favorites and usage work: a "clean up" shortcut on the Usage page (select the biggest files and trash them, or link to the duplicate finder); sorting and bulk actions on the Favorites page; a per-disk bar for stored vs counted bytes on the admin Storage page; show uploads that failed while the tab was closed (today only a live tab sees the failure).
 
 ## Risks
 
