@@ -1,6 +1,6 @@
 # UI polish plan
 
-From a visual review on 2026-10-07 (file list in Plum, Light and B&W, plus the login page). Not started.
+From a visual review on 2026-10-07 (file list in Plum, Light and B&W, plus the login page). Done: Ferrite default theme, old themes removed, list thumbnails now `size-5` (same as the other icons) so image rows keep the row height and the name alignment. The findings below are the original review and mostly apply to the removed themes.
 
 ## Findings
 
