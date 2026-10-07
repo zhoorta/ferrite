@@ -33,9 +33,17 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 7. Docker image, install docs, pre-publication security review (see `docs/install.md`, `docs/security.md`; Docker image written but not built/run end to end: no Docker on the dev machine; 318 tests)
 - [x] 8. Cosy design: warm cream and terracotta look, Nunito and Fraunces, twelve selectable themes with Plum as default (see `docs/themes.md`; 330 tests)
 
+- [ ] 9. UI polish: calmer default theme, no gradient glow, `bw` fixes (see `docs/ui-polish.md`)
+- [ ] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23):
+  - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out
+  - [ ] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100%
+  - [ ] Real seeking for Range requests on SFTP (offset reads) instead of reading and discarding up to the offset
+  - [ ] Document temp disk need (`SHED_TMP_PATH`: largest file x concurrent uploads) and proxy/PHP timeouts in `docs/install.md`
+  - [ ] Test S3 and SFTP against a real server with a multi-GB file
+
 ## Risks
 
-- Large uploads: PHP and proxy limits, assembling chunks; test with multi-GB files.
+- Large uploads: PHP and proxy limits, assembling chunks; test with multi-GB files. On a remote disk the final copy happens inside the last chunk request (see step 10).
 - Serving user files from the app's own domain (HTML/SVG scripts): `nosniff`, forced download except for an allowlist, ideally a separate domain.
 - Share tokens: long random, rate limits, constant-time password checks.
 - Moving a folder into itself, name collisions.
