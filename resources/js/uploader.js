@@ -60,6 +60,16 @@ export default function uploader() {
             return this.items.some((item) => ['queued', 'uploading'].includes(item.status));
         },
 
+        // Overall progress across every item that is not cancelled.
+        get total() {
+            const items = this.items.filter((item) => item.status !== 'cancelled');
+            const bytes = items.reduce((sum, item) => sum + item.file.size, 0);
+            const sent = items.reduce((sum, item) => sum + (item.status === 'done' ? item.file.size : item.sent), 0);
+            const done = items.filter((item) => item.status === 'done').length;
+
+            return { files: items.length, done, bytes, sent, percent: bytes ? Math.round((sent / bytes) * 100) : (done === items.length ? 100 : 0) };
+        },
+
         // `target` is { parentId, baseUrl }: where the files go, captured when they are added.
         // From a file input: folder inputs expose webkitRelativePath.
         pick(fileList, target) {

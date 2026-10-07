@@ -106,6 +106,15 @@
                 <flux:heading>{{ __('Uploads') }}</flux:heading>
                 <flux:button size="xs" variant="ghost" x-on:click="$store.uploads.clear()" x-show="!$store.uploads.active">{{ __('Clear') }}</flux:button>
             </div>
+            <div class="space-y-1 border-b border-zinc-200 px-4 py-2 text-xs text-zinc-500 dark:border-zinc-700" x-show="$store.uploads.total.files > 1" data-test="upload-total">
+                <div class="flex justify-between">
+                    <span x-text="`${$store.uploads.total.done} / ${$store.uploads.total.files} {{ __('files') }}`"></span>
+                    <span x-text="`${$store.uploads.total.percent}%`"></span>
+                </div>
+                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                    <div class="h-full bg-blue-500 transition-all" :style="`width: ${$store.uploads.total.percent}%`"></div>
+                </div>
+            </div>
             <ul class="max-h-64 divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
                 <template x-for="item in $store.uploads.items" :key="item.key">
                     <li class="space-y-1 px-4 py-2 text-sm" data-test="upload-item">
