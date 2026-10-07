@@ -635,9 +635,9 @@ new #[Title('Files')] class extends Component {
             @endif
             @foreach ($this->items as $item)
                 <div wire:key="grid-{{ $item->id }}" data-test="node-row" @if ($this->canCreate) draggable="true" data-node-id="{{ $item->id }}" @endif @if ($item->isFolder() && $this->canCreate) data-drop-id="{{ $item->id }}" @endif
-                    class="group relative data-over:bg-zinc-100 data-over:ring-2 data-over:ring-accent dark:data-over:bg-zinc-700/60 flex cursor-pointer flex-col gap-2 rounded-xl border border-zinc-200 p-2 transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
+                    class="group/row group relative data-over:bg-zinc-100 data-over:ring-2 data-over:ring-accent dark:data-over:bg-zinc-700/60 flex cursor-pointer flex-col gap-2 rounded-xl border border-zinc-200 p-2 transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                     @if ($item->isFolder()) data-href="{{ route('files', $item) }}" @else data-preview="{{ $item->id }}" @endif
-                    x-on:click="if ($event.target.closest('a, button, label, input, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
+                    x-on:click="if ($event.target.closest('a, button, label, input, ui-checkbox, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
                     x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
                     <div class="absolute start-3 top-3 z-10 rounded bg-white/80 p-0.5 dark:bg-zinc-900/80 {{ in_array((string) $item->id, array_map('strval', $selected), true) ? '' : 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100' }}">
                         <flux:checkbox wire:model.live="selected" value="{{ $item->id }}" :aria-label="__('Select :name', ['name' => $item->name])" data-test="select-row" />
@@ -655,12 +655,11 @@ new #[Title('Files')] class extends Component {
                     </div>
                     <span class="flex items-center gap-1 px-1 text-sm font-medium">
                         <span class="truncate" title="{{ $item->name }}">{{ $item->name }}</span>
-                        @if (in_array($item->id, $this->favoriteIds))
-                            <flux:icon name="star" variant="solid" class="size-4 shrink-0 text-amber-500" data-test="favorite-mark" :aria-label="__('Favorite')" />
-                        @endif
                     </span>
 
-                    <div class="absolute end-3 top-3">
+                    <div class="absolute end-3 top-3 flex items-center gap-1">
+                        <x-favorite-star :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" class="bg-white/80 dark:bg-zinc-900/80" />
+
                         <flux:dropdown position="bottom" align="end">
                             <flux:button variant="filled" size="xs" icon="ellipsis-horizontal" :aria-label="__('Actions')" />
 
@@ -679,7 +678,7 @@ new #[Title('Files')] class extends Component {
     @else
         <flux:table>
             <flux:table.columns>
-                <flux:table.column class="w-8">
+                <flux:table.column class="w-8 first:ps-3">
                     <flux:checkbox wire:click="toggleAll" :checked="count($this->selection) > 0 && count($this->selection) === $this->items->count()" :indeterminate="count($this->selection) > 0 && count($this->selection) < $this->items->count()" :aria-label="__('Select all')" data-test="select-all" />
                 </flux:table.column>
                 <flux:table.column>{{ __('Name') }}</flux:table.column>
@@ -710,11 +709,11 @@ new #[Title('Files')] class extends Component {
                     @endif
                 @endif
                 @foreach ($this->items as $item)
-                    <flux:table.row :key="$item->id" data-test="node-row" :draggable="$this->canCreate ? 'true' : null" :data-node-id="$this->canCreate ? $item->id : null" :data-drop-id="$item->isFolder() && $this->canCreate ? $item->id : null" class="cursor-pointer transition-colors data-over:bg-zinc-100 data-over:outline-2 data-over:-outline-offset-2 data-over:outline-accent dark:data-over:bg-zinc-700/60 hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
+                    <flux:table.row :key="$item->id" data-test="node-row" :draggable="$this->canCreate ? 'true' : null" :data-node-id="$this->canCreate ? $item->id : null" :data-drop-id="$item->isFolder() && $this->canCreate ? $item->id : null" class="group/row cursor-pointer transition-colors data-over:bg-zinc-100 data-over:outline-2 data-over:-outline-offset-2 data-over:outline-accent dark:data-over:bg-zinc-700/60 hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                         :data-href="$item->isFolder() ? route('files', $item) : null" :data-preview="$item->isFile() ? $item->id : null"
-                        x-on:click="if ($event.target.closest('a, button, label, input, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
+                        x-on:click="if ($event.target.closest('a, button, label, input, ui-checkbox, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
                         x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
-                        <flux:table.cell>
+                        <flux:table.cell class="first:ps-3">
                             <flux:checkbox wire:model.live="selected" value="{{ $item->id }}" :aria-label="__('Select :name', ['name' => $item->name])" data-test="select-row" />
                         </flux:table.cell>
                         <flux:table.cell>
@@ -733,9 +732,6 @@ new #[Title('Files')] class extends Component {
                                 @else
                                     <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 @endif
-                                @if (in_array($item->id, $this->favoriteIds))
-                                    <flux:icon name="star" variant="solid" class="size-4 shrink-0 text-amber-500" data-test="favorite-mark" :aria-label="__('Favorite')" />
-                                @endif
                             </div>
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
@@ -743,11 +739,15 @@ new #[Title('Files')] class extends Component {
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->updated_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
-                            <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" />
+                            <div class="flex items-center justify-end gap-1">
+                                <x-favorite-star :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
 
-                                <x-node-menu :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
-                            </flux:dropdown>
+                                <flux:dropdown position="bottom" align="end">
+                                    <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" />
+
+                                    <x-node-menu :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
+                                </flux:dropdown>
+                            </div>
 
                             {{-- Same menu, anchored to the cursor: a zero-size trigger is moved to the click point on right-click. --}}
                             <flux:dropdown position="bottom" align="start" class="fixed" data-test="row-context">

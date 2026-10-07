@@ -18,7 +18,7 @@ new #[Title('Favorites')] class extends Component {
     public function items(): Collection
     {
         return Auth::user()->favorites()
-            ->with('owner')
+            ->with(['owner', 'parent'])
             ->notTrashed()
             ->orderByDesc('type')
             ->orderBy('name')
@@ -62,6 +62,11 @@ new #[Title('Favorites')] class extends Component {
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->owner_id === auth()->id() ? __('You') : $item->owner->name }}</flux:table.cell>
                         <flux:table.cell align="end">
+                            {{-- A folder opens itself, a file its folder. Top-level files open the root; a shared item whose parent the user cannot see has no folder to open. --}}
+                            @if ($item->isFolder() || $item->parent === null || auth()->user()->can('view', $item->parent))
+                                <flux:button size="sm" variant="ghost" icon="folder-open" :aria-label="$item->isFolder() ? __('Open folder') : __('Open containing folder')" data-test="favorite-open-folder"
+                                    :href="route('files', $item->isFolder() ? $item : $item->parent)" wire:navigate />
+                            @endif
                             <flux:button size="sm" variant="ghost" icon="arrow-down-tray" :aria-label="__('Download')"
                                 :href="$item->isFolder() ? route('nodes.zip', $item) : route('nodes.download', $item)" />
                             <flux:button size="sm" variant="ghost" icon="star" wire:click="remove({{ $item->id }})" :aria-label="__('Remove from favorites')" data-test="favorite-remove" />

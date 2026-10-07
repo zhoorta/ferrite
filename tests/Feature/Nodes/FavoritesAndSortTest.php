@@ -49,6 +49,14 @@ describe('sorting', function () {
 });
 
 describe('favorites', function () {
+    it('shows a clickable star on each row', function () {
+        Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
+
+        Livewire::test('pages::files.browser')
+            ->assertSeeHtml('data-test="favorite-star"')
+            ->assertDontSeeHtml('data-test="favorite-mark"');
+    });
+
     it('stars and unstars from the browser', function () {
         $file = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
 
@@ -90,6 +98,36 @@ describe('favorites', function () {
         $this->user->favorites()->attach($file->id);
 
         Livewire::test('pages::files.favorites')->call('remove', $file->id)->assertSee('No favorites yet');
+    });
+
+    it('links to the containing folder from the favorites page', function () {
+        $folder = Node::factory()->for($this->user, 'owner')->create(['name' => 'Docs']);
+        $inside = Node::factory()->file()->for($this->user, 'owner')->inside($folder)->create(['name' => 'in.txt']);
+        $top = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'top.txt']);
+        $this->user->favorites()->attach([$inside->id, $top->id]);
+
+        $this->get(route('favorites'))
+            ->assertSeeHtml('href="'.route('files', $folder).'"')
+            ->assertSeeHtml('href="'.route('files').'"');
+    });
+
+    it('opens a favorited folder itself', function () {
+        $parent = Node::factory()->for($this->user, 'owner')->create(['name' => 'Parent']);
+        $folder = Node::factory()->for($this->user, 'owner')->inside($parent)->create(['name' => 'Docs']);
+        $this->user->favorites()->attach($folder->id);
+
+        $this->get(route('favorites'))->assertSeeHtml('data-test="favorite-open-folder"')
+            ->assertDontSeeHtml('href="'.route('files', $parent).'"');
+    });
+
+    it('hides the folder link when the parent is not visible', function () {
+        $owner = User::factory()->create();
+        $folder = Node::factory()->for($owner, 'owner')->create();
+        $file = Node::factory()->file()->for($owner, 'owner')->inside($folder)->create();
+        $file->sharedWith()->attach($this->user, ['permission' => 'view']);
+        $this->user->favorites()->attach($file->id);
+
+        $this->get(route('favorites'))->assertDontSeeHtml('data-test="favorite-open-folder"');
     });
 
     it('goes away with the node', function () {
