@@ -236,3 +236,32 @@ it('shows the upload controls only where the user can write', function () {
 it('gives the page uploader the application base URL, so its requests hit /uploads and not /uploads/uploads', function () {
     $this->get(route('files'))->assertSee("baseUrl: '".str_replace('/', '\\/', url('/'))."'", false);
 });
+
+it('stores identical content of one owner once but charges each file', function () {
+    uploadAll('a.txt', 'same content')->assertOk();
+    uploadAll('b.txt', 'same content')->assertOk();
+
+    [$a, $b] = [Node::firstWhere('name', 'a.txt'), Node::firstWhere('name', 'b.txt')];
+
+    expect($b->path)->toBe($a->path)
+        ->and($b->id)->not->toBe($a->id)
+        ->and(File::allFiles(config('shed.local_root')))->toHaveCount(1)
+        ->and($this->user->fresh()->used_bytes)->toBe(24);
+});
+
+it('does not share blobs between owners', function () {
+    uploadAll('a.txt', 'same content')->assertOk();
+
+    $this->actingAs(User::factory()->create());
+    uploadAll('b.txt', 'same content')->assertOk();
+
+    expect(Node::firstWhere('name', 'b.txt')->path)->not->toBe(Node::firstWhere('name', 'a.txt')->path)
+        ->and(File::allFiles(config('shed.local_root')))->toHaveCount(2);
+});
+
+it('keeps separate blobs for different content of the same size', function () {
+    uploadAll('a.txt', 'aaaa')->assertOk();
+    uploadAll('b.txt', 'bbbb')->assertOk();
+
+    expect(File::allFiles(config('shed.local_root')))->toHaveCount(2);
+});

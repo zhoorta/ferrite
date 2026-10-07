@@ -171,3 +171,24 @@ describe('automatic purge', function () {
             ->and($inside->path)->not->toBeNull();
     });
 });
+
+it('keeps a shared blob until its last node is purged', function () {
+    $a = storedFile($this->user, 'a.txt', 'same');
+    $b = $a->replicate();
+    $b->owner_id = $a->owner_id;
+    $b->name = 'b.txt';
+    $b->save();
+
+    $filesystem = app(StorageManager::class)->filesystem($a->disk);
+    $filesystem->put("thumbnails/{$a->path}.jpg", 'thumb');
+
+    app(PurgeNode::class)->handle($this->user, trashIt($this->user, $a));
+
+    expect(blobExists($b))->toBeTrue()
+        ->and($filesystem->exists("thumbnails/{$b->path}.jpg"))->toBeTrue();
+
+    app(PurgeNode::class)->handle($this->user, trashIt($this->user, $b));
+
+    expect($filesystem->exists($b->path))->toBeFalse()
+        ->and($filesystem->exists("thumbnails/{$b->path}.jpg"))->toBeFalse();
+});

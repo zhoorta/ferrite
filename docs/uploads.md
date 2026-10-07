@@ -14,6 +14,12 @@ Quota is checked when the upload starts and again on completion. It is not reser
 
 `uploads:prune` (daily) removes unfinished uploads untouched for `shed.upload_ttl_hours`.
 
+## Deduplication
+
+Identical files of the same owner on the same disk (same SHA-256 and size) share one blob: the second upload skips the write and its node points at the existing key. Scope is per owner, so nobody can learn whether someone else stores a file. Quota is still charged per node at full size, so dedup only saves disk space.
+
+There is no reference count to drift: a blob's users are the `nodes` rows with that `disk_id` and `path` (indexed). `PurgeNode` deletes the rows first, then removes the blob and its thumbnail only if no node still uses it. On upload, the source node is locked (`FOR UPDATE`) inside the transaction that creates the new node, so a concurrent purge either finishes first (the upload then writes its own copy) or sees the new node. Not done: skipping the upload itself (needs a client-side hash) and merging duplicates that were stored before this change.
+
 ## Deployment limits
 
 Chunks are `SHED_CHUNK_SIZE` bytes (default 5 MiB). The web server's body limit must be larger than that (nginx `client_max_body_size`). PHP's `upload_max_filesize` and `post_max_size` do not apply, since the body is not a form upload. Tested end to end with a 100 MB file; multi-GB testing is still open.

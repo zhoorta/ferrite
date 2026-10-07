@@ -33,6 +33,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 7. Docker image, install docs, pre-publication security review (see `docs/install.md`, `docs/security.md`; Docker image written but not built/run end to end: no Docker on the dev machine; 318 tests)
 - [x] 8. Cosy design: warm cream and terracotta look, Nunito and Fraunces, twelve selectable themes with Plum as default (see `docs/themes.md`; 330 tests)
 
+- [x] 8b. Deduplication: identical files of one owner share a blob, deleted with its last node (see `docs/uploads.md`; 338 tests)
 - [ ] 9. UI polish: calmer default theme, no gradient glow, `bw` fixes (see `docs/ui-polish.md`)
 - [ ] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23):
   - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out

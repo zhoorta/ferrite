@@ -87,6 +87,11 @@ class PurgeNode
         $disks = StorageDisk::query()->whereKey(array_unique(array_column($files, 'disk_id')))->get()->keyBy('id');
 
         foreach ($files as $file) {
+            // Identical files share a blob; it goes with its last node.
+            if (Node::query()->where('disk_id', $file['disk_id'])->where('path', $file['path'])->exists()) {
+                continue;
+            }
+
             try {
                 $filesystem = $this->storage->filesystem($disks[$file['disk_id']]);
                 $filesystem->delete($file['path']);
