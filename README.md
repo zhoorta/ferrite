@@ -25,7 +25,11 @@ Not included (on purpose, for now): sync clients, WebDAV, office document previe
 
 Project page: https://ferrite.stackcare.pt · Live demo: https://demo.ferrite.stackcare.pt
 
-## Run it with Docker
+## Install
+
+Two ways: Docker (below) or a standard Laravel install on a server that already runs PHP and nginx or Apache ([docs/install.md](docs/install.md#without-docker-standard-laravel-install): PHP 8.3+, Composer, a queue worker and a cron entry).
+
+### With Docker
 
 You need a server with Docker and a domain name pointing at it.
 
@@ -45,8 +49,6 @@ docker compose exec ferrite php artisan ferrite:user you@example.com --admin
 
 Everything that changes lives in one volume, `/data`. Back it up, and keep `APP_KEY` safe: see [docs/install.md](docs/install.md) for backups, upgrades and configuration.
 
-> The Docker setup has been reviewed and its parts exercised individually, but the image itself has not been built and run end to end by the author yet. If it fails to build, please open an issue.
-
 ## Develop
 
 ```sh
@@ -62,21 +64,18 @@ vendor/bin/pint && vendor/bin/phpstan analyse
 
 | | |
 | --- | --- |
-| [docs/install.md](docs/install.md) | Install, configuration, reverse proxy, backup, upgrade |
+| [docs/install.md](docs/install.md) | Install (Docker or standard Laravel), configuration, reverse proxy, backup, upgrade |
 | [docs/uploads.md](docs/uploads.md) | The chunked upload protocol |
 | [docs/serving-files.md](docs/serving-files.md) | How files are served safely |
 | [docs/sharing.md](docs/sharing.md) | Sharing with users and links |
 | [docs/storage-search-activity.md](docs/storage-search-activity.md) | Disks, search, activity log |
 | [docs/users.md](docs/users.md) | Accounts, registration, trash |
 | [docs/security.md](docs/security.md) | Security review: what was checked, known limits |
+| [docs/public-site.md](docs/public-site.md) | Project page and demo mode (how ferrite.stackcare.pt runs) |
 
 ## Security
 
 Ferrite serves files uploaded by users from its own origin, so read [docs/security.md](docs/security.md) before exposing an instance to people you do not trust. Report vulnerabilities privately to the maintainer rather than in a public issue.
-
-## License
-
-Not chosen yet.
 
 ## Licence
 

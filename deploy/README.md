@@ -7,6 +7,8 @@ Neither touches your other sites.
 
 ## Private instance (native)
 
+The general steps are in [docs/install.md](../docs/install.md#without-docker-standard-laravel-install); this is the same list with this server's names.
+
 Needs PHP 8.5-fpm with `gd exif zip intl bcmath pdo_sqlite` (check `php -m`), Composer, and Node (build only).
 
 ```sh
@@ -19,7 +21,6 @@ sudo chown -R www-data:www-data storage bootstrap/cache database
 php artisan optimize
 ```
 
-Without `.env` write access for `www-data` it only needs to read; keep it `640`.
 
 **nginx and HTTPS**
 
@@ -34,12 +35,12 @@ Check the socket name (`ls /run/php/`) matches `php8.5-fpm.sock`. In `/etc/php/8
 **Queue workers and scheduler** (uploads are finished by the `uploads` worker, so this is not optional)
 
 ```sh
-sudo cp deploy/ferrite-queue@.service /etc/systemd/system/
-sudo systemctl enable --now ferrite-queue@uploads ferrite-queue@default
+sudo cp deploy/ferrite-uploads.service deploy/ferrite-queue.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now ferrite-uploads ferrite-queue
 echo '* * * * * www-data cd /var/www/ferrite && php artisan schedule:run >> /dev/null 2>&1' | sudo tee /etc/cron.d/ferrite
 ```
 
-After every deploy: `sudo systemctl restart ferrite-queue@uploads ferrite-queue@default` (workers keep old code in memory).
+After every deploy: `sudo systemctl restart ferrite-uploads ferrite-queue` (workers keep old code in memory).
 
 **Your account**
 
@@ -53,7 +54,7 @@ Sign in at `/login`, turn on 2FA or a passkey. For files, add the Hetzner Storag
 
 ```sh
 cd /var/www/ferrite && git pull && composer install --no-dev -o && npm ci && npm run build \
-  && php artisan migrate --force && php artisan optimize && sudo systemctl restart ferrite-queue@uploads ferrite-queue@default
+  && php artisan migrate --force && php artisan optimize && sudo systemctl restart ferrite-uploads ferrite-queue
 ```
 
 **Backups**: `database/database.sqlite`, `.env` (the `APP_KEY`), and the local files folder if you use one (`storage/app/private/ferrite`).

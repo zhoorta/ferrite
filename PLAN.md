@@ -68,7 +68,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 
 ## Ideas (not scheduled)
 
-Suggested next: run the remote test against the real Storage Box (rest of step 10), then the Docker image. Command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
+Suggested next: deploy (see step 13b), then S3 against a real service. The remote SFTP test command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
 
 ```sh
 FERRITE_TEST_SFTP_HOST=u123.your-storagebox.de FERRITE_TEST_SFTP_PORT=23 \
@@ -83,7 +83,6 @@ php artisan test --compact tests/Feature/Remote
 - API for scripts and other apps (not scheduled, wait for a real use; not sync, not WebDAV): personal access tokens (Sanctum) created in settings, scopes read-only or read-write, optionally limited to one folder; endpoints for list, download with Range, upload, mkdir, move and trash, calling the existing `app/Actions/Nodes` and `NodePolicy`; uploads reuse the chunked resumable protocol (`docs/uploads.md`); same quota, activity log and rate limits; must go through the shared decrypting stream wrapper of step 15.
 - Google Drive import (one-way, not scheduled): "Connect Google Drive" via OAuth, then copy the Drive tree into Ferrite (folders to folder nodes, files downloaded and stored as normal blobs; Docs/Sheets/Slides exported to DOCX/XLSX/PPTX or PDF). Nothing stays on Drive afterwards, so no sync or ownership problems; serves "replace Google Drive". Needs the `drive.readonly` scope; Google treats that as restricted, so each deployment creates its own Google Cloud project and enters client ID and secret (like Nextcloud and rclone), and the refresh token is kept encrypted per user and revoked on Disconnect (note in `docs/security.md`). Run as a queued job with progress, skip or rename on name conflicts, dedup by sha256 as usual.
 - Google Drive as a storage disk or browse-in-place (not planned): a Flysystem Drive adapter would only hold Ferrite's own random-key blobs; browsing existing files needs nodes Ferrite does not own (delete, rename, quota and rescan rules, Docs export, Drive changes API). Revisit only after the import exists and there is demand.
-- Also: build the Docker image once to prove the install docs.
 - Follow-ups from the favorites and usage work: a "clean up" shortcut on the Usage page (select the biggest files and trash them, or link to the duplicate finder); sorting and bulk actions on the Favorites page; a per-disk bar for stored vs counted bytes on the admin Storage page; show uploads that failed while the tab was closed (today only a live tab sees the failure).
 
 ## Risks

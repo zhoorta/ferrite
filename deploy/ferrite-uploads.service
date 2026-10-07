@@ -1,0 +1,14 @@
+[Unit]
+Description=Ferrite upload worker (finishes uploads: hash, copy to the disk)
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/ferrite
+Restart=always
+RestartSec=2
+# "uploads" is a queue connection with a long retry_after (see config/queue.php), not only a queue name.
+ExecStart=/usr/bin/php artisan queue:work uploads --queue=uploads --tries=1 --timeout=0 --sleep=1 --max-time=3600
+
+[Install]
+WantedBy=multi-user.target
