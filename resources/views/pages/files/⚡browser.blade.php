@@ -276,7 +276,8 @@ new #[Title('Files')] class extends Component {
 
             <flux:table.rows>
                 @foreach ($this->items as $item)
-                    <flux:table.row :key="$item->id" data-test="node-row">
+                    <flux:table.row :key="$item->id" data-test="node-row" class="group/row"
+                        x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); $el.querySelector('[data-test=row-actions]')?.click()">
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
                                 @if ($item->isFile() && app(Thumbnailer::class)->supports($item))
@@ -301,7 +302,8 @@ new #[Title('Files')] class extends Component {
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->updated_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" />
+                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" :aria-label="__('Actions')" data-test="row-actions"
+                                    class="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/row:opacity-100 [@media(hover:hover)]:group-focus-within/row:opacity-100" />
 
                                 <flux:menu>
                                     @if ($item->isFolder())
