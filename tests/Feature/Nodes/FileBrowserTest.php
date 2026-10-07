@@ -174,3 +174,21 @@ it('shows a ".." row that leads to the parent folder, but not at the root', func
     $this->get(route('files', $parent))->assertOk()->assertSee('data-href="'.route('files').'"', false);
     $this->get(route('files', $child))->assertOk()->assertSee('data-href="'.route('files', $parent).'"', false)->assertSee('This folder is empty');
 });
+
+it('steps through the files of the folder in the preview', function () {
+    $folder = Node::factory()->for($this->user, 'owner')->create();
+    Node::factory()->inside($folder)->create(['name' => 'Subfolder']);
+    $a = storedFile($this->user, 'a.txt', 'a', $folder);
+    $b = storedFile($this->user, 'b.txt', 'b', $folder);
+
+    Livewire::test('pages::files.browser', ['folder' => $folder])
+        ->call('preview', $a->id)
+        ->assertSet('previewId', $a->id)
+        ->call('previewStep', -1)
+        ->assertSet('previewId', $a->id)
+        ->call('previewStep', 1)
+        ->assertSet('previewId', $b->id)
+        ->assertSee('2 / 2')
+        ->call('previewStep', 1)
+        ->assertSet('previewId', $b->id);
+});

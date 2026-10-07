@@ -166,8 +166,37 @@ new #[Title('Files')] class extends Component {
         abort_unless($node->isFile() && ! $node->isTrashed(), 404);
 
         $this->previewId = $node->id;
-        unset($this->previewNode, $this->previewKind, $this->previewText);
+        unset($this->previewNode, $this->previewKind, $this->previewText, $this->previewNeighbours);
         Flux::modal('preview')->show();
+    }
+
+    /**
+     * Position of the previewed file among the files of this folder, with its neighbours.
+     *
+     * @return array{prev: ?int, next: ?int, position: int, total: int}
+     */
+    #[Computed]
+    public function previewNeighbours(): array
+    {
+        $ids = $this->items->filter(fn (Node $node) => $node->isFile())->pluck('id')->values();
+        $index = $ids->search($this->previewId);
+
+        return [
+            'prev' => $index === false ? null : $ids->get($index - 1 < 0 ? -1 : $index - 1),
+            'next' => $index === false ? null : $ids->get($index + 1),
+            'position' => $index === false ? 0 : $index + 1,
+            'total' => $ids->count(),
+        ];
+    }
+
+    /** Preview the previous (-1) or next (1) file of the folder. */
+    public function previewStep(int $direction): void
+    {
+        $id = $this->previewNeighbours[$direction < 0 ? 'prev' : 'next'];
+
+        if ($id !== null) {
+            $this->preview($id);
+        }
     }
 
     public function closePreview(): void
@@ -362,7 +391,9 @@ new #[Title('Files')] class extends Component {
 
     <flux:modal name="preview" class="w-full max-w-4xl" x-on:close="$wire.closePreview()">
         @if ($this->previewNode)
-            <div class="space-y-4" wire:key="preview-{{ $this->previewNode->id }}">
+            <div class="space-y-4" wire:key="preview-{{ $this->previewNode->id }}"
+                x-on:keydown.left.window="if (!$event.target.closest('audio, video, input, textarea')) $wire.previewStep(-1)"
+                x-on:keydown.right.window="if (!$event.target.closest('audio, video, input, textarea')) $wire.previewStep(1)">
                 <flux:heading size="lg" class="truncate pe-8">{{ $this->previewNode->name }}</flux:heading>
 
                 <x-file-preview
@@ -371,7 +402,13 @@ new #[Title('Files')] class extends Component {
                     :name="$this->previewNode->name"
                     :text="$this->previewText" />
 
-                <div class="flex justify-end">
+                <div class="flex items-center justify-between gap-2">
+                    @php($nav = $this->previewNeighbours)
+                    <div class="flex items-center gap-2" data-test="preview-nav">
+                        <flux:button size="sm" icon="chevron-left" wire:click="previewStep(-1)" :disabled="$nav['prev'] === null" :aria-label="__('Previous')" />
+                        <flux:text size="sm">{{ $nav['position'] }} / {{ $nav['total'] }}</flux:text>
+                        <flux:button size="sm" icon="chevron-right" wire:click="previewStep(1)" :disabled="$nav['next'] === null" :aria-label="__('Next')" />
+                    </div>
                     <flux:button icon="arrow-down-tray" :href="route('nodes.download', $this->previewNode)">{{ __('Download') }}</flux:button>
                 </div>
             </div>
