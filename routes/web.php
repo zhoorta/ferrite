@@ -1,12 +1,21 @@
 <?php
 
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\NodeFileController;
 use App\Http\Controllers\ShareFileController;
 use App\Http\Controllers\UploadController;
 use App\Http\Middleware\SharePageHeaders;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', 'files')->name('home');
+Route::get('/', function () {
+    if (config('ferrite.landing') && ! auth()->check()) {
+        return view('landing');
+    }
+
+    return redirect()->route('files');
+})->name('home');
+
+Route::post('demo', DemoController::class)->middleware(['guest', 'throttle:6,60'])->name('demo.start');
 
 // Public share links. Node ids must be numeric so they never clash with the action segments.
 Route::middleware(['throttle:120,1', SharePageHeaders::class])->prefix('s/{token}')->group(function () {

@@ -51,6 +51,17 @@
             </div>
         </form>
 
+        @if (\App\Support\Demo::enabled())
+            <form method="POST" action="{{ route('demo.start') }}" class="flex flex-col gap-2">
+                @csrf
+                @error('demo')
+                    <flux:text class="text-center text-red-600 dark:text-red-400">{{ $message }}</flux:text>
+                @enderror
+                <flux:button type="submit" class="w-full" data-test="demo-button">{{ __('Try the demo') }}</flux:button>
+                <flux:text class="text-center text-xs">{{ __('A throwaway account with sample files, deleted after :minutes minutes.', ['minutes' => config('ferrite.demo.ttl_minutes')]) }}</flux:text>
+            </form>
+        @endif
+
         @if (\App\Support\Registration::open())
             <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
                 <span>{{ __('Don\'t have an account?') }}</span>

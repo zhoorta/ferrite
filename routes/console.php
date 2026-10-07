@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Demo;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -11,3 +12,4 @@ Artisan::command('inspire', function () {
 Schedule::command('uploads:prune')->daily();
 Schedule::command('activity:prune')->daily();
 Schedule::command('trash:purge')->daily();
+Schedule::command('demo:prune')->everyTenMinutes()->when(fn () => Demo::enabled());

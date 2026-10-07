@@ -12,6 +12,6 @@ class Registration
      */
     public static function open(): bool
     {
-        return config('ferrite.registration') || ! User::query()->exists();
+        return ! Demo::enabled() && (config('ferrite.registration') || ! User::query()->exists());
     }
 }

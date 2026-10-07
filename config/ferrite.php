@@ -81,4 +81,39 @@ return [
 
     'local_root' => env('FERRITE_LOCAL_ROOT', storage_path('app/private/ferrite')),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Landing page
+    |--------------------------------------------------------------------------
+    |
+    | When true, visitors who are not signed in see the project page at "/" instead of the
+    | sign-in form (used on ferrite.stackcare.pt). Leave it off for an ordinary install.
+    |
+    */
+
+    'landing' => (bool) env('FERRITE_LANDING', false),
+
+    'repo_url' => env('FERRITE_REPO_URL', 'https://github.com/zhoorta/ferrite'),
+
+    'demo_url' => env('FERRITE_DEMO_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Demo mode
+    |--------------------------------------------------------------------------
+    |
+    | A public try-out instance: the sign-in page offers "Try the demo", which creates a throwaway
+    | account with sample files and a small quota. Accounts older than `ttl_minutes` are deleted
+    | with their files (`demo:prune`, every 10 minutes). Registration is closed and the account,
+    | password and security settings are locked.
+    |
+    */
+
+    'demo' => [
+        'enabled' => (bool) env('FERRITE_DEMO', false),
+        'ttl_minutes' => (int) env('FERRITE_DEMO_TTL_MINUTES', 120),
+        'quota_mb' => (int) env('FERRITE_DEMO_QUOTA_MB', 20),
+        'max_accounts' => (int) env('FERRITE_DEMO_MAX_ACCOUNTS', 100),
+    ],
+
 ];
