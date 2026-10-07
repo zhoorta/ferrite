@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- PHP runtime base: FrankenPHP (Caddy + PHP in one process) with the extensions Ferrite needs
-FROM dunglas/frankenphp:1-php8.4-bookworm AS base
+FROM dunglas/frankenphp:1-php8.5-bookworm AS base
 
 RUN install-php-extensions gd exif zip intl bcmath pcntl opcache pdo_mysql pdo_sqlite \
     && apt-get update \
