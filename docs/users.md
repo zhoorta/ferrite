@@ -2,7 +2,7 @@
 
 ## Getting the first account
 
-On a fresh install (no users yet) the sign-up page is open: the first person to register becomes the **admin**, with a verified e-mail, so no mail setup is needed to get in. Once there is a user, sign-up closes (`/register` is 404 and the link disappears). Set `FERRITE_REGISTRATION=true` to let anyone register as an ordinary user, which is rarely what a private instance wants.
+On a fresh install (no users yet) every visitor is sent to a **Welcome** page to create the administrator account: the first person to register becomes the **admin**, with a verified e-mail, so no mail setup is needed to get in, and the sign-in form only appears afterwards. Whoever opens the page first gets the account, so do it right after the install (or create it from the shell with `php artisan ferrite:user you@example.com --admin`). A demo instance (`FERRITE_DEMO=true`) has no setup page and no admin by design. Once there is a user, sign-up closes (`/register` is 404 and the link disappears). Set `FERRITE_REGISTRATION=true` to let anyone register as an ordinary user, which is rarely what a private instance wants.
 
 From then on admins add people under **Users** (`/admin/users`).
 

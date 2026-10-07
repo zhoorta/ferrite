@@ -6,9 +6,14 @@ use App\Http\Controllers\ShareFileController;
 use App\Http\Controllers\UploadController;
 use App\Http\Middleware\DisableInDemo;
 use App\Http\Middleware\SharePageHeaders;
+use App\Support\Registration;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    if (Registration::needsSetup()) {
+        return redirect()->route('register');
+    }
+
     if (config('ferrite.landing')) {
         return view('landing');
     }

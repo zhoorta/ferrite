@@ -4,6 +4,8 @@ use App\Models\Share;
 use App\Models\User;
 
 it('sends baseline security headers on pages', function () {
+    User::factory()->create();
+
     $response = $this->get(route('login'))->assertOk();
 
     expect($response->headers->get('X-Content-Type-Options'))->toBe('nosniff')

@@ -172,7 +172,7 @@ Workers keep the old code in memory, so restart both after every upgrade. With S
 
 ### 5. First account
 
-Open the site and register: the first account becomes the admin and registration closes afterwards. Or create it from the shell:
+Open the site: while there are no users it shows a **Welcome** page to create the administrator account (name, e-mail, password), signs you in, and registration closes. Do this straight after the install, because whoever reaches the page first becomes the admin; if the server is already reachable from the internet and you cannot do it right away, create the account from the shell instead:
 
 ```sh
 php artisan ferrite:user you@example.com --admin

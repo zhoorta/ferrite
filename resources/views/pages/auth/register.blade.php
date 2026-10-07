@@ -1,6 +1,10 @@
 <x-layouts::auth :title="__('Register')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+        @if (\App\Support\Registration::needsSetup())
+            <x-auth-header :title="__('Welcome to Ferrite')" :description="__('Create the administrator account to get started. You can add other people afterwards.')" />
+        @else
+            <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+        @endif
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -56,7 +60,7 @@
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">
-                    {{ __('Create account') }}
+                    {{ \App\Support\Registration::needsSetup() ? __('Create administrator account') : __('Create account') }}
                 </flux:button>
             </div>
         </form>

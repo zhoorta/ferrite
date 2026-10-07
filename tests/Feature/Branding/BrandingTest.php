@@ -8,6 +8,8 @@ it('ships the favicon files the pages point to', function () {
         expect(public_path($file))->toBeFile();
     }
 
+    User::factory()->create();
+
     $this->get(route('login'))
         ->assertSee('href="/favicon.svg"', false)
         ->assertSee('href="/favicon.ico"', false)

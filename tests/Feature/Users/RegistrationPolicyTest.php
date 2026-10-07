@@ -38,5 +38,42 @@ it('can be opened with FERRITE_REGISTRATION, creating ordinary unverified users'
 });
 
 it('sends the front door to the files', function () {
+    User::factory()->create();
+
     $this->get('/')->assertRedirect(route('files'));
+});
+
+describe('first run', function () {
+    it('sends visitors of a fresh install to create the admin account', function () {
+        $this->get('/')->assertRedirect(route('register'));
+        $this->get(route('login'))->assertRedirect(route('register'));
+        $this->get(route('files'))->assertRedirect(route('login'));
+        $this->get(route('register'))->assertOk()->assertSee('Welcome to Ferrite')->assertSee('Create administrator account');
+    });
+
+    it('goes back to the normal front door and sign-in once the admin exists', function () {
+        $this->post(route('register.store'), registration())->assertSessionHasNoErrors();
+        auth()->logout();
+
+        $this->get('/')->assertRedirect(route('files'));
+        $this->get(route('login'))->assertOk()->assertSee('Log in to your account');
+        $this->get(route('register'))->assertNotFound();
+    });
+
+    it('shows the landing page rather than the setup page only after setup', function () {
+        config(['ferrite.landing' => true]);
+
+        $this->get('/')->assertRedirect(route('register'));
+
+        User::factory()->create();
+        $this->get('/')->assertOk()->assertSee('Your files, on your server.');
+    });
+
+    it('does not ask a demo instance for an admin', function () {
+        config(['ferrite.demo.enabled' => true]);
+
+        $this->get('/')->assertRedirect(route('files'));
+        $this->get(route('login'))->assertOk()->assertSee('Try the demo');
+        $this->get(route('register'))->assertNotFound();
+    });
 });

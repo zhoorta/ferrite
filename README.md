@@ -56,7 +56,7 @@ $EDITOR ferrite.env                                               # set APP_KEY 
 docker compose up -d --build
 ```
 
-Put a reverse proxy with HTTPS in front of port 8080 (examples in [docs/install.md](docs/install.md)), open your `APP_URL`, and **register**: the first account becomes the admin, and registration closes afterwards. Add everyone else under **Users**. To create or recover accounts from the command line:
+Put a reverse proxy with HTTPS in front of port 8080 (examples in [docs/install.md](docs/install.md)), open your `APP_URL`: a fresh install shows a **Welcome** page where you create the administrator account, and registration closes afterwards. Do this right after the first start, since whoever opens the page first becomes the admin. Add everyone else under **Users**. To create or recover accounts from the command line instead:
 
 ```sh
 docker compose exec ferrite php artisan ferrite:user you@example.com --admin

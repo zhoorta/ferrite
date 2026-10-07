@@ -14,4 +14,13 @@ class Registration
     {
         return ! Demo::enabled() && (config('ferrite.registration') || ! User::query()->exists());
     }
+
+    /**
+     * A fresh install with no accounts yet: visitors are sent to create the admin account instead
+     * of to a sign-in form nobody can use. Never on a demo instance, which has no admin by design.
+     */
+    public static function needsSetup(): bool
+    {
+        return ! Demo::enabled() && ! User::query()->exists();
+    }
 }

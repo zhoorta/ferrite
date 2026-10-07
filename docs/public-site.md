@@ -6,7 +6,7 @@ Optional features for running Ferrite as a public project site. An ordinary inst
 
 With `FERRITE_LANDING=true` the landing page is shown at `/` to everyone instead of redirecting to the files. The button top right says **Sign in** (to `/login`) or, once signed in, **Open my files**. The page links to the source (`FERRITE_REPO_URL`) and to a demo (`FERRITE_DEMO_URL`) when set, and lets visitors try the thirteen themes live.
 
-The same install can be your private instance and the public page at one address: keep `FERRITE_REGISTRATION=false`, so strangers can only reach the page and the sign-in form. Create the first account from the shell (`php artisan ferrite:user you@example.com --admin`), because web sign-up is closed once registration is off and the landing page is on. Turn on 2FA or a passkey for it.
+The same install can be your private instance and the public page at one address: keep `FERRITE_REGISTRATION=false`, so strangers can only reach the page and the sign-in form. On a fresh install `/` sends you to the Welcome page to create the admin account; once it exists, `/` shows the landing page. Turn on 2FA or a passkey for it.
 
 ## Demo mode
 
