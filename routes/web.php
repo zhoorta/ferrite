@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('search', 'pages::files.search')->name('search');
     Route::livewire('activity', 'pages::files.activity')->name('activity');
     Route::livewire('favorites', 'pages::files.favorites')->name('favorites');
+    Route::livewire('usage', 'pages::files.usage')->name('usage');
     Route::livewire('shared', 'pages::files.shared')->name('shared');
     Route::livewire('trash', 'pages::files.trash')->name('trash');
 });

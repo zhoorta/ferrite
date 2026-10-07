@@ -137,6 +137,11 @@ new #[Title('Users')] class extends Component {
                     <flux:table.cell class="hidden sm:table-cell">
                         {{ Number::fileSize($user->used_bytes) }}
                         {{ $user->quota_bytes === null ? '' : __('of :quota', ['quota' => Number::fileSize($user->quota_bytes)]) }}
+                        @if ($user->quota_bytes)
+                            <div class="mt-1 h-1.5 w-32 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                <div class="h-full rounded-full bg-accent" style="width: {{ min(100, round($user->used_bytes / $user->quota_bytes * 100)) }}%"></div>
+                            </div>
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell align="end">
                         <flux:dropdown position="bottom" align="end">

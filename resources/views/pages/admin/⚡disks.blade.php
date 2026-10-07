@@ -7,6 +7,7 @@ use App\Actions\Storage\TestStorageDisk;
 use App\Enums\DiskDriver;
 use App\Models\StorageDisk;
 use App\Support\StorageManager;
+use App\Support\StorageUsage;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,17 @@ new #[Title('Storage')] class extends Component {
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Bytes really stored per disk id: a blob shared by several nodes (deduplication) counts once.
+     *
+     * @return array<int, int>
+     */
+    #[Computed]
+    public function physical(): array
+    {
+        return app(StorageUsage::class)->physicalByDisk();
     }
 
     #[Computed]
@@ -141,7 +153,10 @@ new #[Title('Storage')] class extends Component {
                         </div>
                         <flux:text size="sm">
                             {{ trans_choice(':count file|:count files', $disk->nodes_count) }},
-                            {{ \Illuminate\Support\Number::fileSize((int) $disk->nodes_sum_size) }}
+                            {{ \Illuminate\Support\Number::fileSize($this->physical[$disk->id] ?? 0) }} {{ __('stored') }}
+                            @if ((int) $disk->nodes_sum_size > ($this->physical[$disk->id] ?? 0))
+                                ({{ __(':size counted in quotas, the rest is shared by duplicates', ['size' => \Illuminate\Support\Number::fileSize((int) $disk->nodes_sum_size)]) }})
+                            @endif
                         </flux:text>
                     </div>
 

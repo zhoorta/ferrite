@@ -36,7 +36,8 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 8b. Deduplication: identical files of one owner share a blob, deleted with its last node (see `docs/uploads.md`; 338 tests)
 - [x] 9. UI polish: new default Ferrite theme, the twelve non-vintage themes removed, image row thumbnails sized like the other icons (see `docs/ui-polish.md`)
 - [x] 11. Bulk actions: tick rows (list and grid, select all), then download as one ZIP, move or trash; dragging a ticked row moves all ticked rows (see `docs/ui-polish.md`; checked by hand)
-- [x] 12. Copy, sorting and favorites (see `docs/ui-polish.md`; not yet checked by hand)
+- [x] 12. Copy, sorting and favorites (see `docs/ui-polish.md`; checked by hand)
+- [x] 13. Usage page: quota, breakdown by type, biggest folders and files, trash, deduplication savings; stored vs counted bytes per disk for admins (see `docs/ui-polish.md`)
 - [ ] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23):
   - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out
   - [ ] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100%
@@ -48,7 +49,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 
 Suggested next: step 10 (large files on remote disks).
 
-- Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip); storage usage breakdown per user and per disk.
+- Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip).
 - Medium: upload-only drop-box links for guests; e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
 - Bigger: versioning (the thing most missed after a month); content search (needs an indexer); API tokens instead of WebDAV.
 - Also: build the Docker image once to prove the install docs.

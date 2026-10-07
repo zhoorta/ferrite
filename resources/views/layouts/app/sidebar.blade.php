@@ -26,6 +26,9 @@
                 <flux:sidebar.item icon="clock" :href="route('activity')" :current="request()->routeIs('activity')" wire:navigate>
                     {{ __('Activity') }}
                 </flux:sidebar.item>
+                <flux:sidebar.item icon="chart-pie" :href="route('usage')" :current="request()->routeIs('usage')" wire:navigate>
+                    {{ __('Usage') }}
+                </flux:sidebar.item>
                 <flux:sidebar.item icon="trash" :href="route('trash')" :current="request()->routeIs('trash')" wire:navigate>
                     {{ __('Trash') }}
                 </flux:sidebar.item>
