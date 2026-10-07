@@ -8,7 +8,7 @@ use Livewire\Component;
 use Livewire\Attributes\Title;
 
 new #[Title('Appearance settings')] class extends Component {
-    public string $palette = 'plum';
+    public string $palette = 'ferrite';
 
     public function mount(): void
     {
@@ -34,8 +34,7 @@ new #[Title('Appearance settings')] class extends Component {
         <div class="grid gap-2">
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('Theme') }}">
                 @foreach ([
-                    'plum' => [__('Plum'), '#4d2f4a'],
-                    'light' => [__('Light'), '#f4ebdb'],
+                    'ferrite' => [__('Ferrite'), '#2a2724'],
                     'mac' => [__('Classic Mac'), '#ffffff'],
                     'desk95' => [__('Desktop 95'), '#c0c0c0'],
                     'zine' => [__('Plain page'), '#ffffff'],
@@ -43,16 +42,6 @@ new #[Title('Appearance settings')] class extends Component {
                     'phosphor' => [__('Green phosphor'), '#020f06'],
                     'commodore' => [__('Commodore'), '#352879'],
                     'amiga' => [__('Amiga'), '#0055aa'],
-                    'wood' => [__('Wood'), '#4a3a2e'],
-                    'teal' => [__('Teal'), '#2a4e53'],
-                    'forest' => [__('Forest'), '#385436'],
-                    'midnight' => [__('Midnight'), '#314a72'],
-                    'olive' => [__('Olive'), '#555128'],
-                    'berry' => [__('Berry'), '#6b2f4a'],
-                    'charcoal' => [__('Charcoal'), '#403d3a'],
-                    'sage' => [__('Sage'), '#566b58'],
-                    'slate' => [__('Slate'), '#435364'],
-                    'bw' => [__('Black & white'), '#0c0c0c'],
                 ] as $key => [$label, $colour])
                     <button type="button" role="radio" aria-checked="{{ $palette === $key ? 'true' : 'false' }}" wire:click="$set('palette', '{{ $key }}')"
                         class="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2.5 dark:border-zinc-700 text-start text-sm text-zinc-800 transition hover:border-accent aria-checked:border-accent aria-checked:ring-2 aria-checked:ring-accent/40 dark:text-white">

@@ -43,11 +43,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
-    /** Themes a user can pick in the appearance settings: the cream light theme and the dark palettes. */
-    public const PALETTES = ['light', 'mac', 'desk95', 'zine', 'amber', 'phosphor', 'commodore', 'amiga', 'plum', 'wood', 'teal', 'forest', 'midnight', 'olive', 'berry', 'charcoal', 'sage', 'slate', 'bw'];
+    /** Themes a user can pick in the appearance settings: the default Ferrite theme and the vintage ones. */
+    public const PALETTES = ['ferrite', 'mac', 'desk95', 'zine', 'amber', 'phosphor', 'commodore', 'amiga'];
 
     /** Palettes that render in light mode (no `dark` class on `<html>`); every other one is dark. */
-    public const LIGHT_PALETTES = ['light', 'mac', 'desk95', 'zine'];
+    public const LIGHT_PALETTES = ['mac', 'desk95', 'zine'];
 
     public static function isDarkPalette(?string $palette): bool
     {
@@ -55,7 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /** @var array<string, mixed> */
-    protected $attributes = ['palette' => 'plum'];
+    protected $attributes = ['palette' => 'ferrite'];
 
     /**
      * Get the attributes that should be cast.

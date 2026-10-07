@@ -13,11 +13,8 @@ export default defineConfig({
             ],
             refresh: true,
             fonts: [
-                bunny('Nunito', {
+                bunny('Inter', {
                     weights: [400, 500, 600, 700],
-                }),
-                bunny('Fraunces', {
-                    weights: [500, 600, 700],
                 }),
                 bunny('Public Sans', {
                     weights: [400, 500, 600, 700],

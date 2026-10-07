@@ -11,22 +11,22 @@ class AppearanceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_palette_defaults_to_plum_and_is_rendered_on_the_page(): void
+    public function test_palette_defaults_to_ferrite_and_is_rendered_on_the_page(): void
     {
         $this->actingAs($user = User::factory()->create());
 
-        $this->assertSame('plum', $user->fresh()->palette);
-        $this->get(route('appearance.edit'))->assertOk()->assertSee('data-palette="plum"', false);
+        $this->assertSame('ferrite', $user->fresh()->palette);
+        $this->get(route('appearance.edit'))->assertOk()->assertSee('data-palette="ferrite"', false);
     }
 
     public function test_palette_can_be_changed_and_persists(): void
     {
         $this->actingAs($user = User::factory()->create());
 
-        Livewire::test('pages::settings.appearance')->set('palette', 'wood')->assertHasNoErrors();
+        Livewire::test('pages::settings.appearance')->set('palette', 'amiga')->assertHasNoErrors();
 
-        $this->assertSame('wood', $user->fresh()->palette);
-        $this->get(route('appearance.edit'))->assertSee('data-palette="wood"', false);
+        $this->assertSame('amiga', $user->fresh()->palette);
+        $this->get(route('appearance.edit'))->assertSee('data-palette="amiga"', false);
     }
 
     public function test_classic_mac_is_a_light_theme(): void
@@ -39,7 +39,7 @@ class AppearanceTest extends TestCase
 
         $this->assertDoesNotMatchRegularExpression('/<html[^>]*class="[^"]*dark/', $html);
         $this->assertFalse(User::isDarkPalette('mac'));
-        $this->assertTrue(User::isDarkPalette('plum'));
+        $this->assertTrue(User::isDarkPalette('ferrite'));
     }
 
     public function test_amber_terminal_is_a_dark_theme(): void
@@ -67,7 +67,7 @@ class AppearanceTest extends TestCase
             );
         }
 
-        $this->assertSame(['light', 'mac', 'desk95', 'zine'], User::LIGHT_PALETTES);
+        $this->assertSame(['mac', 'desk95', 'zine'], User::LIGHT_PALETTES);
     }
 
     public function test_unknown_palette_is_rejected(): void
@@ -76,7 +76,7 @@ class AppearanceTest extends TestCase
 
         Livewire::test('pages::settings.appearance')->set('palette', 'neon')->assertHasErrors('palette');
 
-        $this->assertSame('plum', $user->fresh()->palette);
+        $this->assertSame('ferrite', $user->fresh()->palette);
     }
 
     public function test_light_theme_drops_the_dark_class(): void
@@ -85,10 +85,10 @@ class AppearanceTest extends TestCase
 
         $this->get(route('appearance.edit'))->assertSee('<html lang="en" class="dark"', false);
 
-        Livewire::test('pages::settings.appearance')->set('palette', 'light')->assertHasNoErrors();
+        Livewire::test('pages::settings.appearance')->set('palette', 'zine')->assertHasNoErrors();
 
         $this->get(route('appearance.edit'))
-            ->assertSee('data-palette="light"', false)
+            ->assertSee('data-palette="zine"', false)
             ->assertDontSee('class="dark"', false);
     }
 }

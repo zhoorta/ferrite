@@ -9,8 +9,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: 'Fraunces', ui-serif, Georgia, serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
     /* Warm "zinc": cream paper in light mode, cocoa in dark mode (matches the logo). */
     --color-zinc-50: #fbf6ec;
@@ -33,11 +33,11 @@
 @layer theme {
     .dark {
         /* Brighter text tones for dark mode (muted text uses zinc-400/500). */
-        /* Plum surfaces. */
-        --color-zinc-700: #6b4562;
-        --color-zinc-800: #4d2f4a;
-        --color-zinc-900: #3c2339;
-        --color-zinc-950: #2a1829;
+        /* Ferrite (default): warm graphite surfaces, rust accent. */
+        --color-zinc-700: #4a4540;
+        --color-zinc-800: #2a2724;
+        --color-zinc-900: #211f1c;
+        --color-zinc-950: #161412;
 
         --color-zinc-200: #f6ecd8;
         --color-zinc-300: #ecdfc4;
@@ -47,90 +47,6 @@
         --color-accent: #e48a5e;
         --color-accent-content: #f0a37c;
         --color-accent-foreground: #2b1a10;
-    }
-}
-
-@layer theme {
-    /* Optional dark palettes (Settings > Appearance); plum is the default above. */
-    .dark[data-palette='wood'] {
-        --color-zinc-700: #66533f;
-        --color-zinc-800: #4a3a2e;
-        --color-zinc-900: #3b2e24;
-        --color-zinc-950: #1c1511;
-    }
-
-    .dark[data-palette='teal'] {
-        --color-zinc-700: #3f6b6d;
-        --color-zinc-800: #2a4e53;
-        --color-zinc-900: #204247;
-        --color-zinc-950: #15302f;
-    }
-
-    .dark[data-palette='forest'] {
-        --color-zinc-700: #4d6a45;
-        --color-zinc-800: #385436;
-        --color-zinc-900: #2c4329;
-        --color-zinc-950: #1e301c;
-    }
-
-    .dark[data-palette='midnight'] {
-        --color-zinc-700: #46618a;
-        --color-zinc-800: #314a72;
-        --color-zinc-900: #263b5d;
-        --color-zinc-950: #182940;
-    }
-
-    .dark[data-palette='olive'] {
-        --color-zinc-700: #6f6a3a;
-        --color-zinc-800: #555128;
-        --color-zinc-900: #443f1f;
-        --color-zinc-950: #2e2b13;
-    }
-
-    .dark[data-palette='berry'] {
-        --color-zinc-700: #8a4560;
-        --color-zinc-800: #6b2f4a;
-        --color-zinc-900: #55233b;
-        --color-zinc-950: #3a1727;
-    }
-
-    .dark[data-palette='charcoal'] {
-        --color-zinc-700: #5a5652;
-        --color-zinc-800: #403d3a;
-        --color-zinc-900: #302e2b;
-        --color-zinc-950: #1d1c1a;
-    }
-
-    .dark[data-palette='sage'] {
-        --color-zinc-700: #6f8470;
-        --color-zinc-800: #566b58;
-        --color-zinc-900: #45574a;
-        --color-zinc-950: #2f3c33;
-    }
-
-    .dark[data-palette='slate'] {
-        --color-zinc-700: #5a6b7d;
-        --color-zinc-800: #435364;
-        --color-zinc-900: #34424f;
-        --color-zinc-950: #222c36;
-    }
-
-    /* Black and white: neutral greys, white text and accent (the only palette that also drops the cream and terracotta). */
-    .dark[data-palette='bw'] {
-        --color-zinc-700: #3d3d3d;
-        --color-zinc-800: #161616;
-        --color-zinc-900: #0c0c0c;
-        --color-zinc-950: #000000;
-
-        --color-zinc-100: #f5f5f5;
-        --color-zinc-200: #ececec;
-        --color-zinc-300: #d9d9d9;
-        --color-zinc-400: #b3b3b3;
-        --color-zinc-500: #8f8f8f;
-
-        --color-accent: #ffffff;
-        --color-accent-content: #ffffff;
-        --color-accent-foreground: #000000;
     }
 }
 
@@ -150,7 +66,7 @@
         border-color: var(--color-zinc-700, currentColor);
     }
 
-    /* Every theme except Light is dark: native controls, scrollbars and defaults follow it. */
+    /* Ferrite and most vintage themes are dark: native controls, scrollbars and defaults follow it. */
     html {
         color-scheme: light;
     }
@@ -190,29 +106,15 @@
     }
 }
 
-/* Cosy paper background: soft glow from the top, faint grain over it. */
+/* Plain page background; the vintage themes draw their own below. */
 .cozy-bg {
     color: var(--color-zinc-800);
     background-color: var(--color-zinc-50);
-    background-image:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgb(251 191 36 / .30), transparent 65%),
-        radial-gradient(ellipse 60% 40% at 100% 100%, rgb(217 121 79 / .14), transparent 70%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .32 0 0 0 0 .2 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-attachment: fixed;
 }
 
 .dark .cozy-bg {
     color: var(--color-zinc-100);
     background-color: var(--color-zinc-800);
-    background-image:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgb(251 191 36 / .22), transparent 65%),
-        radial-gradient(ellipse 60% 40% at 100% 100%, rgb(217 121 79 / .20), transparent 70%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .85 0 0 0 0 .6 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* Black and white: a plain background, no warm glow or paper grain. */
-.dark[data-palette='bw'] .cozy-bg {
-    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgb(255 255 255 / .06), transparent 65%);
 }
 
 /*

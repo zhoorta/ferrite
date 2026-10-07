@@ -34,7 +34,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 8. Cosy design: warm cream and terracotta look, Nunito and Fraunces, twelve selectable themes with Plum as default (see `docs/themes.md`; 330 tests)
 
 - [x] 8b. Deduplication: identical files of one owner share a blob, deleted with its last node (see `docs/uploads.md`; 338 tests)
-- [ ] 9. UI polish: calmer default theme, no gradient glow, `bw` fixes (see `docs/ui-polish.md`)
+- [ ] 9. UI polish: new default Ferrite theme and the twelve non-vintage themes removed (done); image row height and icon indent fixes left (see `docs/ui-polish.md`)
 - [ ] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23):
   - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out
   - [ ] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100%

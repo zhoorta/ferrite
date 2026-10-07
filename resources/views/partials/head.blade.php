@@ -18,7 +18,7 @@
     try {
         const root = document.documentElement;
         if (root.dataset.palette) localStorage.setItem('ferrite.palette', root.dataset.palette);
-        else root.dataset.palette = localStorage.getItem('ferrite.palette') || 'plum';
+        else root.dataset.palette = localStorage.getItem('ferrite.palette') || 'ferrite';
         root.classList.toggle('dark', !{{ \Illuminate\Support\Js::from(\App\Models\User::LIGHT_PALETTES) }}.includes(root.dataset.palette));
     } catch (e) {}
 </script>
