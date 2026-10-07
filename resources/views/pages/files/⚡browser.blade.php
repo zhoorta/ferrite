@@ -13,11 +13,16 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Session;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Files')] class extends Component {
     public ?int $folderId = null;
+
+    /** How the folder is shown: list or grid. Remembered for the session. */
+    #[Session]
+    public string $view = 'list';
 
     public string $name = '';
 
@@ -199,6 +204,11 @@ new #[Title('Files')] class extends Component {
         }
     }
 
+    public function setView(string $view): void
+    {
+        $this->view = $view === 'grid' ? 'grid' : 'list';
+    }
+
     public function closePreview(): void
     {
         $this->previewId = null;
@@ -294,6 +304,12 @@ new #[Title('Files')] class extends Component {
             @endforeach
         </flux:breadcrumbs>
 
+        <div class="flex flex-wrap items-center gap-2">
+        <flux:button.group>
+            <flux:button size="sm" icon="list-bullet" wire:click="setView('list')" :variant="$view === 'list' ? 'filled' : 'ghost'" :aria-label="__('List view')" data-test="view-list" />
+            <flux:button size="sm" icon="squares-2x2" wire:click="setView('grid')" :variant="$view === 'grid' ? 'filled' : 'ghost'" :aria-label="__('Grid view')" data-test="view-grid" />
+        </flux:button.group>
+
         @if ($this->canCreate)
             <div class="flex flex-wrap gap-2">
                 <input type="file" multiple class="hidden" x-ref="files" x-on:change="$store.uploads.pick($event.target.files, target); $event.target.value = ''" data-test="upload-input">
@@ -307,10 +323,56 @@ new #[Title('Files')] class extends Component {
                 </flux:modal.trigger>
             </div>
         @endif
+        </div>
     </div>
 
     @if ($this->items->isEmpty() && ! $this->upUrl)
         <flux:callout icon="folder-open" :heading="__('This folder is empty')" />
+    @elseif ($view === 'grid')
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" data-test="grid">
+            @if ($this->upUrl)
+                <div class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 p-3 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60"
+                    data-test="up-row" data-href="{{ $this->upUrl }}" wire:key="grid-up"
+                    x-on:click="Livewire.navigate($el.dataset.href)">
+                    <flux:icon name="arrow-uturn-left" class="size-8 text-zinc-400" />
+                    <span class="font-medium">..</span>
+                </div>
+            @endif
+            @foreach ($this->items as $item)
+                <div wire:key="grid-{{ $item->id }}" data-test="node-row"
+                    class="group relative flex cursor-pointer flex-col gap-2 rounded-xl border border-zinc-200 p-2 transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
+                    @if ($item->isFolder()) data-href="{{ route('files', $item) }}" @else data-preview="{{ $item->id }}" @endif
+                    x-on:click="if ($event.target.closest('a, button, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
+                    x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
+                    <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                        @if ($item->isFile() && app(Thumbnailer::class)->supports($item))
+                            <span x-data="{ failed: false }" class="flex size-full items-center justify-center">
+                                <img x-show="!failed" x-on:error="failed = true" loading="lazy" alt=""
+                                    src="{{ route('nodes.thumbnail', $item) }}" class="size-full object-cover">
+                                <flux:icon x-show="failed" name="photo" class="size-10 text-zinc-400" />
+                            </span>
+                        @else
+                            <flux:icon :name="$item->isFolder() ? 'folder' : 'document'" class="size-10 text-zinc-400" />
+                        @endif
+                    </div>
+                    <span class="truncate px-1 text-sm font-medium" title="{{ $item->name }}">{{ $item->name }}</span>
+
+                    <div class="absolute end-3 top-3">
+                        <flux:dropdown position="bottom" align="end">
+                            <flux:button variant="filled" size="xs" icon="ellipsis-horizontal" :aria-label="__('Actions')" />
+
+                            <x-node-menu :item="$item" />
+                        </flux:dropdown>
+
+                        <flux:dropdown position="bottom" align="start" class="fixed" data-test="row-context">
+                            <button type="button" class="size-0" tabindex="-1" aria-hidden="true"></button>
+
+                            <x-node-menu :item="$item" />
+                        </flux:dropdown>
+                    </div>
+                </div>
+            @endforeach
+        </div>
     @else
         <flux:table>
             <flux:table.columns>

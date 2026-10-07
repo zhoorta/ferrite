@@ -175,6 +175,18 @@ it('shows a ".." row that leads to the parent folder, but not at the root', func
     $this->get(route('files', $child))->assertOk()->assertSee('data-href="'.route('files', $parent).'"', false)->assertSee('This folder is empty');
 });
 
+it('switches between list and grid view', function () {
+    Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
+
+    Livewire::test('pages::files.browser')
+        ->assertDontSeeHtml('data-test="grid"')
+        ->call('setView', 'grid')
+        ->assertSeeHtml('data-test="grid"')
+        ->assertSee('a.txt')
+        ->call('setView', 'nonsense')
+        ->assertDontSeeHtml('data-test="grid"');
+});
+
 it('steps through the files of the folder in the preview', function () {
     $folder = Node::factory()->for($this->user, 'owner')->create();
     Node::factory()->inside($folder)->create(['name' => 'Subfolder']);
@@ -191,4 +203,13 @@ it('steps through the files of the folder in the preview', function () {
         ->assertSee('2 / 2')
         ->call('previewStep', 1)
         ->assertSet('previewId', $b->id);
+});
+
+it('points the ".." card of the grid at the parent folder', function () {
+    $parent = Node::factory()->for($this->user, 'owner')->create();
+    $child = Node::factory()->inside($parent)->create();
+
+    Livewire::test('pages::files.browser', ['folder' => $child])
+        ->call('setView', 'grid')
+        ->assertSeeHtml('data-href="'.route('files', $parent).'"');
 });
