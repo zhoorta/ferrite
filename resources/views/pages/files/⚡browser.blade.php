@@ -224,11 +224,12 @@ new #[Title('Files')] class extends Component {
 }; ?>
 
 <div class="mx-auto flex w-full max-w-5xl flex-col gap-6"
-    x-data="shedUploader({ parentId: @js($folderId), baseUrl: @js(url('/')) })"
+    x-data="{ dragging: false, target: { parentId: @js($folderId), baseUrl: @js(url('/')) } }"
+    x-on:shed-uploaded.window="$wire.$refresh()"
     @if ($this->canCreate)
         x-on:dragover.prevent="dragging = true"
         x-on:dragleave.self="dragging = false"
-        x-on:drop.prevent="drop($event)"
+        x-on:drop.prevent="dragging = false; $store.uploads.drop($event, target)"
     @endif
 >
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -249,8 +250,8 @@ new #[Title('Files')] class extends Component {
 
         @if ($this->canCreate)
             <div class="flex flex-wrap gap-2">
-                <input type="file" multiple class="hidden" x-ref="files" x-on:change="pick($event.target.files); $event.target.value = ''" data-test="upload-input">
-                <input type="file" webkitdirectory class="hidden" x-ref="folder" x-on:change="pick($event.target.files); $event.target.value = ''">
+                <input type="file" multiple class="hidden" x-ref="files" x-on:change="$store.uploads.pick($event.target.files, target); $event.target.value = ''" data-test="upload-input">
+                <input type="file" webkitdirectory class="hidden" x-ref="folder" x-on:change="$store.uploads.pick($event.target.files, target); $event.target.value = ''">
 
                 <flux:button icon="arrow-up-tray" variant="primary" x-on:click="$refs.files.click()">{{ __('Upload') }}</flux:button>
                 <flux:button icon="arrow-up-tray" x-on:click="$refs.folder.click()">{{ __('Upload folder') }}</flux:button>
@@ -407,30 +408,5 @@ new #[Title('Files')] class extends Component {
     <div x-show="dragging" x-cloak
         class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-zinc-900/60 text-xl font-medium text-white">
         {{ __('Drop to upload') }}
-    </div>
-
-    <div x-show="items.length" x-cloak
-        class="fixed bottom-4 end-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-zinc-50 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-        <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
-            <flux:heading>{{ __('Uploads') }}</flux:heading>
-            <flux:button size="xs" variant="ghost" x-on:click="clear()" x-show="!active">{{ __('Clear') }}</flux:button>
-        </div>
-        <ul class="max-h-64 divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
-            <template x-for="item in items" :key="item.key">
-                <li class="space-y-1 px-4 py-2 text-sm" data-test="upload-item">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="truncate" x-text="item.path"></span>
-                        <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="['queued', 'uploading'].includes(item.status)" x-on:click="cancel(item)">{{ __('Cancel') }}</button>
-                        <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="item.status === 'error'" x-on:click="retry(item)">{{ __('Retry') }}</button>
-                    </div>
-                    <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'done'].includes(item.status)">
-                        <div class="h-full bg-blue-500 transition-all" :class="item.status === 'done' && 'bg-green-500'"
-                            :style="`width: ${item.file.size ? Math.round(item.sent / item.file.size * 100) : (item.status === 'done' ? 100 : 0)}%`"></div>
-                    </div>
-                    <p class="text-xs text-red-600" x-show="item.status === 'error'" x-text="item.error"></p>
-                    <p class="text-xs text-zinc-500" x-show="item.status === 'cancelled'">{{ __('Cancelled') }}</p>
-                </li>
-            </template>
-        </ul>
     </div>
 </div>

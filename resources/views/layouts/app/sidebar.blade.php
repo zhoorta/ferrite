@@ -98,6 +98,34 @@
 
         {{ $slot }}
 
+        {{-- Persisted, so an upload carries on while you navigate (state lives in the `uploads` store). --}}
+        @persist('uploads')
+        <div x-show="$store.uploads.items.length" x-cloak
+            class="fixed bottom-4 end-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-zinc-50 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+                <flux:heading>{{ __('Uploads') }}</flux:heading>
+                <flux:button size="xs" variant="ghost" x-on:click="$store.uploads.clear()" x-show="!$store.uploads.active">{{ __('Clear') }}</flux:button>
+            </div>
+            <ul class="max-h-64 divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
+                <template x-for="item in $store.uploads.items" :key="item.key">
+                    <li class="space-y-1 px-4 py-2 text-sm" data-test="upload-item">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="truncate" x-text="item.path"></span>
+                            <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="['queued', 'uploading'].includes(item.status)" x-on:click="$store.uploads.cancel(item)">{{ __('Cancel') }}</button>
+                            <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="item.status === 'error'" x-on:click="$store.uploads.retry(item)">{{ __('Retry') }}</button>
+                        </div>
+                        <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'done'].includes(item.status)">
+                            <div class="h-full bg-blue-500 transition-all" :class="item.status === 'done' && 'bg-green-500'"
+                                :style="`width: ${item.file.size ? Math.round(item.sent / item.file.size * 100) : (item.status === 'done' ? 100 : 0)}%`"></div>
+                        </div>
+                        <p class="text-xs text-red-600" x-show="item.status === 'error'" x-text="item.error"></p>
+                        <p class="text-xs text-zinc-500" x-show="item.status === 'cancelled'">{{ __('Cancelled') }}</p>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        @endpersist
+
         @persist('toast')
             <flux:toast.group>
                 <flux:toast />

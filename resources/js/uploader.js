@@ -1,15 +1,14 @@
 const MAX_RETRIES = 5;
 
 /**
- * Alpine component for the file browser: uploads files and folders in chunks, one file at a time.
- * A failed chunk is retried after asking the server how much it already has.
+ * Alpine store (`$store.uploads`) that uploads files and folders in chunks, one file at a time.
+ * It lives outside the pages, and its panel is persisted in the layout, so an upload carries on
+ * while you navigate. A failed chunk is retried after asking the server how much it already has.
  */
-export default function uploader({ parentId, baseUrl }) {
-    const base = baseUrl.replace(/\/+$/, '');
-
+export default function uploader() {
     const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
 
-    const request = (method, path, { json, body, headers = {} } = {}) =>
+    const request = (base, method, path, { json, body, headers = {} } = {}) =>
         fetch(`${base}${path}`, {
             method,
             credentials: 'same-origin',
@@ -56,36 +55,36 @@ export default function uploader({ parentId, baseUrl }) {
     return {
         items: [],
         running: false,
-        dragging: false,
 
         get active() {
             return this.items.some((item) => ['queued', 'uploading'].includes(item.status));
         },
 
+        // `target` is { parentId, baseUrl }: where the files go, captured when they are added.
         // From a file input: folder inputs expose webkitRelativePath.
-        pick(fileList) {
-            this.enqueue([...fileList].map((file) => ({ file, path: file.webkitRelativePath || file.name })));
+        pick(fileList, target) {
+            this.enqueue([...fileList].map((file) => ({ file, path: file.webkitRelativePath || file.name })), target);
         },
 
-        async drop(event) {
-            this.dragging = false;
-
+        async drop(event, target) {
             // Entries must be taken synchronously, before the first await.
             const entries = [...(event.dataTransfer?.items ?? [])].map((item) => item.webkitGetAsEntry?.()).filter(Boolean);
 
             if (entries.length === 0) {
-                return this.pick(event.dataTransfer?.files ?? []);
+                return this.pick(event.dataTransfer?.files ?? [], target);
             }
 
-            this.enqueue((await Promise.all(entries.map((entry) => readEntry(entry)))).flat());
+            this.enqueue((await Promise.all(entries.map((entry) => readEntry(entry)))).flat(), target);
         },
 
-        enqueue(files) {
+        enqueue(files, { parentId, baseUrl }) {
             for (const { file, path } of files) {
                 this.items.push({
                     key: crypto.randomUUID(),
                     file,
                     path,
+                    parentId,
+                    base: baseUrl.replace(/\/+$/, ''),
                     status: 'queued',
                     sent: 0,
                     error: null,
@@ -111,16 +110,17 @@ export default function uploader({ parentId, baseUrl }) {
 
             this.running = false;
 
-            if (uploaded) this.$wire.$refresh();
+            // Lets a file browser that is on screen reload its list.
+            if (uploaded) window.dispatchEvent(new CustomEvent('shed-uploaded'));
         },
 
         async send(item) {
             item.status = 'uploading';
 
             try {
-                const started = await request('POST', '/uploads', {
+                const started = await request(item.base, 'POST', '/uploads', {
                     json: {
-                        parent_id: parentId,
+                        parent_id: item.parentId,
                         path: item.path,
                         size: item.file.size,
                         fingerprint: String(item.file.lastModified),
@@ -139,7 +139,7 @@ export default function uploader({ parentId, baseUrl }) {
                     const end = Math.min(state.offset + state.chunk_size, item.file.size);
 
                     try {
-                        const response = await request('PATCH', `/uploads/${state.id}`, {
+                        const response = await request(item.base, 'PATCH', `/uploads/${state.id}`, {
                             body: item.file.slice(state.offset, end),
                             headers: { 'Content-Type': 'application/octet-stream', 'Upload-Offset': String(state.offset) },
                         });
@@ -168,7 +168,7 @@ export default function uploader({ parentId, baseUrl }) {
 
                         await sleep(1000 * 2 ** (failures - 1));
 
-                        const check = await request('GET', `/uploads/${state.id}`).catch(() => null);
+                        const check = await request(item.base, 'GET', `/uploads/${state.id}`).catch(() => null);
                         if (check?.ok) state = { ...state, ...(await check.json()) };
                     }
                 }
@@ -185,7 +185,7 @@ export default function uploader({ parentId, baseUrl }) {
             item.status = 'cancelled';
 
             if (item.uploadId && wasUploading) {
-                await request('DELETE', `/uploads/${item.uploadId}`).catch(() => {});
+                await request(item.base, 'DELETE', `/uploads/${item.uploadId}`).catch(() => {});
             }
         },
 

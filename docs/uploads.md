@@ -2,6 +2,8 @@
 
 All uploads, including small files, use one chunked protocol (`UploadController`, `resources/js/uploader.js`). There is no separate "simple" path.
 
+The client is an Alpine store, `$store.uploads` (registered in `resources/js/app.js`), and the progress panel sits in a `@persist('uploads')` block in the layout, so uploads carry on while you navigate between pages. Each item remembers its target folder when it is added. A browser page reloads its list on the `shed-uploaded` window event. A full page reload or closed tab still stops an upload (the browser asks first); adding the same file again resumes it.
+
 1. `POST /uploads` with `path` (a name, or a relative path such as `photos/2026/a.jpg`), `size`, optional `parent_id` and `fingerprint`. Missing folders in the path are created. Returns the upload `id`, the current `offset` and the `chunk_size`. Starting the same file again (same parent, name, size, fingerprint) resumes the unfinished upload.
 2. `PATCH /uploads/{id}` with the raw chunk as body and an `Upload-Offset` header. A wrong offset gets `409` with the real offset, so the client resumes from there. The last chunk finalizes the upload.
 3. `GET /uploads/{id}` returns the state; `DELETE /uploads/{id}` cancels.
