@@ -88,7 +88,7 @@ class CopyNode
             throw $e;
         }
 
-        ActivityLog::record(ActivityAction::Copied, $copy, $actor, ['from' => $node->name, 'to' => $destination?->name ?? __('My files')]);
+        ActivityLog::record(ActivityAction::Copied, $copy, $actor, ['from' => $node->name, 'to' => $destination === null ? __('My files') : $destination->name]);
 
         return $copy;
     }
@@ -140,11 +140,11 @@ class CopyNode
             [$root->id],
         );
 
-        return Node::query()
+        return array_values(Node::query()
             ->whereKey(array_map(fn ($row) => (int) $row->id, $rows))
             ->where('type', NodeType::File)
             ->get()
-            ->all();
+            ->all());
     }
 
     /**

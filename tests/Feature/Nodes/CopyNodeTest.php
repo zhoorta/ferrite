@@ -5,6 +5,7 @@ use App\Enums\ActivityAction;
 use App\Models\Activity;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\StorageManager;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -87,7 +88,7 @@ it('gives a copy made from a shared file its own blob, owned by the destination 
         ->and($this->user->fresh()->used_bytes)->toBe(6)
         ->and($other->fresh()->used_bytes)->toBe(0);
 
-    $filesystem = app(App\Support\StorageManager::class)->filesystem($copy->disk);
+    $filesystem = app(StorageManager::class)->filesystem($copy->disk);
     expect($filesystem->get($copy->path))->toBe('secret');
 });
 

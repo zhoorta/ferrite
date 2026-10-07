@@ -16,7 +16,7 @@ composer setup            # installs dependencies, creates .env and the key, mig
 composer dev              # app, queue workers and Vite together
 ```
 
-PHP 8.3 or newer (the author runs 8.5), Composer and Node 22. SQLite is the default, so nothing else is needed. On a fresh database the first visit shows a page to create the admin account.
+PHP 8.3 or newer (8.5 is what it is developed on), Composer and Node 22. SQLite is the default, so nothing else is needed. On a fresh database the first visit shows a page to create the admin account.
 
 ## Checks
 

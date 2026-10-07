@@ -1,6 +1,6 @@
 # Ferrite: plan
 
-Self-hosted, web-only file storage. Folders, chunked upload, previews, share links, trash, multiple users with quotas, Flysystem disks (local, S3, SFTP). Laravel 13 + Livewire + Flux. Intended to replace Google Drive for personal use, and possibly be published as open source (no other Livewire/Flux project of this kind found, Oct 2026; closest: gyaaniguy/personal-drive, Laravel + React).
+Self-hosted, web-only file storage. Folders, chunked upload, previews, share links, trash, multiple users with quotas, Flysystem disks (local, S3, SFTP). Laravel 13 + Livewire + Flux. A Google Drive replacement for personal use and small teams, published as free software (AGPL-3.0).
 
 This file is the map: decisions, status, next steps. Detail goes in `docs/`.
 
@@ -30,7 +30,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 - [x] 5. Share links, then sharing with users (see `docs/sharing.md`; dialog and guest page checked by hand; 206 tests)
 - [x] 6. Storage disks (SFTP, S3), name search, activity log (see `docs/storage-search-activity.md`; S3/SFTP only tested up to adapter and error handling, not against a real server; 263 tests)
 - [x] 6b. Admin users (quota, disable, delete), registration policy, permanent delete (see `docs/users.md`; 301 tests)
-- [x] 7. Docker image, install docs, pre-publication security review (see `docs/install.md`, `docs/security.md`; Docker image written but not built/run end to end: no Docker on the dev machine; 318 tests)
+- [x] 7. Docker image, install docs, pre-publication security review (see `docs/install.md`, `docs/security.md`; Docker image written; 318 tests)
 - [x] 8. Cosy design: warm cream and terracotta look, Nunito and Fraunces, twelve selectable themes with Plum as default (see `docs/themes.md`; 330 tests)
 
 - [x] 8b. Deduplication: identical files of one owner share a blob, deleted with its last node (see `docs/uploads.md`; 338 tests)
@@ -43,14 +43,14 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [x] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100% (`FailUpload`, `uploads:prune`, Retry in the UI)
   - [x] Real seeking on SFTP (`SftpStream`, offset reads) and a byte range on S3, instead of reading and discarding up to the offset
   - [x] Temp disk need and proxy/PHP timeouts documented in `docs/install.md`
-  - [x] SFTP against a real Hetzner Storage Box subaccount (live server, 2026-10): Test passes (folder must exist; a subaccount logs in at `/home`), uploads store through the `uploads` worker, stopping and starting the worker leaves an upload at "Storing the file…" until it is back, a 500 MB MP4 uploaded (about 5 min in total over a slow home uplink; copy phase not timed), sha256 of the download matches, preview plays and seeks quickly, deleting removes the blob. Also a 3000 MB test against a local OpenSSH server (`tests/Feature/Remote/SftpDiskTest.php`, opt-in via `FERRITE_TEST_SFTP_*`). Largest file on the real box: 500 MB
+  - [x] SFTP against a real Hetzner Storage Box subaccount (real server, 2026-10): Test passes (folder must exist; a subaccount logs in at `/home`), uploads store through the `uploads` worker, stopping and starting the worker leaves an upload at "Storing the file…" until it is back, a 500 MB MP4 uploaded (about 5 min in total; copy phase not timed), sha256 of the download matches, preview plays and seeks quickly, deleting removes the blob. Also a 3000 MB test against a local OpenSSH server (`tests/Feature/Remote/SftpDiskTest.php`, opt-in via `FERRITE_TEST_SFTP_*`). Largest file on the real box: 500 MB
   - [x] Docker image built and run end to end (2026-10-07, Docker 29): migrations, scheduler and both queue workers start, login, a 60 MB chunked upload (12 chunks, last one 202) finished by the `uploads` worker, download hash identical, 206 Range correct, data survives a container restart. Needed one fix: `composer dump-autoload` failed in the build because `storage/framework/views` did not exist (`storage/*` is in `.dockerignore`)
   - [ ] Still to do: S3 against a real service
 - [x] 13b. Open source release: AGPL-3.0 `LICENSE`, project page at `/` for guests (`FERRITE_LANDING`), demo mode with throwaway accounts (`FERRITE_DEMO`, `demo:prune`; no sharing, uploads limited to small images/PDF/text, 60-minute lifetime, abuse banner), see `docs/public-site.md`
   - [x] Docker base image moved to PHP 8.5 (FrankenPHP `1-php8.5-bookworm`), rebuilt and run end to end (2026-10-07, PHP 8.5.11): both workers and the scheduler start, admin created with `ferrite:user`, login, a 60 MB chunked upload (12 chunks, last 202) finished by the `uploads` worker, download hash identical, 206 Range correct, restart keeps the data
   - [x] Prebuilt image: `.github/workflows/docker.yml` publishes `ghcr.io/zhoorta/ferrite` (amd64, arm64; tags on `v*` give `1.2.3`, `1.2`, `latest`; main gives `edge`); the compose file pulls it and falls back to building. After the first run, set the package to public in GitHub (Packages > ferrite > settings) and link it to the repo
   - [x] CONTRIBUTING, SECURITY, issue and PR templates; history checked for secrets (clean, 2026-10-07)
-  - [ ] Still to do: deploy the demo (demo.ferrite.stackcare.pt), make the GitHub repo public (enable private vulnerability reporting), tag v0.1.0 and make the package public
+  - [ ] Still to do: deploy the public demo, enable private vulnerability reporting, tag v0.1.0 and make the container package public
 - [ ] 14. Content search (details in the list below; write `docs/content-search.md` when it lands):
   - [ ] Extraction in a queued job on its own low-priority queue, once per blob (sha256): plain text, Markdown, code, CSV and JSON read directly (first 1-2 MB, valid UTF-8 only); PDF through `pdftotext` (add poppler-utils to the Docker image); remote disks are copied to temp first
   - [ ] Index: SQLite FTS5 (`node_contents` table with blob key, text, status, extracted_at, plus the FTS5 virtual table), ranking and `snippet()`; Meilisearch/Typesense through Scout rejected for now (extra service)
@@ -63,7 +63,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [ ] Key: dedicated `FERRITE_FILE_KEY` in `.env`, not `APP_KEY` (rotating one must not break the other); key id stored per blob so rotation can re-wrap data keys without rewriting files; document backing it up (losing it means losing every encrypted file)
   - [ ] `storage_disks.encrypt` flag, set at creation; the flag cannot be flipped on a disk that already holds blobs (use the migration command below); the blob stores its own `encrypted` marker so mixed disks still read correctly
   - [ ] Write path: encrypt in the queued upload finish job and in copy; sha256 for dedup stays over the plaintext, computed before encryption; thumbnails and extracted text read the plaintext through the decrypting stream
-  - [ ] Performance: do the sha256 and the encryption in the same single pass of the finish job (no extra read or write of a multi-GB file); constant memory (one chunk at a time). Measured on the dev Mac with PHP libsodium, 64 KiB chunks: encrypt about 400 MB/s (1 GiB in 2.7 s), sha256 about 200 MB/s; network is the bottleneck for users. Record the numbers in `docs/encryption.md` and re-measure on the real server (slow CPUs may be 100-200 MB/s)
+  - [ ] Performance: do the sha256 and the encryption in the same single pass of the finish job (no extra read or write of a multi-GB file); constant memory (one chunk at a time). Measured on a development laptop with PHP libsodium, 64 KiB chunks: encrypt about 400 MB/s (1 GiB in 2.7 s), sha256 about 200 MB/s; network is the bottleneck for users. Record the numbers in `docs/encryption.md` and re-measure on the real server (slow CPUs may be 100-200 MB/s)
   - [ ] Read path: one decrypting stream wrapper used by download, Range, preview, ZIP and share links; `Content-Length` and Range offsets map from plaintext to ciphertext positions; remote disks keep reading at an offset
   - [ ] Command `files:encrypt` (and `files:rekey`) to convert existing blobs in place, resumable, as a queued job with progress
   - [ ] Tests: round trip, Range at chunk boundaries, tampered chunk rejected, wrong key, mixed disk, dedup across encrypted blobs, rekey
@@ -71,7 +71,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 
 ## Ideas (not scheduled)
 
-Suggested next: deploy the Docker demo (the private instance is live natively on PHP 8.5; the author's own deploy files are kept outside the repo, see step 13b), then S3 against a real service. The remote SFTP test command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
+Suggested next: S3 against a real service. The remote SFTP test command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
 
 ```sh
 FERRITE_TEST_SFTP_HOST=u123.your-storagebox.de FERRITE_TEST_SFTP_PORT=23 \
