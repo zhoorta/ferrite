@@ -34,22 +34,19 @@ new #[Title('Appearance settings')] class extends Component {
         <div class="grid gap-2">
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('Theme') }}">
                 @foreach ([
-                    'ferrite' => [__('Ferrite'), '#2a2724'],
-                    'ferrite-light' => [__('Ferrite light'), '#faf8f5'],
-                    'mac' => [__('Classic Mac'), '#ffffff'],
-                    'desk95' => [__('Desktop 95'), '#c0c0c0'],
-                    'zine' => [__('Plain page'), '#ffffff'],
-                    'amber' => [__('Amber terminal'), '#120b02'],
-                    'phosphor' => [__('Green phosphor'), '#020f06'],
-                    'commodore' => [__('Commodore'), '#352879'],
-                    'amiga' => [__('Amiga'), '#0055aa'],
-                ] as $key => [$label, $colour])
+                    'ferrite' => [__('Ferrite'), 'moon'],
+                    'ferrite-light' => [__('Ferrite light'), 'sun'],
+                    'mac' => [__('Classic Mac'), 'computer-desktop'],
+                    'desk95' => [__('Desktop 95'), 'window'],
+                    'zine' => [__('Plain page'), 'newspaper'],
+                    'amber' => [__('Amber terminal'), 'terminal'],
+                    'phosphor' => [__('Green phosphor'), 'tv'],
+                    'commodore' => [__('Commodore'), 'gamepad-2'],
+                    'amiga' => [__('Amiga'), 'save'],
+                ] as $key => [$label, $icon])
                     <button type="button" role="radio" aria-checked="{{ $palette === $key ? 'true' : 'false' }}" wire:click="$set('palette', '{{ $key }}')"
                         class="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2.5 dark:border-zinc-700 text-start text-sm text-zinc-800 transition hover:border-accent aria-checked:border-accent aria-checked:ring-2 aria-checked:ring-accent/40 dark:text-white">
-                        <span class="flex size-8 shrink-0 overflow-hidden rounded-full border border-black/20 dark:border-white/30">
-                            <span class="w-1/2" style="background: {{ $colour }}"></span>
-                            <span class="w-1/2 bg-accent"></span>
-                        </span>
+                        <flux:icon :name="$icon" class="size-6 shrink-0" />
                         {{ $label }}
                     </button>
                 @endforeach
