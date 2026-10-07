@@ -367,6 +367,11 @@ html:not(.dark)[data-palette='mac'] .cozy-bg {
     text-shadow: 0 0 5px rgb(var(--crt-glow) / .3);
 }
 
+/* text-shadow does not reach SVG icons, so give them the same glow */
+.dark:is([data-palette='amber'], [data-palette='phosphor']) .cozy-bg svg {
+    filter: drop-shadow(0 0 5px rgb(var(--crt-glow) / .5));
+}
+
 /*
  * Desktop 95: silver surfaces, navy accent, square corners and raised/sunken bevels.
  * Light theme. Raised: buttons with a background, dialogs and menus. Sunken: inputs.
