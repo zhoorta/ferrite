@@ -199,6 +199,11 @@ export default function uploader() {
             }
         },
 
+        // Queued files are only marked; the one in flight also has its partial upload deleted.
+        cancelAll() {
+            this.items.filter((item) => ['queued', 'uploading'].includes(item.status)).forEach((item) => this.cancel(item));
+        },
+
         retry(item) {
             item.status = 'queued';
             item.error = null;
