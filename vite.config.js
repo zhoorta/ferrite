@@ -13,7 +13,7 @@ export default defineConfig({
             ],
             refresh: true,
             fonts: [
-                bunny('Inter', {
+                bunny('JetBrains Mono', {
                     weights: [400, 500, 600, 700],
                 }),
                 bunny('Public Sans', {

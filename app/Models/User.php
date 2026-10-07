@@ -44,10 +44,10 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /** Themes a user can pick in the appearance settings: the default Ferrite theme and the vintage ones. */
-    public const PALETTES = ['ferrite', 'mac', 'desk95', 'zine', 'amber', 'phosphor', 'commodore', 'amiga'];
+    public const PALETTES = ['ferrite', 'ferrite-light', 'mac', 'desk95', 'zine', 'amber', 'phosphor', 'commodore', 'amiga'];
 
     /** Palettes that render in light mode (no `dark` class on `<html>`); every other one is dark. */
-    public const LIGHT_PALETTES = ['mac', 'desk95', 'zine'];
+    public const LIGHT_PALETTES = ['ferrite-light', 'mac', 'desk95', 'zine'];
 
     public static function isDarkPalette(?string $palette): bool
     {

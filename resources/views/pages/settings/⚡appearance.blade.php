@@ -35,6 +35,7 @@ new #[Title('Appearance settings')] class extends Component {
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('Theme') }}">
                 @foreach ([
                     'ferrite' => [__('Ferrite'), '#2a2724'],
+                    'ferrite-light' => [__('Ferrite light'), '#faf8f5'],
                     'mac' => [__('Classic Mac'), '#ffffff'],
                     'desk95' => [__('Desktop 95'), '#c0c0c0'],
                     'zine' => [__('Plain page'), '#ffffff'],
