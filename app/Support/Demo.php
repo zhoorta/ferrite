@@ -18,6 +18,18 @@ class Demo
 {
     public const DOMAIN = 'demo.ferrite.invalid';
 
+    /** @var array<string, list<string>> Sample pictures: name => gradient colours, top to bottom. */
+    private const PICTURES = [
+        'Lisbon rooftops' => ['#ffb347', '#ff5e62', '#2b1055'],
+        'Faial sunset' => ['#43cea2', '#185a9d', '#0b132b'],
+        'Atlantic swell' => ['#c471f5', '#fa71cd', '#1a0933'],
+        'Peak at dawn' => ['#f9d423', '#ff4e50', '#3a1c71'],
+        'Green valley' => ['#56ab2f', '#a8e063', '#134e5e'],
+        'Harbour night' => ['#00c6ff', '#0072ff', '#001f3f'],
+        'Autumn light' => ['#f2994a', '#f2c94c', '#6b3e26'],
+        'Hot springs' => ['#ee0979', '#ff6a00', '#2d0a31'],
+    ];
+
     public function __construct(private StorageManager $storage, private CreateFolder $folders, private PurgeNode $purge) {}
 
     public static function enabled(): bool
@@ -86,8 +98,8 @@ class Demo
         $store(null, 'Welcome to Ferrite.md', $this->welcome(), 'text/markdown');
 
         $photos = $this->folders->handle($user, null, 'Pictures');
-        foreach (['Sunrise' => ['#f4a261', '#e76f51'], 'Lagoon' => ['#2a9d8f', '#264653'], 'Plum' => ['#9b5de5', '#f15bb5']] as $name => [$a, $b]) {
-            $store($photos, "$name.svg", $this->picture($name, $a, $b), 'image/svg+xml');
+        foreach (self::PICTURES as $name => $colours) {
+            $store($photos, "$name.jpg", $this->picture($colours), 'image/jpeg');
         }
 
         $work = $this->folders->handle($user, null, 'Projects');
@@ -115,15 +127,32 @@ class Demo
         MD;
     }
 
-    private function picture(string $title, string $from, string $to): string
+    /** A small sunset-like gradient JPEG, so the demo shows real thumbnails (GD is required by Ferrite anyway). */
+    /** @param  list<string>  $colours */
+    private function picture(array $colours): string
     {
-        return <<<SVG
-        <svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420">
-          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{$from}"/><stop offset="1" stop-color="{$to}"/></linearGradient></defs>
-          <rect width="640" height="420" fill="url(#g)"/>
-          <circle cx="470" cy="130" r="64" fill="#fff" fill-opacity=".35"/>
-          <text x="40" y="380" font-family="sans-serif" font-size="44" fill="#fff">{$title}</text>
-        </svg>
-        SVG;
+        $image = imagecreatetruecolor(800, 600);
+
+        for ($y = 0; $y < 600; $y++) {
+            $position = $y / 600 * (count($colours) - 1);
+            $i = min((int) $position, count($colours) - 2);
+            $mix = $position - $i;
+            [$r1, $g1, $b1] = sscanf($colours[$i], '#%02x%02x%02x');
+            [$r2, $g2, $b2] = sscanf($colours[$i + 1], '#%02x%02x%02x');
+
+            imageline($image, 0, $y, 800, $y, (int) imagecolorallocate(
+                $image,
+                (int) ($r1 + ($r2 - $r1) * $mix),
+                (int) ($g1 + ($g2 - $g1) * $mix),
+                (int) ($b1 + ($b2 - $b1) * $mix),
+            ));
+        }
+
+        imagefilledellipse($image, 570, 190, 120, 120, (int) imagecolorallocatealpha($image, 255, 255, 255, 70));
+
+        ob_start();
+        imagejpeg($image, null, 85);
+
+        return (string) ob_get_clean();
     }
 }

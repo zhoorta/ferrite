@@ -11,6 +11,10 @@ Self-hosted file storage for one person or a small team: a Google Drive replacem
 
 Not to be confused with other projects of the same name, such as the Rust Markdown editor Ferrite. This one is a Laravel file-storage app, named after the magnetic coating on tape.
 
+<p align="center">
+  <img src="docs/img/screenshots/files-grid.png" alt="Ferrite file browser in grid view with image thumbnails" width="900">
+</p>
+
 ## What it does
 
 - **Files and folders** with upload (chunked and resumable, so multi-gigabyte files and flaky connections are fine; whole folders by drag and drop), download with Range support, rename, move, and folder download as ZIP.
@@ -24,6 +28,17 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
 Not included (on purpose, for now): sync clients, WebDAV, office document previews, real-time collaboration, in-content search, versioning.
 
 Project page: https://ferrite.stackcare.pt · Live demo: https://demo.ferrite.stackcare.pt
+
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Usage page: quota, breakdown by type, biggest folders and files](docs/img/screenshots/usage.png) | ![Classic Mac theme](public/img/themes/mac.png) |
+| The usage page: where your space goes. | Thirteen themes, picked per user. Here: Classic Mac. |
+| ![Amber terminal theme](public/img/themes/amber.png) | ![Bubblegum 98 theme](public/img/themes/bubblegum.png) |
+| Amber terminal. | Bubblegum 98. |
+
+Try it without installing anything: https://demo.ferrite.stackcare.pt
 
 ## Install
 
