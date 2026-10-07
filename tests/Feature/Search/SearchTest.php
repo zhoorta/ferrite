@@ -123,7 +123,7 @@ describe('page', function () {
             ->assertDontSee('Mortgage');
     });
 
-    it('has a search box in the sidebar', function () {
-        $this->get(route('files'))->assertSee('action="'.route('search').'"', false);
+    it('has a search link in the sidebar', function () {
+        $this->get(route('files'))->assertSee('href="'.route('search').'"', false);
     });
 });

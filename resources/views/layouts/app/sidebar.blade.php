@@ -4,17 +4,16 @@
         @include('partials.head')
     </head>
     <body class="cozy-bg min-h-screen antialiased">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-100/80 dark:border-zinc-700 dark:bg-zinc-900/90">
+        <flux:sidebar sticky collapsible="mobile" class="bg-zinc-100/80 dark:bg-zinc-900/90">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('files') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-            <form method="GET" action="{{ route('search') }}" class="px-1" role="search">
-                <flux:input name="q" type="search" icon="magnifying-glass" size="sm" :placeholder="__('Search')" :aria-label="__('Search by name')" value="{{ request()->routeIs('search') ? request('q') : '' }}" />
-            </form>
-
             <flux:sidebar.nav>
+                <flux:sidebar.item icon="magnifying-glass" :href="route('search')" :current="request()->routeIs('search')" wire:navigate>
+                    {{ __('Search') }}
+                </flux:sidebar.item>
                 <flux:sidebar.item icon="folder" :href="route('files')" :current="request()->routeIs('files')" wire:navigate>
                     {{ __('My files') }}
                 </flux:sidebar.item>
