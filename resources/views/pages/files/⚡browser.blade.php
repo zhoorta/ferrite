@@ -12,6 +12,7 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Session;
 use Livewire\Attributes\Title;
@@ -270,6 +271,39 @@ new #[Title('Files')] class extends Component {
         Flux::toast(variant: 'success', text: __('Moved.'));
     }
 
+    /** Move by dragging a row onto a folder (or "..", which is the parent; null is the root). */
+    public function dropMove(int $id, ?int $destinationId, MoveNode $action): void
+    {
+        if ($id === $destinationId) {
+            return;
+        }
+
+        try {
+            $node = Node::findOrFail($id);
+            $action->handle(Auth::user(), $node, $destinationId === null ? null : Node::findOrFail($destinationId));
+        } catch (ValidationException $e) {
+            Flux::toast(variant: 'danger', text: collect($e->errors())->flatten()->first());
+
+            return;
+        }
+
+        unset($this->items);
+        Flux::toast(variant: 'success', text: __('Moved.'));
+    }
+
+    /** ".." accepts a drop when the parent is visible or the folder is the user's own (the parent is then the root). */
+    #[Computed]
+    public function upDropId(): ?string
+    {
+        if (! $this->upUrl || ! $this->canCreate) {
+            return null;
+        }
+
+        $parent = $this->breadcrumbs->reverse()->values()->get(1);
+
+        return $parent !== null ? (string) $parent->id : ($this->folder->owner_id === Auth::id() ? '' : null);
+    }
+
     public function trash(int $id, TrashNode $action): void
     {
         $action->handle(Auth::user(), Node::findOrFail($id));
@@ -283,9 +317,9 @@ new #[Title('Files')] class extends Component {
     x-data="{ dragging: false, target: { parentId: @js($folderId), baseUrl: @js(url('/')) } }"
     x-on:ferrite-uploaded.window="$wire.$refresh()"
     @if ($this->canCreate)
-        x-on:dragover.prevent="dragging = true"
+        x-on:dragover="if ($event.dataTransfer.types.includes('Files')) { $event.preventDefault(); dragging = true }"
         x-on:dragleave.self="dragging = false"
-        x-on:drop.prevent="dragging = false; $store.uploads.drop($event, target)"
+        x-on:drop="dragging = false; if ($event.dataTransfer.types.includes('Files')) { $event.preventDefault(); $store.uploads.drop($event, target) }"
     @endif
 >
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -331,16 +365,16 @@ new #[Title('Files')] class extends Component {
     @elseif ($view === 'grid')
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" data-test="grid">
             @if ($this->upUrl)
-                <div class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 p-3 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60"
-                    data-test="up-row" data-href="{{ $this->upUrl }}" wire:key="grid-up"
+                <div class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 p-3 transition-colors hover:bg-zinc-100 data-over:bg-zinc-100 data-over:ring-2 data-over:ring-accent dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:data-over:bg-zinc-700/60"
+                    data-test="up-row" data-href="{{ $this->upUrl }}" wire:key="grid-up" @if ($this->upDropId !== null) data-drop-id="{{ $this->upDropId }}" @endif
                     x-on:click="Livewire.navigate($el.dataset.href)">
                     <flux:icon name="arrow-uturn-left" class="size-8 text-zinc-400" />
                     <span class="font-medium">..</span>
                 </div>
             @endif
             @foreach ($this->items as $item)
-                <div wire:key="grid-{{ $item->id }}" data-test="node-row"
-                    class="group relative flex cursor-pointer flex-col gap-2 rounded-xl border border-zinc-200 p-2 transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
+                <div wire:key="grid-{{ $item->id }}" data-test="node-row" @if ($this->canCreate) draggable="true" data-node-id="{{ $item->id }}" @endif @if ($item->isFolder() && $this->canCreate) data-drop-id="{{ $item->id }}" @endif
+                    class="group relative data-over:bg-zinc-100 data-over:ring-2 data-over:ring-accent dark:data-over:bg-zinc-700/60 flex cursor-pointer flex-col gap-2 rounded-xl border border-zinc-200 p-2 transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                     @if ($item->isFolder()) data-href="{{ route('files', $item) }}" @else data-preview="{{ $item->id }}" @endif
                     x-on:click="if ($event.target.closest('a, button, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
                     x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
@@ -384,8 +418,8 @@ new #[Title('Files')] class extends Component {
 
             <flux:table.rows>
                 @if ($this->upUrl)
-                    <flux:table.row data-test="up-row" class="cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
-                        :data-href="$this->upUrl" x-on:click="if ($event.target.closest('a')) return; Livewire.navigate($el.dataset.href)">
+                    <flux:table.row data-test="up-row" class="cursor-pointer transition-colors hover:bg-zinc-100 data-over:bg-zinc-100 data-over:outline-2 data-over:-outline-offset-2 data-over:outline-accent dark:hover:bg-zinc-700/60 dark:data-over:bg-zinc-700/60"
+                        :data-drop-id="$this->upDropId" :data-href="$this->upUrl" x-on:click="if ($event.target.closest('a')) return; Livewire.navigate($el.dataset.href)">
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
                                 <flux:icon name="arrow-uturn-left" class="size-5 shrink-0 text-zinc-400" />
@@ -403,16 +437,16 @@ new #[Title('Files')] class extends Component {
                     @endif
                 @endif
                 @foreach ($this->items as $item)
-                    <flux:table.row :key="$item->id" data-test="node-row" class="cursor-pointer transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
+                    <flux:table.row :key="$item->id" data-test="node-row" :draggable="$this->canCreate ? 'true' : null" :data-node-id="$this->canCreate ? $item->id : null" :data-drop-id="$item->isFolder() && $this->canCreate ? $item->id : null" class="cursor-pointer transition-colors data-over:bg-zinc-100 data-over:outline-2 data-over:-outline-offset-2 data-over:outline-accent dark:data-over:bg-zinc-700/60 hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                         :data-href="$item->isFolder() ? route('files', $item) : null" :data-preview="$item->isFile() ? $item->id : null"
                         x-on:click="if ($event.target.closest('a, button, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
                         x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
                                 @if ($item->isFile() && app(Thumbnailer::class)->supports($item))
-                                    <span x-data="{ failed: false }" class="flex size-8 shrink-0 items-center justify-center">
+                                    <span x-data="{ failed: false }" class="flex size-5 shrink-0 items-center justify-center">
                                         <img x-show="!failed" x-on:error="failed = true" loading="lazy" alt=""
-                                            src="{{ route('nodes.thumbnail', $item) }}" class="size-8 rounded object-cover">
+                                            src="{{ route('nodes.thumbnail', $item) }}" class="size-5 rounded-sm object-cover">
                                         <flux:icon x-show="failed" name="photo" class="size-5 text-zinc-400" />
                                     </span>
                                 @else

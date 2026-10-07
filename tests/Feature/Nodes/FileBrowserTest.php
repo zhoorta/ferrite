@@ -100,6 +100,30 @@ it('moves a node through the picker', function () {
     expect($node->fresh()->parent_id)->toBe($target->id);
 });
 
+it('moves a node by dropping it on a folder, and back to the root', function () {
+    $target = Node::factory()->for($this->user, 'owner')->create(['name' => 'Target']);
+    $node = Node::factory()->for($this->user, 'owner')->create(['name' => 'Moving']);
+
+    Livewire::test('pages::files.browser')->call('dropMove', $node->id, $target->id);
+    expect($node->fresh()->parent_id)->toBe($target->id);
+
+    Livewire::test('pages::files.browser')->call('dropMove', $node->id, null);
+    expect($node->fresh()->parent_id)->toBeNull();
+});
+
+it('ignores a drop on itself and reports a name clash instead of failing', function () {
+    $target = Node::factory()->for($this->user, 'owner')->create(['name' => 'Target']);
+    $node = Node::factory()->for($this->user, 'owner')->create(['name' => 'Same']);
+    Node::factory()->for($this->user, 'owner')->create(['name' => 'Same', 'parent_id' => $target->id]);
+
+    Livewire::test('pages::files.browser')
+        ->call('dropMove', $target->id, $target->id)
+        ->call('dropMove', $node->id, $target->id)
+        ->assertHasNoErrors();
+
+    expect($node->fresh()->parent_id)->toBeNull();
+});
+
 it('trashes a node and restores it from the trash', function () {
     $node = Node::factory()->for($this->user, 'owner')->create(['name' => 'Doomed']);
 
