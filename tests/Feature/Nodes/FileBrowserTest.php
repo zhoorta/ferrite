@@ -164,3 +164,13 @@ it('links downloads, ZIPs and thumbnails from the list', function () {
         ->assertSee(route('nodes.thumbnail', $image))
         ->assertDontSee(route('nodes.thumbnail', $file));
 });
+
+it('shows a ".." row that leads to the parent folder, but not at the root', function () {
+    $parent = Node::factory()->for($this->user, 'owner')->create(['name' => 'Work']);
+    $child = Node::factory()->inside($parent)->create(['name' => 'Inner']);
+
+    $this->get(route('files'))->assertOk()->assertDontSee('data-test="up-row"', false);
+
+    $this->get(route('files', $parent))->assertOk()->assertSee('data-href="'.route('files').'"', false);
+    $this->get(route('files', $child))->assertOk()->assertSee('data-href="'.route('files', $parent).'"', false)->assertSee('This folder is empty');
+});

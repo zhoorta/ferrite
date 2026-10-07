@@ -74,6 +74,23 @@ new #[Title('Files')] class extends Component {
             ->values();
     }
 
+    /** Where ".." leads: the parent folder if it is visible, else the top of what the user sees; null at the top. */
+    #[Computed]
+    public function upUrl(): ?string
+    {
+        if ($this->folder === null) {
+            return null;
+        }
+
+        $parent = $this->breadcrumbs->reverse()->values()->get(1);
+
+        if ($parent !== null) {
+            return route('files', $parent);
+        }
+
+        return $this->folder->owner_id === Auth::id() ? route('files') : route('shared');
+    }
+
     /**
      * @return Collection<int, Node>
      */
@@ -263,7 +280,7 @@ new #[Title('Files')] class extends Component {
         @endif
     </div>
 
-    @if ($this->items->isEmpty())
+    @if ($this->items->isEmpty() && ! $this->upUrl)
         <flux:callout icon="folder-open" :heading="__('This folder is empty')" />
     @else
         <flux:table>
@@ -275,6 +292,25 @@ new #[Title('Files')] class extends Component {
             </flux:table.columns>
 
             <flux:table.rows>
+                @if ($this->upUrl)
+                    <flux:table.row data-test="up-row" class="cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+                        :data-href="$this->upUrl" x-on:click="if ($event.target.closest('a')) return; Livewire.navigate($el.dataset.href)">
+                        <flux:table.cell>
+                            <div class="flex items-center gap-3">
+                                <flux:icon name="arrow-uturn-left" class="size-5 shrink-0 text-zinc-400" />
+                                <flux:link :href="$this->upUrl" wire:navigate variant="ghost" class="font-medium" :aria-label="__('Up one level')">..</flux:link>
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell class="hidden sm:table-cell" />
+                        <flux:table.cell class="hidden sm:table-cell" />
+                        <flux:table.cell />
+                    </flux:table.row>
+                    @if ($this->items->isEmpty())
+                        <flux:table.row>
+                            <flux:table.cell colspan="4" class="text-zinc-500">{{ __('This folder is empty') }}</flux:table.cell>
+                        </flux:table.row>
+                    @endif
+                @endif
                 @foreach ($this->items as $item)
                     <flux:table.row :key="$item->id" data-test="node-row" class="cursor-pointer transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                         :data-href="$item->isFolder() ? route('files', $item) : null" :data-preview="$item->isFile() ? $item->id : null"
