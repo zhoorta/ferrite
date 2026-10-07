@@ -25,7 +25,7 @@
             <nav class="flex items-center gap-4 text-sm">
                 <a href="{{ $repo }}" class="hover:underline">Source</a>
                 @if ($demo)<a href="{{ $demo }}" class="hover:underline">Demo</a>@endif
-                <a href="{{ route('login') }}" class="rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Sign in</a>
+                <a href="{{ auth()->check() ? route('files') : route('login') }}" class="rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">{{ auth()->check() ? 'Open my files' : 'Sign in' }}</a>
             </nav>
         </header>
 
@@ -43,6 +43,10 @@
                     <a href="{{ $repo }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Get the source</a>
                 </div>
                 <p class="mt-4 text-sm text-zinc-500">Free software, AGPL-3.0. Laravel 13, Livewire, Flux UI.</p>
+            </section>
+
+            <section class="pb-16">
+                <img src="{{ asset('img/ferrite-files.png') }}" alt="The Ferrite file browser: a sidebar, folders and files in a list with upload and new-folder buttons" width="1280" height="800" class="w-full rounded-xl border border-zinc-200 shadow-2xl dark:border-zinc-800">
             </section>
 
             <section class="grid gap-4 pb-16 sm:grid-cols-2 lg:grid-cols-3">

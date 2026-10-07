@@ -9,11 +9,11 @@ it('redirects guests to the sign-in form when the landing page is off', function
     $this->get('/')->assertRedirect(route('files'));
 });
 
-it('shows the landing page to guests but sends signed-in users to their files', function () {
+it('shows the landing page to everyone, with a link to the files for signed-in users', function () {
     config(['ferrite.landing' => true, 'ferrite.demo_url' => 'https://demo.example.test']);
 
     $this->get('/')->assertOk()->assertSee('Your files, on your server.')->assertSee('https://demo.example.test');
-    $this->actingAs(User::factory()->create())->get('/')->assertRedirect(route('files'));
+    $this->actingAs(User::factory()->create())->get('/')->assertOk()->assertSee('Open my files');
 });
 
 it('hides the demo button unless demo mode is on', function () {

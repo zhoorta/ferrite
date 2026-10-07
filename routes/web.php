@@ -8,7 +8,7 @@ use App\Http\Middleware\SharePageHeaders;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (config('ferrite.landing') && ! auth()->check()) {
+    if (config('ferrite.landing')) {
         return view('landing');
     }
 

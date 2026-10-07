@@ -4,7 +4,7 @@ Two separate installs of the same code, both behind the same reverse proxy.
 
 ## ferrite.stackcare.pt: project page and private instance
 
-One install, one address. Visitors who are not signed in see the project page at `/`; the **Sign in** link goes to `/login`. Signed-in users are sent to their files. Registration stays closed (`FERRITE_REGISTRATION=false`), so the page is the only thing strangers can reach: the login form, nothing else.
+One install, one address. Everyone sees the project page at `/`; the button top right says **Sign in** (to `/login`) or, once signed in, **Open my files**. Registration stays closed (`FERRITE_REGISTRATION=false`), so the page is the only thing strangers can reach: the login form, nothing else.
 
 ```
 FERRITE_LANDING=true
