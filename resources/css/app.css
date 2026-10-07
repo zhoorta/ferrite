@@ -114,6 +114,24 @@
         --color-zinc-900: #34424f;
         --color-zinc-950: #222c36;
     }
+
+    /* Black and white: neutral greys, white text and accent (the only palette that also drops the cream and terracotta). */
+    .dark[data-palette='bw'] {
+        --color-zinc-700: #3d3d3d;
+        --color-zinc-800: #161616;
+        --color-zinc-900: #0c0c0c;
+        --color-zinc-950: #000000;
+
+        --color-zinc-100: #f5f5f5;
+        --color-zinc-200: #ececec;
+        --color-zinc-300: #d9d9d9;
+        --color-zinc-400: #b3b3b3;
+        --color-zinc-500: #8f8f8f;
+
+        --color-accent: #ffffff;
+        --color-accent-content: #ffffff;
+        --color-accent-foreground: #000000;
+    }
 }
 
 @layer base {
@@ -175,6 +193,11 @@
         radial-gradient(ellipse 80% 50% at 50% -10%, rgb(251 191 36 / .22), transparent 65%),
         radial-gradient(ellipse 60% 40% at 100% 100%, rgb(217 121 79 / .20), transparent 70%),
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .85 0 0 0 0 .6 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Black and white: a plain background, no warm glow or paper grain. */
+.dark[data-palette='bw'] .cozy-bg {
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgb(255 255 255 / .06), transparent 65%);
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
