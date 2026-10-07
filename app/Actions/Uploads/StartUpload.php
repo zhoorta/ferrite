@@ -7,6 +7,7 @@ use App\Actions\Nodes\NodeName;
 use App\Models\Node;
 use App\Models\Upload;
 use App\Models\User;
+use App\Support\Demo;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -35,6 +36,8 @@ class StartUpload
 
         $segments = explode('/', $path);
         $name = NodeName::normalize(array_pop($segments));
+
+        Demo::assertUploadAllowed($actor, $name, $size);
 
         if (count($segments) > self::MAX_DEPTH) {
             throw ValidationException::withMessages(['path' => __('That folder structure is too deep.')]);

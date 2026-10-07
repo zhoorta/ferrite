@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Support\Demo;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/** Public share links do not exist on a demo instance: nothing a visitor uploads is ever served to anyone else. */
+class DisableInDemo
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        abort_if(Demo::enabled(), 404);
+
+        return $next($request);
+    }
+}

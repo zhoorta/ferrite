@@ -4,6 +4,7 @@ use App\Http\Controllers\DemoController;
 use App\Http\Controllers\NodeFileController;
 use App\Http\Controllers\ShareFileController;
 use App\Http\Controllers\UploadController;
+use App\Http\Middleware\DisableInDemo;
 use App\Http\Middleware\SharePageHeaders;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +19,7 @@ Route::get('/', function () {
 Route::post('demo', DemoController::class)->middleware(['guest', 'throttle:6,60'])->name('demo.start');
 
 // Public share links. Node ids must be numeric so they never clash with the action segments.
-Route::middleware(['throttle:120,1', SharePageHeaders::class])->prefix('s/{token}')->group(function () {
+Route::middleware([DisableInDemo::class, 'throttle:120,1', SharePageHeaders::class])->prefix('s/{token}')->group(function () {
     Route::get('download/{node?}', [ShareFileController::class, 'download'])->whereNumber('node')->name('share.download');
     Route::get('preview/{node}', [ShareFileController::class, 'preview'])->whereNumber('node')->name('share.preview');
     Route::get('thumbnail/{node}', [ShareFileController::class, 'thumbnail'])->whereNumber('node')->name('share.thumbnail');

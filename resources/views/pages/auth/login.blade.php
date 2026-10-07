@@ -58,7 +58,7 @@
                     <flux:text class="text-center text-red-600 dark:text-red-400">{{ $message }}</flux:text>
                 @enderror
                 <flux:button type="submit" class="w-full" data-test="demo-button">{{ __('Try the demo') }}</flux:button>
-                <flux:text class="text-center text-xs">{{ __('A throwaway account with sample files, deleted after :minutes minutes.', ['minutes' => config('ferrite.demo.ttl_minutes')]) }}</flux:text>
+                <flux:text class="text-center text-xs">{{ __('A throwaway account with sample files, deleted after :minutes minutes. Public demo: small images, PDFs and text only, no sharing.', ['minutes' => config('ferrite.demo.ttl_minutes')]) }}</flux:text>
             </form>
         @endif
 

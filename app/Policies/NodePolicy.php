@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\Permission;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\Demo;
 
 /**
  * Access is granted to the owner, or to a user the node (or an ancestor) is shared with.
@@ -43,7 +44,8 @@ class NodePolicy
 
     public function share(User $user, Node $node): bool
     {
-        return $this->owns($user, $node) && ! $node->isTrashed();
+        // No sharing in the demo: files there are only ever visible to the visitor who uploaded them.
+        return $this->owns($user, $node) && ! $node->isTrashed() && ! Demo::isDemoUser($user);
     }
 
     public function restore(User $user, Node $node): bool

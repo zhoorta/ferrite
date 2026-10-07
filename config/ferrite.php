@@ -104,16 +104,20 @@ return [
     |
     | A public try-out instance: the sign-in page offers "Try the demo", which creates a throwaway
     | account with sample files and a small quota. Accounts older than `ttl_minutes` are deleted
-    | with their files (`demo:prune`, every 10 minutes). Registration is closed and the account,
-    | password and security settings are locked.
+    | with their files (`demo:prune`, every 10 minutes). Registration is closed, the account,
+    | password and security settings are locked, sharing (links and users) is off, and uploads are
+    | limited to small images, PDFs and plain text (`max_file_mb`), checked by name and by content.
+    | `contact` is shown in the demo banner for takedown requests.
     |
     */
 
     'demo' => [
         'enabled' => (bool) env('FERRITE_DEMO', false),
-        'ttl_minutes' => (int) env('FERRITE_DEMO_TTL_MINUTES', 120),
+        'ttl_minutes' => (int) env('FERRITE_DEMO_TTL_MINUTES', 60),
         'quota_mb' => (int) env('FERRITE_DEMO_QUOTA_MB', 20),
         'max_accounts' => (int) env('FERRITE_DEMO_MAX_ACCOUNTS', 100),
+        'max_file_mb' => (int) env('FERRITE_DEMO_MAX_FILE_MB', 2),
+        'contact' => env('FERRITE_DEMO_CONTACT'),
     ],
 
 ];

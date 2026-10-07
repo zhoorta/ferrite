@@ -9,6 +9,7 @@ use App\Models\Node;
 use App\Models\Upload;
 use App\Models\User;
 use App\Support\ActivityLog;
+use App\Support\Demo;
 use App\Support\StorageManager;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,8 @@ class CompleteUpload
 
         $sha256 = hash_file('sha256', $tmp) ?: throw new RuntimeException('Cannot read the uploaded file.');
         $mime = mime_content_type($tmp) ?: 'application/octet-stream';
+
+        Demo::assertContentAllowed($actor, $mime);
 
         // Identical content of the same owner shares one blob; see duplicateOf().
         $written = null;
