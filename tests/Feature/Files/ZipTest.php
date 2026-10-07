@@ -66,3 +66,23 @@ it('needs view permission, and only folders can be zipped', function () {
     $root->forceFill(['trashed_at' => now()])->save();
     $this->actingAs($this->user)->get(route('nodes.zip', $root))->assertNotFound();
 });
+
+it('zips a selection of files and folders under their own names', function () {
+    $dir = Node::factory()->for($this->user, 'owner')->create(['name' => 'Dir']);
+    storedFile($this->user, 'inner.txt', 'inner', $dir);
+    $file = storedFile($this->user, 'loose.txt', 'loose');
+    storedFile($this->user, 'left-out.txt', 'no');
+
+    $response = $this->get(route('nodes.zip-selection', ['ids' => "{$dir->id},{$file->id}"]))->assertOk();
+
+    expect($response->headers->get('Content-Disposition'))->toContain('Ferrite.zip')
+        ->and(zipEntries($response))->toBe(['Dir/' => null, 'Dir/inner.txt' => 'inner', 'loose.txt' => 'loose']);
+});
+
+it('refuses a selection that includes something the user cannot see', function () {
+    $mine = storedFile($this->user, 'mine.txt', 'x');
+    $theirs = storedFile(User::factory()->create(), 'theirs.txt', 'x');
+
+    $this->get(route('nodes.zip-selection', ['ids' => "{$mine->id},{$theirs->id}"]))->assertForbidden();
+    $this->get(route('nodes.zip-selection', ['ids' => 'abc']))->assertNotFound();
+});

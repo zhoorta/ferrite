@@ -23,6 +23,9 @@ class NodeResponder
 {
     private const CHUNK = 1024 * 1024;
 
+    /** @var array<int, Filesystem> */
+    private array $zipFilesystems = [];
+
     public function __construct(private StorageManager $storage, private Thumbnailer $thumbnails) {}
 
     /**
@@ -112,28 +115,55 @@ class NodeResponder
      */
     public function zip(Node $folder): StreamedResponse
     {
-        return new StreamedResponse(function () use ($folder) {
+        return $this->zipResponse($folder->name.'.zip', function (ZipStream $zip) use ($folder) {
+            $this->addFolder($zip, $folder);
+        });
+    }
+
+    /**
+     * Several files and folders of one folder in a single archive, each under its own name.
+     *
+     * @param  iterable<Node>  $nodes
+     */
+    public function zipMany(iterable $nodes, string $filename): StreamedResponse
+    {
+        return $this->zipResponse($filename, function (ZipStream $zip) use ($nodes) {
+            foreach ($nodes as $node) {
+                if ($node->isFolder()) {
+                    $this->addFolder($zip, $node, "{$node->name}/");
+                } else {
+                    $this->addFile($zip, $node, '');
+                }
+            }
+        });
+    }
+
+    /**
+     * @param  callable(ZipStream): void  $fill
+     */
+    private function zipResponse(string $filename, callable $fill): StreamedResponse
+    {
+        return new StreamedResponse(function () use ($fill) {
             set_time_limit(0);
             $zip = new ZipStream(
                 defaultCompressionMethod: CompressionMethod::STORE,
                 sendHttpHeaders: false,
             );
 
-            $this->addFolder($zip, $folder);
+            $fill($zip);
             $zip->finish();
         }, 200, [
             'Content-Type' => 'application/zip',
-            'Content-Disposition' => $this->disposition('attachment', $folder->name.'.zip'),
+            'Content-Disposition' => $this->disposition('attachment', $filename),
             'Cache-Control' => 'private, no-store',
             'X-Accel-Buffering' => 'no',
             ...$this->safetyHeaders(),
         ]);
     }
 
-    private function addFolder(ZipStream $zip, Node $root): void
+    private function addFolder(ZipStream $zip, Node $root, string $rootPrefix = ''): void
     {
-        $filesystems = [];
-        $queue = [[$root, '']];
+        $queue = [[$root, $rootPrefix]];
 
         while ($queue !== []) {
             [$folder, $prefix] = array_shift($queue);
@@ -145,27 +175,30 @@ class NodeResponder
             foreach (Node::query()->where('parent_id', $folder->id)->notTrashed()->orderBy('name')->get() as $child) {
                 if ($child->isFolder()) {
                     $queue[] = [$child, "{$prefix}{$child->name}/"];
-
-                    continue;
-                }
-
-                if ($child->disk_id === null || $child->path === null) {
-                    continue;
-                }
-
-                $filesystem = $filesystems[$child->disk_id] ??= $this->storage->filesystem(StorageDisk::query()->findOrFail($child->disk_id));
-                $stream = $filesystem->readStream($child->path);
-
-                if ($stream === null) {
-                    continue;
-                }
-
-                try {
-                    $zip->addFileFromStream("{$prefix}{$child->name}", $stream, lastModificationDateTime: $child->updated_at);
-                } finally {
-                    fclose($stream);
+                } else {
+                    $this->addFile($zip, $child, $prefix);
                 }
             }
+        }
+    }
+
+    private function addFile(ZipStream $zip, Node $file, string $prefix): void
+    {
+        if ($file->disk_id === null || $file->path === null) {
+            return;
+        }
+
+        $filesystem = $this->zipFilesystems[$file->disk_id] ??= $this->storage->filesystem(StorageDisk::query()->findOrFail($file->disk_id));
+        $stream = $filesystem->readStream($file->path);
+
+        if ($stream === null) {
+            return;
+        }
+
+        try {
+            $zip->addFileFromStream("{$prefix}{$file->name}", $stream, lastModificationDateTime: $file->updated_at);
+        } finally {
+            fclose($stream);
         }
     }
 

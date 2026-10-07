@@ -237,3 +237,84 @@ it('points the ".." card of the grid at the parent folder', function () {
         ->call('setView', 'grid')
         ->assertSeeHtml('data-href="'.route('files', $parent).'"');
 });
+
+it('moves the ticked items to the trash in one go', function () {
+    $a = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
+    $b = Node::factory()->for($this->user, 'owner')->create(['name' => 'B']);
+    $keep = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'keep.txt']);
+
+    Livewire::test('pages::files.browser')
+        ->set('selected', [(string) $a->id, (string) $b->id])
+        ->assertSee('2 selected')
+        ->call('trashSelection')
+        ->assertSet('selected', []);
+
+    expect($a->fresh()->isTrashed())->toBeTrue()
+        ->and($b->fresh()->isTrashed())->toBeTrue()
+        ->and($keep->fresh()->isTrashed())->toBeFalse();
+});
+
+it('ignores ticked ids that are not listed in the folder', function () {
+    $other = Node::factory()->file()->create(['name' => 'theirs.txt']);
+
+    Livewire::test('pages::files.browser')->set('selected', [$other->id])->call('trashSelection');
+
+    expect($other->fresh()->isTrashed())->toBeFalse();
+});
+
+it('moves the ticked items into a folder from the move dialog', function () {
+    $target = Node::factory()->for($this->user, 'owner')->create(['name' => 'Target']);
+    $a = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
+    $b = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'b.txt']);
+
+    Livewire::test('pages::files.browser')
+        ->set('selected', [$a->id, $b->id])
+        ->call('startMoveSelection')
+        ->call('browseMove', $target->id)
+        ->call('move')
+        ->assertSet('selected', []);
+
+    expect($a->fresh()->parent_id)->toBe($target->id)
+        ->and($b->fresh()->parent_id)->toBe($target->id);
+});
+
+it('moves what it can and reports the name clashes', function () {
+    $target = Node::factory()->for($this->user, 'owner')->create(['name' => 'Target']);
+    Node::factory()->file()->inside($target)->create(['name' => 'a.txt']);
+    $a = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
+    $b = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'b.txt']);
+
+    Livewire::test('pages::files.browser')
+        ->set('selected', [$a->id, $b->id])
+        ->call('startMoveSelection')
+        ->call('browseMove', $target->id)
+        ->call('move');
+
+    expect($a->fresh()->parent_id)->toBeNull()
+        ->and($b->fresh()->parent_id)->toBe($target->id);
+});
+
+it('drags every ticked row along with the dragged one', function () {
+    $target = Node::factory()->for($this->user, 'owner')->create(['name' => 'Target']);
+    $a = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'a.txt']);
+    $b = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'b.txt']);
+    $c = Node::factory()->file()->for($this->user, 'owner')->create(['name' => 'c.txt']);
+
+    Livewire::test('pages::files.browser')
+        ->set('selected', [$a->id, $b->id])
+        ->call('dropMove', $a->id, $target->id);
+
+    expect($a->fresh()->parent_id)->toBe($target->id)
+        ->and($b->fresh()->parent_id)->toBe($target->id)
+        ->and($c->fresh()->parent_id)->toBeNull();
+});
+
+it('selects and clears everything', function () {
+    Node::factory()->file()->for($this->user, 'owner')->count(3)->create();
+
+    Livewire::test('pages::files.browser')
+        ->call('toggleAll')
+        ->assertCount('selected', 3)
+        ->call('toggleAll')
+        ->assertSet('selected', []);
+});

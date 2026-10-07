@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('uploads/{upload}', [UploadController::class, 'update'])->name('uploads.update');
     Route::delete('uploads/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
 
+    Route::get('nodes/zip', [NodeFileController::class, 'zipSelection'])->name('nodes.zip-selection');
     Route::get('nodes/{node}/download', [NodeFileController::class, 'download'])->name('nodes.download');
     Route::get('nodes/{node}/preview', [NodeFileController::class, 'preview'])->name('nodes.preview');
     Route::get('nodes/{node}/thumbnail', [NodeFileController::class, 'thumbnail'])->name('nodes.thumbnail');

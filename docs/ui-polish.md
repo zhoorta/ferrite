@@ -18,3 +18,10 @@ From a visual review on 2026-10-07 (file list in Plum, Light and B&W, plus the l
 5. Fix the taller image row and the icon indent in the file list.
 6. Optional: use the sans font for headings in the app (Fraunces only on sign-in and share pages); trim the twelve themes to about four; simplify the logo at small sizes.
 7. Update `docs/themes.md` when done.
+
+## Bulk actions
+
+- Each row (list) or tile (grid, on hover) has a checkbox; the header checkbox ticks all rows of the folder. Selection lives in `$selected` on the browser component and is cleared after an action.
+- A bar appears with the count and Download (one ZIP, `GET nodes/zip?ids=1,2,3`, max 500, 403 if any item is not viewable), Move (the move dialog, now taking `$moveIds`) and Move to trash. Move and trash only show where the user may edit the folder.
+- Actions run item by item: what is allowed goes through, the rest is listed in a toast ("Some items were skipped"). Ids not listed in the current folder are ignored.
+- Dragging a ticked row onto a folder moves every ticked row.

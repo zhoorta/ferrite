@@ -49,6 +49,27 @@ class NodeFileController extends Controller
     }
 
     /**
+     * Several files and folders of one folder as one archive: `?ids=1,2,3`. Anything not viewable is a 403.
+     */
+    public function zipSelection(Request $request): Response
+    {
+        $ids = collect(explode(',', (string) $request->query('ids')))
+            ->filter(fn (string $id) => ctype_digit($id))
+            ->map(fn (string $id) => (int) $id)
+            ->unique()
+            ->take(500)
+            ->values();
+
+        $nodes = Node::query()->whereKey($ids)->notTrashed()->orderByDesc('type')->orderBy('name')->get();
+
+        abort_if($nodes->isEmpty(), 404);
+        $nodes->each(fn (Node $node) => Gate::authorize('view', $node));
+        $nodes->each(fn (Node $node) => $this->logDownload($request, $node));
+
+        return $this->responder->zipMany($nodes, 'Ferrite.zip');
+    }
+
+    /**
      * Owners downloading their own files is not worth a log line; collaborators doing it is.
      * Only the start of a download counts, not each Range request of a media player.
      */

@@ -12,6 +12,7 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Session;
@@ -29,7 +30,11 @@ new #[Title('Files')] class extends Component {
 
     public ?int $renameId = null;
 
-    public ?int $moveId = null;
+    /** @var array<int, int|string> Ids ticked in the list, as the checkboxes send them. */
+    public array $selected = [];
+
+    /** @var array<int, int> Nodes the move dialog is about. */
+    public array $moveIds = [];
 
     public ?int $previewId = null;
 
@@ -124,10 +129,35 @@ new #[Title('Files')] class extends Component {
             ->where('owner_id', Auth::id())
             ->where('parent_id', $this->moveBrowseId)
             ->where('type', 'folder')
-            ->whereKeyNot($this->moveId)
+            ->whereKeyNot($this->moveIds)
             ->notTrashed()
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * The ticked nodes that are still listed here.
+     *
+     * @return Collection<int, Node>
+     */
+    #[Computed]
+    public function selection(): Collection
+    {
+        $ids = array_map('intval', $this->selected);
+
+        return $this->items->whereIn('id', $ids)->values();
+    }
+
+    public function toggleAll(): void
+    {
+        $this->selected = count($this->selection) === $this->items->count() ? [] : $this->items->pluck('id')->all();
+        unset($this->selection);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selected = [];
+        unset($this->selection);
     }
 
     #[Computed]
@@ -249,8 +279,22 @@ new #[Title('Files')] class extends Component {
         $node = Node::findOrFail($id);
         Gate::authorize('move', $node);
 
-        $this->moveId = $node->id;
+        $this->moveIds = [$node->id];
         $this->moveBrowseId = $node->parent_id;
+        $this->resetErrorBag();
+        Flux::modal('move')->show();
+    }
+
+    public function startMoveSelection(): void
+    {
+        $nodes = $this->selection->filter(fn (Node $node) => Gate::allows('move', $node));
+
+        if ($nodes->isEmpty()) {
+            return;
+        }
+
+        $this->moveIds = $nodes->pluck('id')->all();
+        $this->moveBrowseId = $this->folderId;
         $this->resetErrorBag();
         Flux::modal('move')->show();
     }
@@ -263,32 +307,96 @@ new #[Title('Files')] class extends Component {
 
     public function move(MoveNode $action): void
     {
-        $action->handle(Auth::user(), Node::findOrFail($this->moveId), $this->moveBrowseFolder);
+        $destination = $this->moveBrowseFolder;
 
-        $this->reset('moveId', 'moveBrowseId');
+        if (count($this->moveIds) === 1) {
+            $action->handle(Auth::user(), Node::findOrFail($this->moveIds[0]), $destination);
+            $failed = [];
+        } else {
+            $failed = $this->each($this->moveIds, fn (Node $node) => $action->handle(Auth::user(), $node, $destination));
+        }
+
+        if ($failed !== [] && count($failed) === count($this->moveIds)) {
+            $this->addError('destination', $failed[0]);
+
+            return;
+        }
+
+        $this->reset('moveIds', 'moveBrowseId');
+        $this->clearSelection();
         unset($this->items);
         Flux::modal('move')->close();
-        Flux::toast(variant: 'success', text: __('Moved.'));
+        $this->report(__('Moved.'), $failed);
+    }
+
+    public function trashSelection(TrashNode $action): void
+    {
+        $ids = $this->selection->pluck('id')->all();
+        $failed = $this->each($ids, fn (Node $node) => $action->handle(Auth::user(), $node));
+
+        $this->clearSelection();
+        unset($this->items);
+        $this->report(__('Moved to trash.'), $failed);
+    }
+
+    /**
+     * Run $callback on each node, collecting the reason for each one that is refused.
+     *
+     * @param  array<int, int>  $ids
+     * @return array<int, string>
+     */
+    private function each(array $ids, Closure $callback): array
+    {
+        $failed = [];
+
+        foreach (Node::findMany($ids) as $node) {
+            try {
+                $callback($node);
+            } catch (ValidationException $e) {
+                $failed[] = "{$node->name}: ".collect($e->errors())->flatten()->first();
+            } catch (AuthorizationException) {
+                $failed[] = "{$node->name}: ".__('Not allowed.');
+            }
+        }
+
+        return $failed;
+    }
+
+    /** @param  array<int, string>  $failed */
+    private function report(string $done, array $failed): void
+    {
+        if ($failed === []) {
+            Flux::toast(variant: 'success', text: $done);
+        } else {
+            Flux::toast(variant: 'danger', text: __('Some items were skipped.').' '.implode('; ', array_slice($failed, 0, 3)));
+        }
     }
 
     /** Move by dragging a row onto a folder (or "..", which is the parent; null is the root). */
     public function dropMove(int $id, ?int $destinationId, MoveNode $action): void
     {
-        if ($id === $destinationId) {
+        // Dragging a ticked row takes every ticked row with it.
+        $ids = in_array($id, array_map('intval', $this->selected), true)
+            ? $this->selection->pluck('id')->all()
+            : [$id];
+        $ids = array_values(array_diff($ids, [$destinationId]));
+
+        if ($ids === []) {
             return;
         }
 
         try {
-            $node = Node::findOrFail($id);
-            $action->handle(Auth::user(), $node, $destinationId === null ? null : Node::findOrFail($destinationId));
+            $destination = $destinationId === null ? null : Node::findOrFail($destinationId);
+            $failed = $this->each($ids, fn (Node $node) => $action->handle(Auth::user(), $node, $destination));
         } catch (ValidationException $e) {
             Flux::toast(variant: 'danger', text: collect($e->errors())->flatten()->first());
 
             return;
         }
 
+        $this->clearSelection();
         unset($this->items);
-        Flux::toast(variant: 'success', text: __('Moved.'));
+        $this->report(__('Moved.'), $failed);
     }
 
     /** ".." accepts a drop when the parent is visible or the folder is the user's own (the parent is then the root). */
@@ -360,6 +468,19 @@ new #[Title('Files')] class extends Component {
         </div>
     </div>
 
+    @if (count($this->selection) > 0)
+        <div class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800" data-test="bulk-bar">
+            <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="clearSelection" :aria-label="__('Clear selection')" data-test="bulk-clear" />
+            <span class="me-auto text-sm font-medium" data-test="bulk-count">{{ __(':count selected', ['count' => count($this->selection)]) }}</span>
+
+            <flux:button size="sm" icon="arrow-down-tray" :href="route('nodes.zip-selection', ['ids' => $this->selection->pluck('id')->implode(',')])" data-test="bulk-download">{{ __('Download') }}</flux:button>
+            @if ($this->canCreate)
+                <flux:button size="sm" icon="arrow-right-circle" wire:click="startMoveSelection" data-test="bulk-move">{{ __('Move') }}</flux:button>
+                <flux:button size="sm" icon="trash" variant="danger" wire:click="trashSelection" data-test="bulk-trash">{{ __('Move to trash') }}</flux:button>
+            @endif
+        </div>
+    @endif
+
     @if ($this->items->isEmpty() && ! $this->upUrl)
         <flux:callout icon="folder-open" :heading="__('This folder is empty')" />
     @elseif ($view === 'grid')
@@ -376,8 +497,11 @@ new #[Title('Files')] class extends Component {
                 <div wire:key="grid-{{ $item->id }}" data-test="node-row" @if ($this->canCreate) draggable="true" data-node-id="{{ $item->id }}" @endif @if ($item->isFolder() && $this->canCreate) data-drop-id="{{ $item->id }}" @endif
                     class="group relative data-over:bg-zinc-100 data-over:ring-2 data-over:ring-accent dark:data-over:bg-zinc-700/60 flex cursor-pointer flex-col gap-2 rounded-xl border border-zinc-200 p-2 transition-colors hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                     @if ($item->isFolder()) data-href="{{ route('files', $item) }}" @else data-preview="{{ $item->id }}" @endif
-                    x-on:click="if ($event.target.closest('a, button, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
+                    x-on:click="if ($event.target.closest('a, button, label, input, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
                     x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
+                    <div class="absolute start-3 top-3 z-10 rounded bg-white/80 p-0.5 dark:bg-zinc-900/80 {{ in_array((string) $item->id, array_map('strval', $selected), true) ? '' : 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100' }}">
+                        <flux:checkbox wire:model.live="selected" value="{{ $item->id }}" :aria-label="__('Select :name', ['name' => $item->name])" data-test="select-row" />
+                    </div>
                     <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-zinc-50 dark:bg-zinc-800">
                         @if ($item->isFile() && app(Thumbnailer::class)->supports($item))
                             <span x-data="{ failed: false }" class="flex size-full items-center justify-center">
@@ -410,6 +534,9 @@ new #[Title('Files')] class extends Component {
     @else
         <flux:table>
             <flux:table.columns>
+                <flux:table.column class="w-8">
+                    <flux:checkbox wire:click="toggleAll" :checked="count($this->selection) > 0 && count($this->selection) === $this->items->count()" :indeterminate="count($this->selection) > 0 && count($this->selection) < $this->items->count()" :aria-label="__('Select all')" data-test="select-all" />
+                </flux:table.column>
                 <flux:table.column>{{ __('Name') }}</flux:table.column>
                 <flux:table.column class="hidden sm:table-cell" align="end">{{ __('Size') }}</flux:table.column>
                 <flux:table.column class="hidden sm:table-cell">{{ __('Modified') }}</flux:table.column>
@@ -420,6 +547,7 @@ new #[Title('Files')] class extends Component {
                 @if ($this->upUrl)
                     <flux:table.row data-test="up-row" class="cursor-pointer transition-colors hover:bg-zinc-100 data-over:bg-zinc-100 data-over:outline-2 data-over:-outline-offset-2 data-over:outline-accent dark:hover:bg-zinc-700/60 dark:data-over:bg-zinc-700/60"
                         :data-drop-id="$this->upDropId" :data-href="$this->upUrl" x-on:click="if ($event.target.closest('a')) return; Livewire.navigate($el.dataset.href)">
+                        <flux:table.cell />
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
                                 <flux:icon name="arrow-uturn-left" class="size-5 shrink-0 text-zinc-400" />
@@ -432,15 +560,18 @@ new #[Title('Files')] class extends Component {
                     </flux:table.row>
                     @if ($this->items->isEmpty())
                         <flux:table.row>
-                            <flux:table.cell colspan="4" class="text-zinc-500">{{ __('This folder is empty') }}</flux:table.cell>
+                            <flux:table.cell colspan="5" class="text-zinc-500">{{ __('This folder is empty') }}</flux:table.cell>
                         </flux:table.row>
                     @endif
                 @endif
                 @foreach ($this->items as $item)
                     <flux:table.row :key="$item->id" data-test="node-row" :draggable="$this->canCreate ? 'true' : null" :data-node-id="$this->canCreate ? $item->id : null" :data-drop-id="$item->isFolder() && $this->canCreate ? $item->id : null" class="cursor-pointer transition-colors data-over:bg-zinc-100 data-over:outline-2 data-over:-outline-offset-2 data-over:outline-accent dark:data-over:bg-zinc-700/60 hover:bg-zinc-100 has-[[data-flux-dropdown][data-open]]:bg-zinc-100 dark:hover:bg-zinc-700/60 dark:has-[[data-flux-dropdown][data-open]]:bg-zinc-700/60"
                         :data-href="$item->isFolder() ? route('files', $item) : null" :data-preview="$item->isFile() ? $item->id : null"
-                        x-on:click="if ($event.target.closest('a, button, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
+                        x-on:click="if ($event.target.closest('a, button, label, input, [data-flux-dropdown]') || window.getSelection().toString()) return; $el.dataset.href ? Livewire.navigate($el.dataset.href) : $wire.preview(Number($el.dataset.preview))"
                         x-on:contextmenu="if ($event.shiftKey) return; $event.preventDefault(); const c = $el.querySelector('[data-test=row-context]'); c.style.left = $event.clientX + 'px'; c.style.top = $event.clientY + 'px'; c.querySelector('button').click()">
+                        <flux:table.cell>
+                            <flux:checkbox wire:model.live="selected" value="{{ $item->id }}" :aria-label="__('Select :name', ['name' => $item->name])" data-test="select-row" />
+                        </flux:table.cell>
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
                                 @if ($item->isFile() && app(Thumbnailer::class)->supports($item))

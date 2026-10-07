@@ -35,6 +35,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 
 - [x] 8b. Deduplication: identical files of one owner share a blob, deleted with its last node (see `docs/uploads.md`; 338 tests)
 - [x] 9. UI polish: new default Ferrite theme, the twelve non-vintage themes removed, image row thumbnails sized like the other icons (see `docs/ui-polish.md`)
+- [x] 11. Bulk actions: tick rows (list and grid, select all), then download as one ZIP, move or trash; dragging a ticked row moves all ticked rows (see `docs/ui-polish.md`; not yet checked by hand)
 - [ ] 10. Large files on remote disks (Hetzner Storage Box via SFTP, port 23):
   - [ ] Finish uploads in a queued job (hash, mime, copy to disk, create node) with a "processing" state in the UI, so the last chunk request no longer waits for the remote copy and times out
   - [ ] Clean up on failure: no orphaned remote file without a `nodes` row, no upload stuck at 100%
