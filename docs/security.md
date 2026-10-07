@@ -53,7 +53,7 @@ Users upload files and Ferrite serves them from its own origin. Anything a brows
 - **Activity log keeps no IP addresses**, and failed logins are only throttled, not logged.
 - **Losing `APP_KEY`** makes stored 2FA secrets and disk credentials unreadable.
 - **Build tooling advisories**: `npm audit` reports critical issues in `vite-plus` (via `oxfmt`/`tinypool`) and `concurrently` (via `shell-quote`). They affect development and the asset build only; none of it ships in the Docker image or runs in production. The suggested fix upgrades `vite-plus` and breaks the build, so it was not applied.
-- **Install paths**: the Docker image was built and run end to end once (2026-10-07; login, chunked upload, download, restart). The standard Laravel install (nginx, PHP-FPM, systemd workers) has not been run through on a clean server yet; it is being deployed on the author's own server.
+- **Install paths**: the Docker image was built and run end to end once (2026-10-07; login, chunked upload, download, restart). The standard Laravel install (nginx, PHP 8.5-FPM, systemd workers) is what the author runs in production at ferrite.stackcare.pt.
 
 ## Before going public
 

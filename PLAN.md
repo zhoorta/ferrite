@@ -68,7 +68,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
 
 ## Ideas (not scheduled)
 
-Suggested next: deploy (see step 13b), then S3 against a real service. The remote SFTP test command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
+Suggested next: deploy the Docker demo (private instance is live natively on PHP 8.5, see step 13b), then S3 against a real service. The remote SFTP test command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
 
 ```sh
 FERRITE_TEST_SFTP_HOST=u123.your-storagebox.de FERRITE_TEST_SFTP_PORT=23 \

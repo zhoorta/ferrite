@@ -5,7 +5,7 @@
 Two ways to run Ferrite; pick one.
 
 - **Docker**: a server with Docker and Docker Compose. Nothing else to install; the image brings PHP, the web server, the scheduler and the queue workers. Easiest, and the same on every host.
-- **Standard Laravel install** ("without Docker"): PHP 8.3 or newer (8.4 and 8.5 work) with `gd`, `exif`, `zip`, `intl`, `bcmath`, `mbstring`, `xml`, `curl` and `pdo_sqlite` (or `pdo_mysql`), Composer, Node 20+ (to build the assets, can be done elsewhere), nginx or Apache, and permission to run a systemd service (or Supervisor) and a cron entry. Best when the server already runs PHP sites.
+- **Standard Laravel install** ("without Docker"): PHP 8.3 or newer (the author runs 8.5, locally and in production) with `gd`, `exif`, `zip`, `intl`, `bcmath`, `mbstring`, `xml`, `curl` and `pdo_sqlite` (or `pdo_mysql`), Composer, Node 20+ (to build the assets, can be done elsewhere), nginx or Apache, and permission to run a systemd service (or Supervisor) and a cron entry. Best when the server already runs PHP sites.
 
 Either way you need a domain name and HTTPS in front of it. 512 MB of RAM is enough for a small team; disk space depends on what you store (or use an S3 or SFTP disk).
 
@@ -75,7 +75,7 @@ Set `TRUSTED_PROXIES` to the proxy's address (or `*` if only the proxy can reach
 
 ## Without Docker (standard Laravel install)
 
-Tested on Ubuntu 24.04 with nginx and PHP-FPM; other setups follow the same shape. Replace the paths and the PHP version as needed.
+Running in production on Ubuntu 24.04 with nginx and PHP 8.5-FPM; other setups follow the same shape. Replace the paths and the PHP version as needed.
 
 ### 1. Code and dependencies
 
