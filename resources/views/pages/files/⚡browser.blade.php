@@ -461,19 +461,32 @@ new #[Title('Files')] class extends Component {
                 x-on:keydown.right.window="if (!$event.target.closest('audio, video, input, textarea')) $wire.previewStep(1)">
                 <flux:heading size="lg" class="truncate pe-8">{{ $this->previewNode->name }}</flux:heading>
 
-                <x-file-preview
-                    :kind="$this->previewKind"
-                    :url="route('nodes.preview', $this->previewNode)"
-                    :name="$this->previewNode->name"
-                    :text="$this->previewText" />
+                @php($nav = $this->previewNeighbours)
+                <div class="relative" data-test="preview-nav">
+                    <x-file-preview
+                        :kind="$this->previewKind"
+                        :url="route('nodes.preview', $this->previewNode)"
+                        :name="$this->previewNode->name"
+                        :text="$this->previewText" />
+
+                    @if ($nav['total'] > 1)
+                        <div class="absolute inset-y-0 start-2 flex items-center">
+                            <button type="button" @disabled($nav['prev'] === null) class="disabled:cursor-not-allowed disabled:opacity-30 flex size-10 items-center justify-center rounded-full bg-black/60 text-white shadow-md ring-1 ring-white/40 backdrop-blur-sm transition-colors enabled:hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-white" wire:click="previewStep(-1)" aria-label="{{ __('Previous') }}" data-test="preview-prev">
+                                <flux:icon name="chevron-left" class="size-6" />
+                            </button>
+                        </div>
+                    @endif
+                    @if ($nav['total'] > 1)
+                        <div class="absolute inset-y-0 end-2 flex items-center">
+                            <button type="button" @disabled($nav['next'] === null) class="disabled:cursor-not-allowed disabled:opacity-30 flex size-10 items-center justify-center rounded-full bg-black/60 text-white shadow-md ring-1 ring-white/40 backdrop-blur-sm transition-colors enabled:hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-white" wire:click="previewStep(1)" aria-label="{{ __('Next') }}" data-test="preview-next">
+                                <flux:icon name="chevron-right" class="size-6" />
+                            </button>
+                        </div>
+                    @endif
+                </div>
 
                 <div class="flex items-center justify-between gap-2">
-                    @php($nav = $this->previewNeighbours)
-                    <div class="flex items-center gap-2" data-test="preview-nav">
-                        <flux:button size="sm" icon="chevron-left" wire:click="previewStep(-1)" :disabled="$nav['prev'] === null" :aria-label="__('Previous')" />
-                        <flux:text size="sm">{{ $nav['position'] }} / {{ $nav['total'] }}</flux:text>
-                        <flux:button size="sm" icon="chevron-right" wire:click="previewStep(1)" :disabled="$nav['next'] === null" :aria-label="__('Next')" />
-                    </div>
+                    <flux:text size="sm">{{ $nav['position'] }} / {{ $nav['total'] }}</flux:text>
                     <div class="flex items-center gap-2">
                         <flux:button icon="arrows-pointing-out" x-show="document.fullscreenEnabled" x-cloak
                             x-on:click="full ? document.exitFullscreen() : $root.requestFullscreen()"
