@@ -2,6 +2,8 @@
 
 The search page finds words inside files as well as names. A name match is shown first; below it, "Found inside files" lists other files with a snippet around the match.
 
+Clicking a result opens the same preview dialog as the file browser (arrows step through the results, Download and full screen included) instead of a new tab.
+
 ## What gets indexed
 
 - **Text files**: anything with a `text/*` type or a known text type (JSON, XML, YAML, shell, SQL and similar), plus files with a generic type but a text extension (`.md`, `.csv`, `.log`, `.php`, `.js` and so on). Only the first `FERRITE_SEARCH_MAX_TEXT_KB` (2048) are read. A file that is binary (a NUL byte) or not valid UTF-8 is skipped.

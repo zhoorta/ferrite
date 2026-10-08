@@ -1,9 +1,14 @@
 <?php
 
+use App\Models\Node;
+use App\Support\FileKind;
 use App\Support\NodeSearch;
 use App\Support\Search\ContentSearch;
+use App\Support\TextPreview;
+use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -12,6 +17,8 @@ use Livewire\Component;
 new #[Title('Search')] class extends Component {
     #[Url(as: 'q')]
     public string $q = '';
+
+    public ?int $previewId = null;
 
     /**
      * @return Collection<int, array{node: \App\Models\Node, path: string, folder_id: int|null}>
@@ -33,6 +40,86 @@ new #[Title('Search')] class extends Component {
         $named = $this->results->pluck('node.id');
 
         return app(NodeSearch::class)->contents(Auth::user(), $this->q)->reject(fn (array $result) => $named->contains($result['node']->id))->values();
+    }
+
+    #[Computed]
+    public function previewNode(): ?Node
+    {
+        return $this->previewId === null ? null : Node::find($this->previewId);
+    }
+
+    #[Computed]
+    public function previewKind(): ?string
+    {
+        $node = $this->previewNode;
+
+        return $node !== null && FileKind::inlineType($node->mime) !== null ? FileKind::of($node->mime) : null;
+    }
+
+    /**
+     * @return array{text: string, truncated: bool}|null
+     */
+    #[Computed]
+    public function previewText(): ?array
+    {
+        $node = $this->previewNode;
+
+        return $node !== null && $this->previewKind === 'text' ? TextPreview::read($node) : null;
+    }
+
+    /**
+     * The files in the results, in the order shown, which the preview steps through.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    private function fileIds(): Collection
+    {
+        return $this->results->pluck('node')->merge($this->contentResults->pluck('node'))
+            ->filter(fn (Node $node) => $node->isFile())->pluck('id')->values();
+    }
+
+    /**
+     * @return array{prev: ?int, next: ?int, position: int, total: int}
+     */
+    #[Computed]
+    public function previewNeighbours(): array
+    {
+        $ids = $this->fileIds();
+        $index = $ids->search($this->previewId);
+
+        return [
+            'prev' => $index === false ? null : $ids->get($index - 1 < 0 ? -1 : $index - 1),
+            'next' => $index === false ? null : $ids->get($index + 1),
+            'position' => $index === false ? 0 : $index + 1,
+            'total' => $ids->count(),
+        ];
+    }
+
+    public function preview(int $id): void
+    {
+        $node = Node::findOrFail($id);
+        Gate::authorize('view', $node);
+
+        abort_unless($node->isFile() && ! $node->isTrashed(), 404);
+
+        $this->previewId = $node->id;
+        unset($this->previewNode, $this->previewKind, $this->previewText, $this->previewNeighbours);
+        Flux::modal('preview')->show();
+    }
+
+    /** Preview the previous (-1) or next (1) file in the results. */
+    public function previewStep(int $direction): void
+    {
+        $id = $this->previewNeighbours[$direction < 0 ? 'prev' : 'next'];
+
+        if ($id !== null) {
+            $this->preview($id);
+        }
+    }
+
+    public function closePreview(): void
+    {
+        $this->previewId = null;
     }
 
     #[Computed]
@@ -73,7 +160,7 @@ new #[Title('Search')] class extends Component {
                                 @if ($item->isFolder())
                                     <flux:link :href="route('files', $item)" wire:navigate variant="ghost" class="font-medium">{{ $item->name }}</flux:link>
                                 @else
-                                    <flux:link :href="route('nodes.preview', $item)" target="_blank" variant="ghost" class="font-medium">{{ $item->name }}</flux:link>
+                                    <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -108,7 +195,7 @@ new #[Title('Search')] class extends Component {
                             <div class="min-w-0 space-y-1">
                                 <div class="flex items-center gap-2">
                                     <flux:icon name="document" class="size-5 shrink-0 text-zinc-400" />
-                                    <flux:link :href="route('nodes.preview', $item)" target="_blank" variant="ghost" class="truncate font-medium">{{ $item->name }}</flux:link>
+                                    <button type="button" wire:click="preview({{ $item->id }})" class="truncate text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 </div>
                                 <p class="text-sm text-zinc-600 dark:text-zinc-400 [&_mark]:rounded [&_mark]:bg-accent/25 [&_mark]:px-0.5 [&_mark]:text-inherit">{!! \App\Support\Search\ContentSearch::html($result['snippet']) !!}</p>
                                 <p class="text-xs text-zinc-500">
@@ -126,4 +213,6 @@ new #[Title('Search')] class extends Component {
             </div>
         @endif
     @endif
+
+    <x-preview-modal :node="$this->previewNode" :kind="$this->previewKind" :text="$this->previewText" :nav="$this->previewNeighbours" />
 </div>

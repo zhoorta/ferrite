@@ -341,6 +341,36 @@ describe('the search page', function () {
         expect($component->instance()->contentResults->map(fn ($r) => $r['node']->name)->all())->toBe(['notes.txt']);
     });
 
+    it('previews a result in the dialog and steps through the results', function () {
+        $named = indexed($this->user, 'budget.txt', 'the budget lives here');
+        $inside = indexed($this->user, 'notes.txt', 'remember the budget');
+
+        $this->actingAs($this->user);
+
+        $component = Livewire::test('pages::files.search')->set('q', 'budget')
+            ->call('preview', $inside->id)
+            ->assertSet('previewId', $inside->id)
+            ->assertSee('remember the budget')
+            ->assertSee('2 / 2');
+
+        $component->call('previewStep', -1)->assertSet('previewId', $named->id)->assertSee('the budget lives here');
+        $component->call('previewStep', -1)->assertSet('previewId', $named->id);
+        $component->call('closePreview')->assertSet('previewId', null);
+    });
+
+    it('refuses to preview what the user may not see, folders and trashed files', function () {
+        $other = User::factory()->create();
+        $theirs = storedFile($other, 'theirs.txt', 'private');
+        $folder = Node::factory()->for($this->user, 'owner')->create(['name' => 'Docs']);
+        $gone = storedFile($this->user, 'gone.txt', 'bin');
+        $gone->forceFill(['trashed_at' => now()])->save();
+
+        $this->actingAs($this->user);
+        Livewire::test('pages::files.search')->call('preview', $theirs->id)->assertForbidden();
+        Livewire::test('pages::files.search')->call('preview', $folder->id)->assertNotFound();
+        Livewire::test('pages::files.search')->call('preview', $gone->id)->assertNotFound();
+    });
+
     it('says nothing matches when neither names nor contents do', function () {
         $this->actingAs($this->user);
 
