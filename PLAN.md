@@ -69,7 +69,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [ ] Tests: round trip, Range at chunk boundaries, tampered chunk rejected, wrong key, mixed disk, dedup across encrypted blobs, rekey
   - [ ] Docs: say what it does and does not protect; extracted search text and thumbnails stay unencrypted unless handled (decide: encrypt thumbnails, and offer to skip content indexing on encrypted disks); full-disk encryption on the host as the simpler alternative
 
-- [x] 16. Drop-box links (see `docs/sharing.md`; guest page, dialog and the share badge in the file browser (left of the star) not yet checked in a browser; 449 tests): a guest uploads into one folder, sees nothing (details in `docs/sharing.md` when it lands):
+- [x] 16. Drop-box links (see `docs/sharing.md`; checked by hand; 449 tests): a guest uploads into one folder, sees nothing (details in `docs/sharing.md` when it lands):
   - [x] Schema: `shares.kind` (`view` | `dropbox`, default `view`), `max_bytes` (nullable cap per link); a drop-box link targets a folder only; password and expiry as for view links
   - [x] Guest page: drop zone on the existing chunked upload protocol through a token-scoped endpoint; no listing of the folder, only what this session sent; no rename, delete or overwrite; clashing names get a suffix
   - [x] Limits: counts against the folder owner's quota, per-link cap, rate limit per IP (like password guesses); revoked, expired, unknown and trashed answer 404
