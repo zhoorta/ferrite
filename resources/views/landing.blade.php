@@ -19,7 +19,7 @@
 <html lang="en" class="dark">
     <head>
         @include('partials.head', ['title' => 'Self-hosted file storage'])
-        <meta name="description" content="Ferrite is a free, self-hosted file storage app built with Laravel and Livewire: a Google Drive replacement for one person or a small team.">
+        <meta name="description" content="Ferrite is a free, self-hosted file server for one person or a small team: upload, preview and share from the browser, on your own server or storage. Built with Laravel and Livewire.">
     </head>
     <body class="cozy-bg min-h-screen antialiased">
         <header class="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
@@ -38,8 +38,8 @@
             <section class="py-16 text-center sm:py-24">
                 <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-6xl">Your files, on your server.</h1>
                 <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
-                    Ferrite is a self-hosted, web-only file storage app: a Google Drive replacement for one person or a small team.
-                    No sync clients, no WebDAV, nothing to install on your devices.
+                    Ferrite is a small, self-hosted file server you use from the browser: upload, preview, share. Without the weight of a full cloud suite.
+                    For one person or a small team. No sync clients, no WebDAV, nothing to install on your devices.
                 </p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
                     @if ($demo)
@@ -52,6 +52,11 @@
 
             <section class="pb-16">
                 <img id="app-shot" src="{{ asset('img/themes/ferrite.png') }}" alt="The Ferrite file browser: a sidebar, folders and files in a list with upload and new-folder buttons" width="1280" height="800" class="w-full rounded-xl border border-zinc-200 shadow-2xl dark:border-zinc-800">
+            </section>
+
+            <section class="pb-16 text-center">
+                <h2 class="font-serif text-2xl font-semibold">Who it is for</h2>
+                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Self-hosters, homelabs and small teams who want private file storage on a VPS or a Storage Box, without running Nextcloud.</p>
             </section>
 
             <section class="pb-16 text-center">

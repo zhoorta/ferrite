@@ -7,7 +7,7 @@
 
 # Ferrite
 
-Self-hosted file storage for one person or a small team: a Google Drive replacement that runs on your own server. Web only, built with Laravel, Livewire and Flux. No sync clients and no WebDAV, by design.
+A small, self-hosted file server for one person or a small team: upload, preview and share from the browser, without the weight of a full cloud suite. For self-hosters and homelabs who want private storage on their own server. Web only, built with Laravel, Livewire and Flux. No sync clients and no WebDAV, by design.
 
 Not to be confused with other projects of the same name, such as the Rust Markdown editor Ferrite. This one is a Laravel file-storage app, named after the magnetic coating on tape.
 
