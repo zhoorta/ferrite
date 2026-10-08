@@ -160,7 +160,25 @@ ExecStart=/usr/bin/php artisan queue:work uploads --queue=uploads --tries=1 --ti
 WantedBy=multi-user.target
 ```
 
-`/etc/systemd/system/ferrite-queue.service` is the same with `Description=Ferrite queue worker` and `ExecStart=/usr/bin/php artisan queue:work --queue=default,search --tries=3 --sleep=3 --max-time=3600`. The `search` queue holds the jobs that read file contents for content search; listing it after `default` keeps it from holding up anything else.
+`/etc/systemd/system/ferrite-queue.service`:
+
+```ini
+[Unit]
+Description=Ferrite queue worker
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/ferrite
+Restart=always
+RestartSec=2
+ExecStart=/usr/bin/php artisan queue:work --queue=default,search --tries=3 --sleep=3 --max-time=3600
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The `search` queue holds the jobs that read file contents for content search; listing it after `default` keeps it from holding up anything else.
 
 The first `uploads` is a queue *connection* with a retry window of about six hours (`config/queue.php`); a worker on the default connection would pick a long copy up a second time after 90 seconds. Use the command exactly as written.
 
@@ -170,7 +188,33 @@ sudo systemctl enable --now ferrite-uploads ferrite-queue
 echo '* * * * * www-data cd /var/www/ferrite && php artisan schedule:run >> /dev/null 2>&1' | sudo tee /etc/cron.d/ferrite
 ```
 
-Workers keep the old code in memory, so restart both after every upgrade. With Supervisor, run the same two commands as programs instead. `QUEUE_CONNECTION=sync` removes the worker, but then uploads finish inside the last request: fine for small files on a local disk, not for big ones or remote disks.
+Workers keep the old code in memory, so restart both after every upgrade (`sudo systemctl restart ferrite-uploads ferrite-queue`).
+
+**With Supervisor instead of systemd**, the same two commands as programs, for example `/etc/supervisor/conf.d/ferrite.conf`:
+
+```ini
+[program:ferrite-uploads]
+command=/usr/bin/php artisan queue:work uploads --queue=uploads --tries=1 --timeout=0 --sleep=1 --max-time=3600
+directory=/var/www/ferrite
+user=www-data
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/ferrite-uploads.log
+
+[program:ferrite-queue]
+command=/usr/bin/php artisan queue:work --queue=default,search --tries=3 --sleep=3 --max-time=3600
+directory=/var/www/ferrite
+user=www-data
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/ferrite-queue.log
+```
+
+Then `sudo supervisorctl reread && sudo supervisorctl update`, and `sudo supervisorctl restart ferrite-uploads ferrite-queue` after upgrades. The scheduler still needs the cron entry above.
+
+Setting `QUEUE_CONNECTION=sync` removes the need for the workers, but then uploads finish inside the last request: fine for small files on a local disk, not for big ones or remote disks. (Text files are still indexed for search at once; PDFs wait for the hourly scheduler run, see `docs/content-search.md`.)
 
 ### 5. First account
 
