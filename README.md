@@ -89,7 +89,7 @@ sudo chown -R www-data:www-data storage bootstrap/cache database
 php artisan optimize
 ```
 
-Then three things, all required ([details and nginx config](docs/install.md#without-docker-standard-laravel-install)):
+Then three things, all required. The guide has the full nginx config ([step 3](docs/install.md#3-web-server)) and the systemd units and cron entry ([step 4](docs/install.md#4-queue-workers-and-scheduler)):
 
 1. **Web server** with `public/` as the document root.
 2. **Two queue workers**, as systemd units or Supervisor programs. Without the first, uploads stay at "Storing the file…":
