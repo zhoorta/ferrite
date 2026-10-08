@@ -35,4 +35,4 @@ A folder can also get an **upload link** (`shares.kind = dropbox`). Whoever has 
 - Guests cannot delete or change what they sent, and cannot see it afterwards beyond the progress list on the page.
 - Not included: e-mail notification, download limits, per-IP caps beyond the request throttles.
 
-In the file browser, items you own that have an active link, an upload link or people they are shared with show small icons next to the name (hover for the details); clicking them opens the share dialog.
+In the file browser, items you own that have an active link, an upload link or people they are shared with show small icons left of the star (hover for the details); clicking them opens the share dialog.

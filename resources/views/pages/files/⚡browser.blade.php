@@ -691,10 +691,10 @@ new #[Title('Files')] class extends Component {
                     </div>
                     <span class="flex items-center gap-1 px-1 text-sm font-medium">
                         <span class="truncate" title="{{ $item->name }}">{{ $item->name }}</span>
-                        <x-share-badge :item="$item" :sharing="$this->sharing[$item->id] ?? null" />
                     </span>
 
                     <div class="absolute end-3 top-3 flex items-center gap-1">
+                        <x-share-badge :item="$item" :sharing="$this->sharing[$item->id] ?? null" class="bg-white/80 dark:bg-zinc-900/80" />
                         <x-favorite-star :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" class="bg-white/80 dark:bg-zinc-900/80" />
 
                         <flux:dropdown position="bottom" align="end">
@@ -769,7 +769,6 @@ new #[Title('Files')] class extends Component {
                                 @else
                                     <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 @endif
-                                <x-share-badge :item="$item" :sharing="$this->sharing[$item->id] ?? null" />
                             </div>
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
@@ -778,6 +777,7 @@ new #[Title('Files')] class extends Component {
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->updated_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <div class="flex items-center justify-end gap-1">
+                                <x-share-badge :item="$item" :sharing="$this->sharing[$item->id] ?? null" />
                                 <x-favorite-star :item="$item" :favorite="in_array($item->id, $this->favoriteIds)" />
 
                                 <flux:dropdown position="bottom" align="end">
