@@ -69,7 +69,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [ ] Tests: round trip, Range at chunk boundaries, tampered chunk rejected, wrong key, mixed disk, dedup across encrypted blobs, rekey
   - [ ] Docs: say what it does and does not protect; extracted search text and thumbnails stay unencrypted unless handled (decide: encrypt thumbnails, and offer to skip content indexing on encrypted disks); full-disk encryption on the host as the simpler alternative
 
-- [x] 16. Drop-box links (see `docs/sharing.md`; guest page and dialog not yet checked in a browser; 447 tests): a guest uploads into one folder, sees nothing (details in `docs/sharing.md` when it lands):
+- [x] 16. Drop-box links (see `docs/sharing.md`; guest page, dialog and the share badge in the file browser (left of the star) not yet checked in a browser; 449 tests): a guest uploads into one folder, sees nothing (details in `docs/sharing.md` when it lands):
   - [x] Schema: `shares.kind` (`view` | `dropbox`, default `view`), `max_bytes` (nullable cap per link); a drop-box link targets a folder only; password and expiry as for view links
   - [x] Guest page: drop zone on the existing chunked upload protocol through a token-scoped endpoint; no listing of the folder, only what this session sent; no rename, delete or overwrite; clashing names get a suffix
   - [x] Limits: counts against the folder owner's quota, per-link cap, rate limit per IP (like password guesses); revoked, expired, unknown and trashed answer 404
@@ -90,7 +90,7 @@ php artisan test --compact tests/Feature/Remote
 ```
 
 - Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip).
-- Medium: upload-only drop-box links for guests; e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
+- Medium: e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
 - Bigger: versioning (the thing most missed after a month); API tokens instead of WebDAV. (Content search moved to step 14.)
 - API for scripts and other apps (not scheduled, wait for a real use; not sync, not WebDAV): personal access tokens (Sanctum) created in settings, scopes read-only or read-write, optionally limited to one folder; endpoints for list, download with Range, upload, mkdir, move and trash, calling the existing `app/Actions/Nodes` and `NodePolicy`; uploads reuse the chunked resumable protocol (`docs/uploads.md`); same quota, activity log and rate limits; must go through the shared decrypting stream wrapper of step 15.
 - Google Drive import (one-way, not scheduled): "Connect Google Drive" via OAuth, then copy the Drive tree into Ferrite (folders to folder nodes, files downloaded and stored as normal blobs; Docs/Sheets/Slides exported to DOCX/XLSX/PPTX or PDF). Nothing stays on Drive afterwards, so no sync or ownership problems; serves "replace Google Drive". Needs the `drive.readonly` scope; Google treats that as restricted, so each deployment creates its own Google Cloud project and enters client ID and secret (like Nextcloud and rclone), and the refresh token is kept encrypted per user and revoked on Disconnect (note in `docs/security.md`). Run as a queued job with progress, skip or rename on name conflicts, dedup by sha256 as usual.
