@@ -50,7 +50,7 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [x] Docker base image moved to PHP 8.5 (FrankenPHP `1-php8.5-bookworm`), rebuilt and run end to end (2026-10-07, PHP 8.5.11): both workers and the scheduler start, admin created with `ferrite:user`, login, a 60 MB chunked upload (12 chunks, last 202) finished by the `uploads` worker, download hash identical, 206 Range correct, restart keeps the data
   - [x] Prebuilt image: `.github/workflows/docker.yml` publishes `ghcr.io/zhoorta/ferrite` (amd64, arm64; tags on `v*` give `1.2.3`, `1.2`, `latest`; main gives `edge`); the compose file pulls it and falls back to building. After the first run, set the package to public in GitHub (Packages > ferrite > settings) and link it to the repo
   - [x] CONTRIBUTING, SECURITY, issue and PR templates; history checked for secrets (clean, 2026-10-07)
-  - [ ] Still to do: deploy the public demo, enable private vulnerability reporting, tag v0.1.0 and make the container package public
+  - [x] Public demo deployed, private vulnerability reporting enabled, v0.1.0 tagged (2026-10-07) and the container package made public
 - [ ] 14. Content search (details in the list below; write `docs/content-search.md` when it lands):
   - [ ] Extraction in a queued job on its own low-priority queue, once per blob (sha256): plain text, Markdown, code, CSV and JSON read directly (first 1-2 MB, valid UTF-8 only); PDF through `pdftotext` (add poppler-utils to the Docker image); remote disks are copied to temp first
   - [ ] Index: SQLite FTS5 (`node_contents` table with blob key, text, status, extracted_at, plus the FTS5 virtual table), ranking and `snippet()`; Meilisearch/Typesense through Scout rejected for now (extra service)
