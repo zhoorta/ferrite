@@ -69,6 +69,15 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [ ] Tests: round trip, Range at chunk boundaries, tampered chunk rejected, wrong key, mixed disk, dedup across encrypted blobs, rekey
   - [ ] Docs: say what it does and does not protect; extracted search text and thumbnails stay unencrypted unless handled (decide: encrypt thumbnails, and offer to skip content indexing on encrypted disks); full-disk encryption on the host as the simpler alternative
 
+- [ ] 16. Drop-box links: a guest uploads into one folder, sees nothing (details in `docs/sharing.md` when it lands):
+  - [ ] Schema: `shares.kind` (`view` | `dropbox`, default `view`), `max_bytes` (nullable cap per link); a drop-box link targets a folder only; password and expiry as for view links
+  - [ ] Guest page: drop zone on the existing chunked upload protocol through a token-scoped endpoint; no listing of the folder, only what this session sent; no rename, delete or overwrite; clashing names get a suffix
+  - [ ] Limits: counts against the folder owner's quota, per-link cap, rate limit per IP (like password guesses); revoked, expired, unknown and trashed answer 404
+  - [ ] Safety: blobs still served only through `NodeResponder`; guest uploads go through `FinalizeUpload`; activity log entry for the owner (e-mail later)
+  - [ ] UI: "Create upload link" in the share dialog for folders, shown as its own kind in the link list
+  - [ ] Tests: no listing leak, no access outside the folder, cap and quota enforced, revoked/expired/trashed 404, name clash, password gate
+  - Not in scope: download limits, QR codes, recipient e-mail, access history (separate small ideas)
+
 ## Ideas (not scheduled)
 
 Suggested next: S3 against a real service. The remote SFTP test command (fill in the Storage Box user; it writes only under `/ferrite-test/run-…` and removes it):
