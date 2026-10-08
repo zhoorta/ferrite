@@ -18,8 +18,8 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
     <head>
-        @include('partials.head', ['title' => 'Self-hosted file storage'])
-        <meta name="description" content="Ferrite is a free, self-hosted file server for one person or a small team: upload, preview and share from the browser, on your own server or storage. Built with Laravel and Livewire.">
+        @include('partials.head', ['title' => 'Self-hosted file server by StackCare'])
+        <meta name="description" content="Ferrite by StackCare is a free, self-hosted file server for one person or a small team: upload, preview and share from the browser, on your own server or storage. Built with Laravel and Livewire.">
     </head>
     <body class="cozy-bg min-h-screen antialiased">
         <header class="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
