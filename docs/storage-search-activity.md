@@ -23,7 +23,7 @@ Admins manage disks under **Storage** (`/admin/storage`, gate `admin`, i.e. `use
 
 ## Search
 
-`NodeSearch` finds files and folders by part of the name (case-insensitive, `%` and `_` are literal) among a user's own items and everything below folders shared with them. Trashed items, and items inside trashed folders, are left out. Exact matches come first, then by name; at most 50 results. The sidebar has a search box and results live at `/search?q=`. It is a plain `LIKE` on the name: fine for personal use and small teams, and there is no index on it. In-content search is out of scope.
+`NodeSearch` finds files and folders by part of the name (case-insensitive, `%` and `_` are literal) among a user's own items and everything below folders shared with them. Trashed items, and items inside trashed folders, are left out. Exact matches come first, then by name; at most 50 results. The sidebar has a search box and results live at `/search?q=`. It is a plain `LIKE` on the name: fine for personal use and small teams, and there is no index on it. In-content search is out of scope. Words inside files are searched too: see `docs/content-search.md`.
 
 ## Activity log
 

@@ -5,7 +5,7 @@
 Two ways to run Ferrite; pick one.
 
 - **Docker**: a server with Docker and Docker Compose. Nothing else to install; the image brings PHP 8.5, the web server, the scheduler and the queue workers. Easiest, and the same on every host.
-- **Standard Laravel install** ("without Docker"): PHP 8.3 or newer (8.5 is what Ferrite is developed and run on) with `gd`, `exif`, `zip`, `intl`, `bcmath`, `mbstring`, `xml`, `curl` and `pdo_sqlite` (or `pdo_mysql`), Composer, Node 20+ (to build the assets, can be done elsewhere), nginx or Apache, and permission to run a systemd service (or Supervisor) and a cron entry. Best when the server already runs PHP sites.
+- **Standard Laravel install** ("without Docker"): PHP 8.3 or newer (8.5 is what Ferrite is developed and run on) with `gd`, `exif`, `zip`, `intl`, `bcmath`, `mbstring`, `xml`, `curl` and `pdo_sqlite` (or `pdo_mysql`), the `pdftotext` command from poppler-utils (optional, for searching inside PDFs), Composer, Node 20+ (to build the assets, can be done elsewhere), nginx or Apache, and permission to run a systemd service (or Supervisor) and a cron entry. Best when the server already runs PHP sites.
 
 Either way you need a domain name and HTTPS in front of it. 512 MB of RAM is enough for a small team; disk space depends on what you store (or use an S3 or SFTP disk).
 
@@ -160,7 +160,7 @@ ExecStart=/usr/bin/php artisan queue:work uploads --queue=uploads --tries=1 --ti
 WantedBy=multi-user.target
 ```
 
-`/etc/systemd/system/ferrite-queue.service` is the same with `Description=Ferrite queue worker` and `ExecStart=/usr/bin/php artisan queue:work --tries=3 --sleep=3 --max-time=3600`.
+`/etc/systemd/system/ferrite-queue.service` is the same with `Description=Ferrite queue worker` and `ExecStart=/usr/bin/php artisan queue:work --queue=default,search --tries=3 --sleep=3 --max-time=3600`. The `search` queue holds the jobs that read file contents for content search; listing it after `default` keeps it from holding up anything else.
 
 The first `uploads` is a queue *connection* with a retry window of about six hours (`config/queue.php`); a worker on the default connection would pick a long copy up a second time after 90 seconds. Use the command exactly as written.
 
@@ -196,6 +196,7 @@ Set in `ferrite.env` (Docker) or `.env` (standard install):
 | `FERRITE_TRASH_DAYS` | `30` | Days before trashed items are deleted for good |
 | `FERRITE_ACTIVITY_DAYS` | `90` | Days of activity log kept |
 | `FERRITE_CHUNK_SIZE` | `5242880` | Upload chunk size in bytes |
+| `FERRITE_SEARCH_CONTENTS` | `true` | Search inside text files and PDFs (see `docs/content-search.md`); `false` turns indexing and content results off |
 | `FERRITE_TMP_PATH` | `/data/tmp` (Docker), `storage/app/private/ferrite-tmp` (standard) | Where uploads in progress are assembled; see "Large files" |
 | `FERRITE_PROCESSING_TIMEOUT_HOURS` | `12` | An upload still being stored this long after storing started is given up on |
 | `QUEUE_CONNECTION` | `database` | `sync` = no worker, uploads finish inside the last request |
@@ -249,6 +250,8 @@ git pull && composer install --no-dev --optimize-autoloader && npm ci && npm run
 php artisan migrate --force && php artisan optimize
 sudo systemctl restart ferrite-uploads ferrite-queue
 ```
+
+From a version before content search: change the `ferrite-queue` unit's command to include `--queue=default,search` (section 4), run `systemctl daemon-reload`, and then `php artisan search:index` once to read the files you already have. See `docs/content-search.md`.
 
 Migrations run on start with Docker, and by hand otherwise. Take a backup first. Rolling back means restoring the backup and the previous version.
 

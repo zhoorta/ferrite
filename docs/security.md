@@ -42,6 +42,7 @@ Users upload files and Ferrite serves them from its own origin. Anything a brows
 ## Known limitations
 
 - **Same-origin file serving** (above). Mitigated, not eliminated.
+- **Content search keeps the text of files in the database**, unencrypted, whoever may read them: the first 2 MB of text files and the text of PDFs. Anyone with the database has that text even if the files are on an encrypted or remote disk. Results are filtered by the same access rules as the file list, and the text of a file is never returned for a node the user cannot see. Turn it off with `FERRITE_SEARCH_CONTENTS=false` if that does not suit you. PDFs are parsed by `pdftotext` (poppler) with a time limit; keep it updated.
 - **No Content-Security-Policy on the app's own pages**: Livewire and Flux use inline scripts. User files do get one.
 - **Share tokens are stored in plain text** so owners can copy a link later. A database leak exposes the links of unrevoked shares (not the files' contents on other disks, but anything reachable through a link). Hashing them is possible at the cost of showing a link only once.
 - **"View only" is not copy protection**: whatever a browser can display, it can save.

@@ -50,6 +50,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Content search
+    |--------------------------------------------------------------------------
+    |
+    | Text files and PDFs are read in the background and their text is added to the search index.
+    | Set FERRITE_SEARCH_CONTENTS=false to turn it off (names are always searchable). Only the first
+    | `search_max_text_kb` of a text file are indexed; a PDF over `search_max_pdf_mb` is skipped.
+    | PDFs need the `pdftotext` command (poppler-utils); without it they are skipped.
+    |
+    */
+
+    'search_contents' => (bool) env('FERRITE_SEARCH_CONTENTS', true),
+
+    'search_max_text_kb' => (int) env('FERRITE_SEARCH_MAX_TEXT_KB', 2048),
+
+    'search_max_pdf_mb' => (int) env('FERRITE_SEARCH_MAX_PDF_MB', 50),
+
+    'pdftotext' => env('FERRITE_PDFTOTEXT', 'pdftotext'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Trash
     |--------------------------------------------------------------------------
     |

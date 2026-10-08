@@ -115,7 +115,7 @@ describe('page', function () {
         $this->get(route('search', ['q' => 'mort']))->assertOk()->assertSee('Mortgage');
 
         Livewire::test('pages::files.search')
-            ->assertSee('Type part of a file or folder name')
+            ->assertSee('Type part of a name, or words from inside a text file or PDF')
             ->set('q', 'mort')
             ->assertSee('Mortgage')
             ->set('q', 'zzz')

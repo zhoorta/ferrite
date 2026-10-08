@@ -2,8 +2,11 @@
 
 namespace App\Support;
 
+use App\Enums\NodeType;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\Search\ContentSearch;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -26,34 +29,93 @@ class NodeSearch
 
         $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($term)).'%';
 
-        $candidates = Node::query()
-            ->where(fn ($query) => $query
-                ->where('owner_id', $user->id)
-                ->orWhereRaw(
-                    'id in (with recursive shared (id) as (
-                        select node_id from node_user where user_id = ?
-                        union all
-                        select n.id from nodes n join shared on n.parent_id = shared.id
-                    ) select id from shared)',
-                    [$user->id],
-                ))
-            ->whereNull('trashed_at')
-            ->whereRaw("lower(name) like ? escape '!'", [$like])
-            ->orderByRaw('case when lower(name) = ? then 0 else 1 end', [mb_strtolower($term)])
-            ->orderBy('name')
+        $candidates = $this->visibleTo(Node::query(), $user)
+            ->whereNull('nodes.trashed_at')
+            ->whereRaw("lower(nodes.name) like ? escape '!'", [$like])
+            ->orderByRaw('case when lower(nodes.name) = ? then 0 else 1 end', [mb_strtolower($term)])
+            ->orderBy('nodes.name')
             ->limit($limit * 2)
             ->get();
 
         // The query only sees the node's own trash flag; an ancestor may be trashed.
         $nodes = $candidates->reject(fn (Node $node) => $node->isTrashed())->take($limit)->values();
 
-        $sharedRoots = array_values(DB::table('node_user')->where('user_id', $user->id)->pluck('node_id')->map(fn ($id) => (int) $id)->all());
+        $sharedRoots = $this->sharedRoots($user);
 
         return $nodes->map(function (Node $node) use ($user, $sharedRoots) {
             [$path, $folderId] = $this->location($node, $user, $sharedRoots);
 
             return ['node' => $node, 'path' => $path, 'folder_id' => $folderId];
         });
+    }
+
+    /**
+     * Files whose text contains the words of $term, best match first, each with a snippet (marked
+     * with \x01 and \x02, see ContentSearch::html). Same visibility as the name search. Empty when
+     * content search is off or the database cannot do it.
+     *
+     * @return Collection<int, array{node: Node, path: string, folder_id: int|null, snippet: string}>
+     */
+    public function contents(User $user, string $term, int $limit = 30): Collection
+    {
+        $driver = ContentSearch::driver();
+        $term = trim($term);
+
+        if ($term === '' || ! ContentSearch::enabled() || $driver === null) {
+            return new Collection;
+        }
+
+        $query = $driver->match(
+            $this->visibleTo(Node::query(), $user)->where('nodes.type', NodeType::File)->whereNull('nodes.trashed_at'),
+            $term,
+        );
+
+        if ($query === null) {
+            return new Collection;
+        }
+
+        $candidates = $query->limit($limit * 2)->get();
+        $nodes = $candidates->reject(fn (Node $node) => $node->isTrashed())->take($limit)->values();
+        $sharedRoots = $this->sharedRoots($user);
+
+        return $nodes->map(function (Node $node) use ($user, $sharedRoots, $driver, $term) {
+            [$path, $folderId] = $this->location($node, $user, $sharedRoots);
+
+            return [
+                'node' => $node,
+                'path' => $path,
+                'folder_id' => $folderId,
+                'snippet' => $driver->present((string) $node->getAttribute('snippet'), $term),
+            ];
+        });
+    }
+
+    /**
+     * Restrict $query to what $user can see: their own nodes and everything below folders shared with them.
+     *
+     * @param  Builder<Node>  $query
+     * @return Builder<Node>
+     */
+    private function visibleTo(Builder $query, User $user): Builder
+    {
+        return $query->where(fn ($query) => $query
+            ->where('nodes.owner_id', $user->id)
+            ->orWhereRaw(
+                'nodes.id in (with recursive shared (id) as (
+                    select node_id from node_user where user_id = ?
+                    union all
+                    select n.id from nodes n join shared on n.parent_id = shared.id
+                ) select id from shared)',
+                [$user->id],
+            ));
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function sharedRoots(User $user): array
+    {
+        return array_values(DB::table('node_user')->where('user_id', $user->id)->pluck('node_id')->map(fn ($id) => (int) $id)->all());
     }
 
     /**

@@ -5,7 +5,7 @@ FROM dunglas/frankenphp:1-php8.5-bookworm AS base
 
 RUN install-php-extensions gd exif zip intl bcmath pcntl opcache pdo_mysql pdo_sqlite \
     && apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -8,7 +8,7 @@
     ];
     $features = [
         ['Files and folders', 'Chunked, resumable uploads that cope with multi-gigabyte files and flaky connections. Drag in whole folders, rename, move, copy, download a folder as a ZIP.'],
-        ['Previews', 'Images, PDF, video, audio and text open in the browser, with thumbnails and seeking in large videos.'],
+        ['Previews and search', 'Images, PDF, video, audio and text open in the browser, with thumbnails and seeking in large videos. Search finds words inside text files and PDFs, not just names.'],
         ['Sharing', 'Links with an optional password and expiry, sharing with other users as viewer or editor, and upload links so clients can drop files into one folder. Revoke any time.'],
         ['Your storage', 'Local folder, S3-compatible or SFTP (a Hetzner Storage Box works well). Identical files are stored once.'],
         ['Small team ready', 'Several users with quotas, an admin screen, two-factor authentication and passkeys.'],

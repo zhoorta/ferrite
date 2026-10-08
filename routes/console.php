@@ -12,4 +12,5 @@ Artisan::command('inspire', function () {
 Schedule::command('uploads:prune')->daily();
 Schedule::command('activity:prune')->daily();
 Schedule::command('trash:purge')->daily();
+Schedule::command('search:prune')->daily();
 Schedule::command('demo:prune')->everyTenMinutes()->when(fn () => Demo::enabled());

@@ -5,6 +5,7 @@ namespace App\Actions\Uploads;
 use App\Actions\Nodes\NodeName;
 use App\Enums\ActivityAction;
 use App\Enums\NodeType;
+use App\Jobs\ExtractContent;
 use App\Models\Node;
 use App\Models\Share;
 use App\Models\Upload;
@@ -135,6 +136,8 @@ class CompleteUpload
         } else {
             ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
         }
+
+        ExtractContent::queueFor($node);
 
         return $node;
     }
