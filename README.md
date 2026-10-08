@@ -12,7 +12,7 @@ A small, self-hosted file server for one person or a small team: upload, preview
 Not to be confused with other projects of the same name, such as the Rust Markdown editor Ferrite and the Rust DNS filter ferrite-server. This one is a Laravel file-storage app, named after the magnetic coating on tape.
 
 <p align="center">
-  <img src="docs/img/screenshots/files-grid.png" alt="Ferrite file browser in grid view with image thumbnails" width="900">
+  <img src="docs/img/demo.gif" alt="A short tour of Ferrite: one click into the demo, uploading files, searching for a word inside a PDF and a text file, replacing a file that already exists, and switching themes" width="900">
 </p>
 
 ## What it does
@@ -33,10 +33,12 @@ Project page: https://ferrite.stackcare.pt · Live demo: https://demo.ferrite.st
 
 | | |
 | --- | --- |
-| ![Usage page: quota, breakdown by type, biggest folders and files](docs/img/screenshots/usage.png) | ![Classic Mac theme](public/img/themes/mac.png) |
-| The usage page: where your space goes. | Fifteen themes, picked per user. Here: Classic Mac. |
-| ![Amber terminal theme](public/img/themes/amber.png) | ![Bubblegum 98 theme](public/img/themes/bubblegum.png) |
-| Amber terminal. | Bubblegum 98. |
+| ![Ferrite file browser in grid view with image thumbnails](docs/img/screenshots/files-grid.png) | ![Usage page: quota, breakdown by type, biggest folders and files](docs/img/screenshots/usage.png) |
+| The file browser in grid view. | The usage page: where your space goes. |
+| ![Classic Mac theme](public/img/themes/mac.png) | ![Amber terminal theme](public/img/themes/amber.png) |
+| Fifteen themes, picked per user. Here: Classic Mac. | Amber terminal. |
+| ![Miami Vice theme](public/img/themes/miami.png) | ![Nokia 3310 theme](public/img/themes/nokia.png) |
+| Miami Vice. | Nokia 3310. |
 
 Try it without installing anything: https://demo.ferrite.stackcare.pt
 
