@@ -155,3 +155,34 @@ describe('shared with me', function () {
         $this->get(route('shared'))->assertRedirect(route('login'));
     });
 });
+
+describe('share badge in the file browser', function () {
+    it('marks items shared by link, upload link or with people, and nothing else', function () {
+        $plain = Node::factory()->for($this->user, 'owner')->create(['name' => 'Plain']);
+        $linked = Node::factory()->for($this->user, 'owner')->create(['name' => 'Linked']);
+        $dropbox = Node::factory()->for($this->user, 'owner')->create(['name' => 'Dropbox']);
+        $people = Node::factory()->for($this->user, 'owner')->create(['name' => 'People']);
+        $revoked = Node::factory()->for($this->user, 'owner')->create(['name' => 'Revoked']);
+
+        Share::factory()->create(['node_id' => $linked->id]);
+        Share::factory()->dropbox()->create(['node_id' => $dropbox->id]);
+        Share::factory()->revoked()->create(['node_id' => $revoked->id]);
+        $people->sharedWith()->attach(User::factory()->create(), ['permission' => 'view']);
+
+        $sharing = Livewire::test('pages::files.browser')->instance()->sharing;
+
+        expect($sharing)->toHaveKeys([$linked->id, $dropbox->id, $people->id])
+            ->and($sharing)->not->toHaveKeys([$plain->id, $revoked->id, $this->node->id])
+            ->and($sharing[$linked->id])->toBe(['link' => true, 'upload' => false, 'people' => 0])
+            ->and($sharing[$dropbox->id])->toBe(['link' => false, 'upload' => true, 'people' => 0])
+            ->and($sharing[$people->id])->toBe(['link' => false, 'upload' => false, 'people' => 1]);
+    });
+
+    it('renders the badge and refreshes it when the dialog changes a share', function () {
+        $component = Livewire::test('pages::files.browser')->assertDontSee('data-test="share-badge"', false);
+
+        Share::factory()->create(['node_id' => $this->node->id]);
+
+        $component->dispatch('shares-changed')->assertSee('data-test="share-badge"', false)->assertSee('Shared by link');
+    });
+});

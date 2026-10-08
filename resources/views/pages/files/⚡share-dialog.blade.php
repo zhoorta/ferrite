@@ -97,6 +97,7 @@ new class extends Component {
 
         $this->reset('linkPassword', 'expiry', 'maxSize');
         unset($this->links);
+        $this->dispatch('shares-changed');
     }
 
     public function revokeLink(int $id, RevokeShareLink $action): void
@@ -104,6 +105,7 @@ new class extends Component {
         $action->handle(Auth::user(), Share::query()->where('node_id', $this->nodeId)->findOrFail($id));
 
         unset($this->links);
+        $this->dispatch('shares-changed');
     }
 
     public function shareWithUser(ShareWithUser $action): void
@@ -114,6 +116,7 @@ new class extends Component {
 
         $this->reset('email');
         unset($this->people);
+        $this->dispatch('shares-changed');
     }
 
     public function removeUser(int $userId, UnshareWithUser $action): void
@@ -121,6 +124,7 @@ new class extends Component {
         $action->handle(Auth::user(), Node::findOrFail($this->nodeId), User::findOrFail($userId));
 
         unset($this->people);
+        $this->dispatch('shares-changed');
     }
 }; ?>
 

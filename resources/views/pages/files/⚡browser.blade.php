@@ -6,6 +6,7 @@ use App\Actions\Nodes\MoveNode;
 use App\Actions\Nodes\RenameNode;
 use App\Actions\Nodes\TrashNode;
 use App\Models\Node;
+use App\Models\Share;
 use App\Support\FileKind;
 use App\Support\TextPreview;
 use App\Support\Thumbnailer;
@@ -13,10 +14,12 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -410,6 +413,39 @@ new #[Title('Files')] class extends Component {
         return Auth::user()->favorites()->whereIn('nodes.id', $this->items->pluck('id'))->pluck('nodes.id')->all();
     }
 
+    /**
+     * How each listed node is shared, for the badge next to its name: `link` (an active download
+     * link), `upload` (an active upload link) and `people` (a count of users it is shared with).
+     *
+     * @return array<int, array{link: bool, upload: bool, people: int}>
+     */
+    #[Computed]
+    public function sharing(): array
+    {
+        $ids = $this->items->where('owner_id', Auth::id())->pluck('id');
+        $map = [];
+
+        foreach (Share::query()->active()->whereIn('node_id', $ids)->get(['node_id', 'kind']) as $share) {
+            $map[$share->node_id] ??= ['link' => false, 'upload' => false, 'people' => 0];
+            $map[$share->node_id][$share->isDropbox() ? 'upload' : 'link'] = true;
+        }
+
+        $people = DB::table('node_user')->whereIn('node_id', $ids)->selectRaw('node_id, count(*) as total')->groupBy('node_id')->pluck('total', 'node_id');
+
+        foreach ($people as $nodeId => $total) {
+            $map[$nodeId] ??= ['link' => false, 'upload' => false, 'people' => 0];
+            $map[$nodeId]['people'] = (int) $total;
+        }
+
+        return $map;
+    }
+
+    #[On('shares-changed')]
+    public function refreshSharing(): void
+    {
+        unset($this->sharing);
+    }
+
     public function toggleFavorite(int $id): void
     {
         $node = Node::findOrFail($id);
@@ -655,6 +691,7 @@ new #[Title('Files')] class extends Component {
                     </div>
                     <span class="flex items-center gap-1 px-1 text-sm font-medium">
                         <span class="truncate" title="{{ $item->name }}">{{ $item->name }}</span>
+                        <x-share-badge :item="$item" :sharing="$this->sharing[$item->id] ?? null" />
                     </span>
 
                     <div class="absolute end-3 top-3 flex items-center gap-1">
@@ -732,6 +769,7 @@ new #[Title('Files')] class extends Component {
                                 @else
                                     <button type="button" wire:click="preview({{ $item->id }})" class="text-start font-medium font-sans [font-size-adjust:none] hover:underline">{{ $item->name }}</button>
                                 @endif
+                                <x-share-badge :item="$item" :sharing="$this->sharing[$item->id] ?? null" />
                             </div>
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
