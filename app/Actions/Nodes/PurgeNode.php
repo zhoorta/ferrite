@@ -80,9 +80,12 @@ class PurgeNode
     }
 
     /**
+     * Remove blobs no node uses any more, with their thumbnails. Failures are reported, not thrown: a
+     * blob that survives is only wasted space.
+     *
      * @param  list<array{size: int, disk_id: int, path: string}>  $files
      */
-    private function deleteBlobs(array $files): void
+    public function deleteBlobs(array $files): void
     {
         $disks = StorageDisk::query()->whereKey(array_unique(array_column($files, 'disk_id')))->get()->keyBy('id');
 

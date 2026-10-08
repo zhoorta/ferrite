@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Uploads\AppendChunk;
 use App\Actions\Uploads\FailUpload;
+use App\Actions\Uploads\FindUploadConflicts;
 use App\Actions\Uploads\StartUpload;
 use App\Jobs\FinalizeUpload;
 use App\Models\Node;
@@ -22,13 +23,31 @@ class UploadController extends Controller
             'path' => ['required', 'string', 'max:2048'],
             'size' => ['required', 'integer', 'min:0'],
             'fingerprint' => ['nullable', 'string', 'max:100'],
+            'replace' => ['nullable', 'boolean'],
         ]);
 
         $parent = isset($data['parent_id']) ? Node::query()->whereKey($data['parent_id'])->firstOrFail() : null;
 
-        $upload = $start->handle($request->user(), $parent, $data['path'], $data['size'], $data['fingerprint'] ?? null);
+        $upload = $start->handle($request->user(), $parent, $data['path'], $data['size'], $data['fingerprint'] ?? null, (bool) ($data['replace'] ?? false));
 
         return response()->json($this->state($upload), $upload->wasRecentlyCreated ? 201 : 200);
+    }
+
+    /**
+     * Which of the files about to be uploaded would meet one of the same name, so the browser can ask
+     * what to do first. Advisory: the real decision is made when each upload is stored.
+     */
+    public function conflicts(Request $request, FindUploadConflicts $find): JsonResponse
+    {
+        $data = $request->validate([
+            'parent_id' => ['nullable', 'integer'],
+            'paths' => ['required', 'array', 'min:1', 'max:5000'],
+            'paths.*' => ['required', 'string', 'max:2048'],
+        ]);
+
+        $parent = isset($data['parent_id']) ? Node::query()->whereKey($data['parent_id'])->firstOrFail() : null;
+
+        return response()->json($find->handle($request->user(), $parent, array_values($data['paths'])));
     }
 
     public function show(Request $request, Upload $upload): JsonResponse

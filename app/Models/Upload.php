@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $size
  * @property int $offset
  * @property string|null $fingerprint
+ * @property bool $replace
  * @property string $status
  * @property string|null $error
  * @property int|null $node_id
@@ -51,6 +52,7 @@ class Upload extends Model
         return [
             'size' => 'integer',
             'offset' => 'integer',
+            'replace' => 'boolean',
             'started_at' => 'datetime',
         ];
     }

@@ -141,6 +141,50 @@
                 </template>
             </ul>
         </div>
+
+        {{-- Asked before an upload starts when some of it already exists in the folder (see uploader.js). --}}
+        <div x-data x-show="$store.uploads.decision" x-cloak x-trap.noscroll="!!$store.uploads.decision"
+            x-on:keydown.escape.window="$store.uploads.decision && $store.uploads.answer('cancel')"
+            class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" data-test="upload-conflict">
+            <div role="alertdialog" aria-modal="true" aria-labelledby="upload-conflict-title"
+                class="w-full max-w-lg space-y-4 border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-800" style="border-radius: var(--radius-lg)">
+                <template x-if="$store.uploads.decision">
+                    <div class="space-y-4">
+                        <flux:heading id="upload-conflict-title" size="lg" x-text="$store.uploads.decision.conflicts.length
+                            ? `${$store.uploads.decision.conflicts.length} ${$store.uploads.decision.conflicts.length === 1 ? @js(__('item already exists here')) : @js(__('items already exist here'))}`
+                            : @js(__('This folder already exists here'))"></flux:heading>
+
+                        <ul class="max-h-48 space-y-1 overflow-y-auto text-sm" data-test="upload-conflict-list">
+                            <template x-for="entry in $store.uploads.decision.conflicts.slice(0, 8)" :key="entry.path">
+                                <li class="truncate">
+                                    <span x-text="entry.path"></span>
+                                    <span class="text-zinc-500" x-show="entry.kind === 'folder'">({{ __('a folder: kept under a new name') }})</span>
+                                </li>
+                            </template>
+                            <li class="text-zinc-500" x-show="$store.uploads.decision.conflicts.length > 8"
+                                x-text="`${@js(__('and'))} ${$store.uploads.decision.conflicts.length - 8} ${@js(__('more'))}`"></li>
+                        </ul>
+
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400" x-show="$store.uploads.decision.merged.length">
+                            {{ __('Folders that already exist are merged:') }}
+                            <span x-text="$store.uploads.decision.merged.join(', ')"></span>.
+                            {{ __('Other files in them are kept.') }}
+                        </p>
+
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400" x-show="$store.uploads.decision.conflicts.length">
+                            {{ __('Replace swaps the content and keeps the file where it is, with its links and favorites. Keep both saves the new file as "name (2)". Skip uploads only what is new.') }}
+                        </p>
+
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <flux:button x-on:click="$store.uploads.answer('cancel')" data-test="conflict-cancel">{{ __('Cancel') }}</flux:button>
+                            <flux:button x-on:click="$store.uploads.answer('skip')" x-show="$store.uploads.decision.conflicts.length" data-test="conflict-skip">{{ __('Skip existing') }}</flux:button>
+                            <flux:button x-on:click="$store.uploads.answer('keep')" data-test="conflict-keep" x-text="$store.uploads.decision?.conflicts.length ? @js(__('Keep both')) : @js(__('Merge'))"></flux:button>
+                            <flux:button variant="primary" x-on:click="$store.uploads.answer('replace')" x-show="$store.uploads.decision.conflicts.length" data-test="conflict-replace">{{ __('Replace') }}</flux:button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
         @endpersist
 
         @persist('toast')

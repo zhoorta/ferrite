@@ -5,6 +5,10 @@ const MAX_RETRIES = 5;
  * It lives outside the pages, and its panel is persisted in the layout, so an upload carries on
  * while you navigate. A failed chunk is retried after asking the server how much it already has.
  *
+ * Before anything is sent, a batch is checked against what is already in the target folder. If
+ * some of it exists, `decision` is set and the layout shows a dialog: replace, keep both, skip
+ * the existing ones, or cancel. The choice travels with each upload as `replace`.
+ *
  * Once the last chunk is in, the server copies the file to its disk in a background job (slow on
  * remote disks). The item is then "processing": the next file starts uploading and a poll on
  * `GET /uploads/{id}` reports done or failed.
@@ -61,6 +65,10 @@ export default function uploader() {
         running: false,
         // Something finished since the browsers on screen were last told to reload.
         dirty: false,
+        // Set while the person is asked what to do about files that already exist.
+        decision: null,
+        // Batches are checked one at a time, so two dialogs never compete.
+        gate: Promise.resolve(),
 
         get active() {
             return this.items.some((item) => ['queued', 'uploading'].includes(item.status));
@@ -76,7 +84,8 @@ export default function uploader() {
             return { files: items.length, done, bytes, sent, percent: bytes ? Math.round((sent / bytes) * 100) : (done === items.length ? 100 : 0) };
         },
 
-        // `target` is { parentId, baseUrl }: where the files go, captured when they are added.
+        // `target` is { parentId, baseUrl, conflicts }: where the files go, captured when they are added.
+        // `conflicts: false` (guests of an upload link) skips the question: the server keeps both.
         // From a file input: folder inputs expose webkitRelativePath.
         pick(fileList, target) {
             this.enqueue([...fileList].map((file) => ({ file, path: file.webkitRelativePath || file.name })), target);
@@ -93,14 +102,42 @@ export default function uploader() {
             this.enqueue((await Promise.all(entries.map((entry) => readEntry(entry)))).flat(), target);
         },
 
-        enqueue(files, { parentId, baseUrl }) {
+        enqueue(files, target) {
+            this.gate = this.gate.then(() => this.admit(files, target)).catch(() => {});
+
+            return this.gate;
+        },
+
+        // Asks about existing files if there are any, then queues what is to be uploaded.
+        async admit(files, { parentId, baseUrl, conflicts = true }) {
+            const base = baseUrl.replace(/\/+$/, '');
+            let replace = false;
+
+            if (conflicts) {
+                const found = await this.findConflicts(base, parentId, files).catch(() => null);
+
+                if (found && (found.conflicts.length || found.merged.length)) {
+                    const choice = await this.ask(found);
+
+                    if (choice === 'cancel') return;
+
+                    if (choice === 'skip') {
+                        const taken = new Set(found.conflicts.map((entry) => entry.path));
+                        files = files.filter(({ path }) => !taken.has(path));
+                    }
+
+                    replace = choice === 'replace';
+                }
+            }
+
             for (const { file, path } of files) {
                 this.items.push({
                     key: crypto.randomUUID(),
                     file,
                     path,
                     parentId,
-                    base: baseUrl.replace(/\/+$/, ''),
+                    base,
+                    replace,
                     status: 'queued',
                     sent: 0,
                     error: null,
@@ -109,6 +146,28 @@ export default function uploader() {
             }
 
             this.run();
+        },
+
+        async findConflicts(base, parentId, files) {
+            const response = await request(base, 'POST', '/uploads/conflicts', { json: { parent_id: parentId, paths: files.map(({ path }) => path) } });
+
+            if (!response.ok) throw new Error(`Error ${response.status}`);
+
+            return response.json();
+        },
+
+        // Shows the dialog and resolves with 'replace', 'keep', 'skip' or 'cancel'.
+        ask(found) {
+            return new Promise((resolve) => {
+                this.decision = { ...found, resolve };
+            });
+        },
+
+        answer(choice) {
+            const { resolve } = this.decision ?? {};
+
+            this.decision = null;
+            resolve?.(choice);
         },
 
         async run() {
@@ -194,6 +253,7 @@ export default function uploader() {
                         path: item.path,
                         size: item.file.size,
                         fingerprint: String(item.file.lastModified),
+                        replace: item.replace,
                     },
                 });
 

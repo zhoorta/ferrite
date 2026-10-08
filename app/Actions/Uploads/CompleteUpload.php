@@ -3,6 +3,7 @@
 namespace App\Actions\Uploads;
 
 use App\Actions\Nodes\NodeName;
+use App\Actions\Nodes\PurgeNode;
 use App\Enums\ActivityAction;
 use App\Enums\NodeType;
 use App\Jobs\ExtractContent;
@@ -68,8 +69,11 @@ class CompleteUpload
             $written = $this->write($upload, $disk->id, $filesystem, $key, $tmp);
         }
 
+        // The blob a replaced file used to have, once nothing points at it any more (see below).
+        $replaced = null;
+
         try {
-            $node = DB::transaction(function () use ($upload, $ownerId, $parent, $disk, $filesystem, $tmp, &$key, &$written, $sha256, $mime) {
+            $node = DB::transaction(function () use ($upload, $actor, $ownerId, $parent, $disk, $filesystem, $tmp, &$key, &$written, &$replaced, $sha256, $mime) {
                 // FailUpload (a timeout in uploads:prune) may have given up on it meanwhile and
                 // removed what it wrote; the same lock decides which of the two wins.
                 $current = Upload::query()->lockForUpdate()->find($upload->id);
@@ -81,7 +85,12 @@ class CompleteUpload
                 $owner = User::query()->lockForUpdate()->findOrFail($ownerId);
                 $share = $this->claimLink($upload);
 
-                if ($owner->quota_bytes !== null && $upload->size > $owner->remainingBytes()) {
+                $existing = $upload->replace ? $this->replaceable($actor, $ownerId, $parent?->id, $upload->name) : null;
+
+                // Replacing only needs room for what the file grows by.
+                $growth = $upload->size - ($existing === null ? 0 : $existing->size);
+
+                if ($owner->quota_bytes !== null && $growth > $owner->remainingBytes()) {
                     throw ValidationException::withMessages(['size' => __('Not enough storage space left.')]);
                 }
 
@@ -95,20 +104,27 @@ class CompleteUpload
                     $written = $this->write($upload, $disk->id, $filesystem, $key, $tmp);
                 }
 
-                $node = new Node([
-                    'parent_id' => $parent?->id,
-                    'type' => NodeType::File,
-                    'name' => NodeName::available($ownerId, $parent?->id, $upload->name, true),
-                    'disk_id' => $disk->id,
-                    'path' => $key,
-                    'size' => $upload->size,
-                    'mime' => $mime,
-                    'sha256' => $sha256,
-                ]);
-                $node->owner_id = $ownerId;
-                $node->save();
+                if ($existing !== null) {
+                    // Same node, new content: share links, favorites and the activity history stay with it.
+                    $replaced = ['disk_id' => $existing->disk_id, 'path' => $existing->path];
+                    $existing->forceFill(['disk_id' => $disk->id, 'path' => $key, 'size' => $upload->size, 'mime' => $mime, 'sha256' => $sha256])->save();
+                    $node = $existing;
+                } else {
+                    $node = new Node([
+                        'parent_id' => $parent?->id,
+                        'type' => NodeType::File,
+                        'name' => NodeName::available($ownerId, $parent?->id, $upload->name, true),
+                        'disk_id' => $disk->id,
+                        'path' => $key,
+                        'size' => $upload->size,
+                        'mime' => $mime,
+                        'sha256' => $sha256,
+                    ]);
+                    $node->owner_id = $ownerId;
+                    $node->save();
+                }
 
-                $owner->increment('used_bytes', $upload->size);
+                $owner->increment('used_bytes', $growth);
                 $share?->increment('received_bytes', $upload->size);
                 $current->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
 
@@ -131,15 +147,38 @@ class CompleteUpload
         @unlink($tmp);
         $upload->refresh();
 
+        // The old content goes with its last node: another node may share it (deduplication).
+        if ($replaced !== null && $replaced['disk_id'] !== null && $replaced['path'] !== null) {
+            app(PurgeNode::class)->deleteBlobs([['size' => 0, 'disk_id' => (int) $replaced['disk_id'], 'path' => (string) $replaced['path']]]);
+        }
+
         if ($upload->share_id !== null) {
             ActivityLog::record(ActivityAction::LinkUploaded, $node, null, ['size' => $node->size, 'share_id' => $upload->share_id]);
         } else {
-            ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
+            ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size] + ($replaced !== null ? ['replaced' => true] : []));
         }
 
         ExtractContent::queueFor($node);
 
         return $node;
+    }
+
+    /**
+     * The active file with this name in the folder, locked, if the uploader may change it. A folder, or a
+     * file the uploader may not edit, is not replaced: the upload is kept next to it instead.
+     */
+    private function replaceable(User $actor, int $ownerId, ?int $parentId, string $name): ?Node
+    {
+        $node = Node::query()
+            ->where('owner_id', $ownerId)
+            ->where('parent_id', $parentId)
+            ->where('type', NodeType::File)
+            ->whereNull('trashed_at')
+            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->lockForUpdate()
+            ->first();
+
+        return $node !== null && Gate::forUser($actor)->allows('update', $node) ? $node : null;
     }
 
     /**

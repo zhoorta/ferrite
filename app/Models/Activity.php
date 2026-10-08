@@ -57,7 +57,9 @@ class Activity extends Model
         $person = $meta['user'] ?? '';
 
         return match ($this->action) {
-            ActivityAction::Uploaded => __(':who uploaded :name', ['who' => $who, 'name' => $name]),
+            ActivityAction::Uploaded => ($meta['replaced'] ?? false)
+                ? __(':who replaced :name with a new upload', ['who' => $who, 'name' => $name])
+                : __(':who uploaded :name', ['who' => $who, 'name' => $name]),
             ActivityAction::CreatedFolder => __(':who created the folder :name', ['who' => $who, 'name' => $name]),
             ActivityAction::Renamed => __(':who renamed :from to :name', ['who' => $who, 'from' => $meta['from'] ?? '?', 'name' => $name]),
             ActivityAction::Moved => __(':who moved :name to :to', ['who' => $who, 'name' => $name, 'to' => $meta['to'] ?? __('My files')]),

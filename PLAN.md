@@ -58,6 +58,12 @@ Decisions: blobs under random keys so rename/move only touch the database; trash
   - [x] Housekeeping: backfill command (`search:index`), reindex on content change, delete the index row with the last node of a blob, mark too-big/binary/failed files so they are not retried, `FERRITE_SEARCH_CONTENTS=false` turns indexing off (an env switch, not an admin screen); rows nobody uses are removed by the daily `search:prune`
   - [x] Docs: extracted text sits unencrypted in the database (`docs/security.md`); not in scope: OCR for scans and images, Office formats (DOCX/XLSX are zip+XML, possible later)
 
+- [x] 17. Upload conflicts: ask before an upload runs into an existing name (see `docs/uploads.md`)
+  - [x] `POST /uploads/conflicts` reports files and folders with the same name, also inside existing folders, and folders that will be merged
+  - [x] Dialog: Replace, Keep both, Skip existing, Cancel (Merge when only a folder exists); guests of upload links are never asked
+  - [x] Replace swaps the content of the same node (links and favorites stay), keeps the quota right and removes the old blob; the activity log says "replaced"
+  - [x] Tests for the check, replace, quota, editors in shared folders and drop-box links; the dialog was tried in headless Chrome (replace, keep both, skip, cancel)
+
 - [ ] 15. Encryption at rest (optional per disk; write `docs/encryption.md` when it lands). Server-side only: protects a stolen disk, a leaked bucket or backup, not someone holding the server and the key. Per-user keys and browser end-to-end encryption rejected (break share links, thumbnails, search, Drive import; password reset loses files)
   - [ ] Format: chunked authenticated encryption (libsodium secretstream, e.g. 64 KiB chunks) so ranged reads, preview seeking and ZIP streaming decrypt only the chunks they need; header with version and nonce; a per-blob random data key wrapped by the master key
   - [ ] Key: dedicated `FERRITE_FILE_KEY` in `.env`, not `APP_KEY` (rotating one must not break the other); key id stored per blob so rotation can re-wrap data keys without rewriting files; document backing it up (losing it means losing every encrypted file)
@@ -89,7 +95,7 @@ FERRITE_TEST_SFTP_ROOT=/ferrite-test FERRITE_TEST_SFTP_MB=3000 \
 php artisan test --compact tests/Feature/Remote
 ```
 
-- Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2); upload conflict choice (keep both, replace, skip).
+- Small: Recent view and type filters; "select all N items" with infinite scroll; keyboard shortcuts (Delete, Esc, Cmd/Ctrl+A, F2).
 - Medium: e-mail notifications (link opened, drop-box upload); configurable trash retention; duplicate finder (sha256 already stored).
 - Bigger: versioning (the thing most missed after a month); API tokens instead of WebDAV. (Content search moved to step 14.)
 - API for scripts and other apps (not scheduled, wait for a real use; not sync, not WebDAV): personal access tokens (Sanctum) created in settings, scopes read-only or read-write, optionally limited to one folder; endpoints for list, download with Range, upload, mkdir, move and trash, calling the existing `app/Actions/Nodes` and `NodePolicy`; uploads reuse the chunked resumable protocol (`docs/uploads.md`); same quota, activity log and rate limits; must go through the shared decrypting stream wrapper of step 15.

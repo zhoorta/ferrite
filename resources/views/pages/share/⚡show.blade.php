@@ -120,7 +120,7 @@ new #[Layout('layouts::share')] class extends Component {
         </div>
     @elseif ($this->share->isDropbox())
         <div class="mx-auto w-full max-w-xl space-y-6 pt-8" data-test="dropbox"
-            x-data="{ dragging: false, target: { parentId: null, baseUrl: @js('/s/'.$token) } }">
+            x-data="{ dragging: false, target: { parentId: null, baseUrl: @js('/s/'.$token), conflicts: false } }">
             <div class="space-y-1 text-center">
                 <flux:icon name="arrow-up-tray" class="mx-auto size-8 text-zinc-400" />
                 <flux:heading size="lg">{{ __('Send files to :name', ['name' => $this->node->name]) }}</flux:heading>
