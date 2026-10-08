@@ -178,7 +178,10 @@
                         <div class="flex flex-wrap justify-end gap-2">
                             <flux:button x-on:click="$store.uploads.answer('cancel')" data-test="conflict-cancel">{{ __('Cancel') }}</flux:button>
                             <flux:button x-on:click="$store.uploads.answer('skip')" x-show="$store.uploads.decision.conflicts.length" data-test="conflict-skip">{{ __('Skip existing') }}</flux:button>
-                            <flux:button x-on:click="$store.uploads.answer('keep')" data-test="conflict-keep" x-text="$store.uploads.decision?.conflicts.length ? @js(__('Keep both')) : @js(__('Merge'))"></flux:button>
+                            <flux:button x-on:click="$store.uploads.answer('keep')" data-test="conflict-keep">
+                                <span x-show="$store.uploads.decision.conflicts.length">{{ __('Keep both') }}</span>
+                                <span x-show="!$store.uploads.decision.conflicts.length" x-cloak>{{ __('Merge') }}</span>
+                            </flux:button>
                             <flux:button variant="primary" x-on:click="$store.uploads.answer('replace')" x-show="$store.uploads.decision.conflicts.length" data-test="conflict-replace">{{ __('Replace') }}</flux:button>
                         </div>
                     </div>
