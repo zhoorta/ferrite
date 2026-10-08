@@ -32,3 +32,5 @@ FERRITE_DEMO_CONTACT=abuse@example.com   # shown in the banner for takedown requ
 Why so strict: an open sign-up that stores files on your domain can be abused to hold illegal or malicious content, and a flagged host can hurt the parent domain's reputation. With sharing off the demo stores but never distributes, with a short lifetime. Remaining: a visitor could still upload a bad image or PDF that only they can see, for an hour. If a report comes in, delete the account and keep the web server access log for the period your obligations require. Using a separate domain for the demo protects your main domain further.
 
 Install it like any other instance ([install.md](install.md)); with Docker, a second service in the compose file with its own env file and volume is enough, and keep the request size limit of its reverse proxy modest.
+
+The sitemap at `/sitemap.xml` (the landing page only) and `/robots.txt`, which points to it, are served by the app while `FERRITE_LANDING` is on; the sitemap returns 404 otherwise.

@@ -176,3 +176,15 @@ describe('demo restrictions', function () {
         $this->get(route('files'))->assertOk()->assertSee('Public demo')->assertSee('abuse@example.test');
     });
 });
+
+it('serves a sitemap and points robots.txt at it only while the landing page is on', function () {
+    config(['ferrite.landing' => true]);
+
+    $this->get('/sitemap.xml')->assertOk()->assertHeader('Content-Type', 'application/xml')->assertSee('<loc>'.route('home').'</loc>', false);
+    $this->get('/robots.txt')->assertOk()->assertSee('Sitemap: '.route('sitemap'));
+
+    config(['ferrite.landing' => false]);
+
+    $this->get('/sitemap.xml')->assertNotFound();
+    $this->get('/robots.txt')->assertOk()->assertDontSee('Sitemap');
+});

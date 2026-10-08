@@ -22,6 +22,23 @@ Route::get('/', function () {
     return redirect()->route('files');
 })->name('home');
 
+// Only the landing page is meant for search engines, so the sitemap exists only while it is on.
+Route::get('sitemap.xml', function () {
+    abort_unless(config('ferrite.landing'), 404);
+
+    return response()->view('sitemap', ['urls' => [route('home')]])->header('Content-Type', 'application/xml');
+})->name('sitemap');
+
+Route::get('robots.txt', function () {
+    $lines = ['User-agent: *', 'Disallow:'];
+
+    if (config('ferrite.landing')) {
+        $lines[] = 'Sitemap: '.route('sitemap');
+    }
+
+    return response(implode("\n", $lines)."\n")->header('Content-Type', 'text/plain');
+})->name('robots');
+
 Route::post('demo', DemoController::class)->middleware(['guest', 'throttle:6,60'])->name('demo.start');
 
 // Public share links. Node ids must be numeric so they never clash with the action segments.
