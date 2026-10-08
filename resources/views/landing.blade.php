@@ -81,13 +81,31 @@
 
             <section class="pb-16">
                 <h2 class="font-serif text-2xl font-semibold">Run it in five minutes</h2>
-                <p class="mt-2 text-zinc-600 dark:text-zinc-400">You need a server with Docker and a domain. The first account to register becomes the admin.</p>
-                <pre class="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>git clone {{ $repo }}.git ferrite &amp;&amp; cd ferrite
+                <p class="mt-2 text-zinc-600 dark:text-zinc-400">Two ways, same app. Either way you need a domain and HTTPS in front of it. The first account to register becomes the admin.</p>
+
+                <div class="mt-6 grid gap-6 lg:grid-cols-2">
+                    <div class="min-w-0">
+                        <h3 class="font-serif text-lg font-semibold">With Docker</h3>
+                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server with Docker. The image brings PHP, the web server, the workers and the scheduler.</p>
+                        <pre class="mt-3 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>git clone {{ $repo }}.git ferrite &amp;&amp; cd ferrite
 cp docker/ferrite.env.example ferrite.env
 docker compose run --rm ferrite php artisan key:generate --show
 $EDITOR ferrite.env   # APP_KEY and APP_URL
-docker compose up -d --build</code></pre>
-                <p class="mt-3 text-sm text-zinc-500">Full guide: <a class="underline" href="{{ $repo }}/blob/main/docs/install.md">docs/install.md</a>.</p>
+docker compose up -d</code></pre>
+                    </div>
+
+                    <div class="min-w-0">
+                        <h3 class="font-serif text-lg font-semibold">With Laravel</h3>
+                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server that already runs PHP 8.3+ and nginx or Apache. You add two queue workers and a cron entry.</p>
+                        <pre class="mt-3 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>git clone {{ $repo }}.git &amp;&amp; cd ferrite
+composer install --no-dev -o &amp;&amp; npm ci &amp;&amp; npm run build
+cp .env.example .env &amp;&amp; php artisan key:generate
+$EDITOR .env          # APP_ENV, APP_URL
+php artisan migrate --force &amp;&amp; php artisan optimize</code></pre>
+                    </div>
+                </div>
+
+                <p class="mt-3 text-sm text-zinc-500">Full guide, with the web server, workers and reverse proxy: <a class="underline" href="{{ $repo }}/blob/main/docs/install.md">docs/install.md</a>.</p>
             </section>
 
             <section class="pb-20">
