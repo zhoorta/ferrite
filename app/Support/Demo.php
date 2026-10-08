@@ -142,7 +142,7 @@ class Demo
 
         $work = $this->folders->handle($user, null, 'Projects');
         $store($work, 'Budget 2026.csv', "Month,Income,Costs\nJanuary,3200,2100\nFebruary,2900,2050\nMarch,3500,2300\nApril,3100,2150\n", 'text/csv');
-        $store($work, 'Notes.txt', "Ideas\n- try dragging a file onto a folder\n- select a few rows and download them as one ZIP\n- share a folder with a link and a password\n", 'text/plain');
+        $store($work, 'Notes.txt', "Ideas\n- try dragging a file onto a folder\n- select a few rows and download them as one ZIP\n- star a file to find it again under Favorites\n", 'text/plain');
 
         $this->folders->handle($user, null, 'Empty folder, drop files here');
     }
