@@ -36,6 +36,6 @@ There is no reference count to drift: a blob's users are the `nodes` rows with t
 
 ## Deployment limits
 
-Chunks are `FERRITE_CHUNK_SIZE` bytes (default 5 MiB). The web server's body limit must be larger than that (nginx `client_max_body_size`). PHP's `upload_max_filesize` and `post_max_size` do not apply, since the body is not a form upload. The temporary file needs room for the whole file: plan `FERRITE_TMP_PATH` (the `tmp/` folder of the data volume in Docker) for the largest file times the number of uploads in flight, plus the same again on the target disk. A queue worker must run (the Docker image starts one; see `docs/install.md`).
+Chunks are `FERRITE_CHUNK_SIZE` bytes (default 5 MiB). The web server's body limit must be larger than that (nginx `client_max_body_size`). PHP's `upload_max_filesize` does not apply, since the body is not a form upload; keep `post_max_size` above the chunk size as well, as `docs/install.md` says. The temporary file needs room for the whole file: plan `FERRITE_TMP_PATH` (the `tmp/` folder of the data volume in Docker) for the largest file times the number of uploads in flight, plus the same again on the target disk. A queue worker must run (the Docker image starts one; see `docs/install.md`).
 
 Tested end to end with a 100 MB file, and with a 3000 MB file to an SFTP server (a local OpenSSH one): see `tests/Feature/Remote/SftpDiskTest.php` and `docs/storage-search-activity.md`.
