@@ -25,7 +25,8 @@ Whitespace is collapsed, so a snippet reads as one line.
 
 - MySQL and MariaDB ignore words shorter than three characters and a short stopword list (`the`, `with`, `from` …). Those words are dropped from the query, so a search made only of them finds nothing in contents. SQLite has neither limit.
 - Results can rank differently: `bm25` on SQLite, InnoDB relevance on MySQL.
-- The MySQL driver is tested against MySQL 9. MariaDB uses the same syntax but is not part of the test run.
+- Accents are ignored on MySQL and MariaDB too, as long as the table keeps Laravel's default collation (`utf8mb4_unicode_ci`). A case- and accent-sensitive collation (`_bin`, `_as_cs`) makes `reuniao` stop matching `reunião`.
+- The tests pass on MySQL 8.4 and 9 and on MariaDB 11. CI runs MySQL 8.4.
 
 ## Running it
 
