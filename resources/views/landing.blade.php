@@ -83,7 +83,7 @@
                 <h2 class="font-serif text-2xl font-semibold">Run it in five minutes</h2>
                 <p class="mt-2 text-zinc-600 dark:text-zinc-400">Two ways, same app. Either way you need a domain and HTTPS in front of it. The first account to register becomes the admin.</p>
 
-                <div class="mt-6 grid gap-6 lg:grid-cols-2">
+                <div class="mt-6 grid gap-6">
                     <div class="min-w-0">
                         <h3 class="font-serif text-lg font-semibold">With Docker</h3>
                         <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server with Docker. The image brings PHP, the web server, the workers and the scheduler.</p>

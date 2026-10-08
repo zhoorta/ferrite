@@ -25,8 +25,10 @@ Run these before pushing; CI runs the same:
 ```sh
 php artisan test --compact          # Pest; tests use in-memory SQLite
 vendor/bin/pint                     # code style (fixes in place)
-vendor/bin/phpstan analyse          # static analysis
+vendor/bin/phpstan analyse          # static analysis (or `composer test` for all three; it gives phpstan the memory it needs)
 ```
+
+Content search has a driver for SQLite and one for MySQL and MariaDB, and CI runs its tests on both. If you touch it, run `tests/Feature/Search/ContentSearchTest.php` against a throwaway MySQL database too (see `docs/content-search.md`).
 
 While working, run just the tests you touched (`php artisan test --compact tests/Feature/Uploads`).
 
@@ -35,7 +37,7 @@ While working, run just the tests you touched (`php artisan test --compact tests
 - **Tests:** a change in behaviour comes with a test. Files are a security surface, so anything that touches how user files are stored or served needs one even for a small fix (see `docs/serving-files.md` and `docs/security.md`).
 - **Write like the surrounding code:** same naming, comment density and idiom. Actions live in `app/Actions`, one class per use case.
 - **Keep the plan current:** if your change finishes or adds an item, update the checkboxes in `PLAN.md`; put detail in `docs/`, not in the plan.
-- **UI:** it uses Flux UI and Tailwind, and has thirteen themes (`docs/themes.md`). Check a change in the default theme and at least one light and one retro one; do not hard-code colours.
+- **UI:** it uses Flux UI and Tailwind, and has fifteen themes (`docs/themes.md`). Check a change in the default theme and at least one light and one retro one; do not hard-code colours.
 - **Dependencies:** adding one needs a reason in the pull request. Prefer what is already in `composer.json`.
 - **Commits:** a short imperative summary line saying what changed and why; no need for a particular format.
 
