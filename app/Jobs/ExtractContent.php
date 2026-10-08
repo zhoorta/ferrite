@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Node;
 use App\Models\NodeContent;
 use App\Support\ContentExtractor;
+use App\Support\FileKind;
 use App\Support\Search\ContentSearch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -41,6 +42,12 @@ class ExtractContent implements ShouldQueue
         }
 
         if (NodeContent::query()->where('sha256', $node->sha256)->exists()) {
+            return;
+        }
+
+        // Without a queue worker the job would run inside the upload request, and a PDF can take long
+        // enough to hit a time limit. The scheduled `search:index` picks it up instead.
+        if (config('queue.default') === 'sync' && FileKind::of($node->mime) === 'pdf') {
             return;
         }
 

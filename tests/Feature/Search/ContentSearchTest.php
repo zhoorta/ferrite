@@ -57,6 +57,15 @@ function indexed(User $owner, string $name, string $content, ?Node $parent = nul
     return $node;
 }
 
+/** Like indexed(), but reads the file right now, as a queue worker would (PDFs are not read inline under the sync queue). */
+function indexedByWorker(User $owner, string $name, string $content, ?string $mime): Node
+{
+    $node = storedFile($owner, $name, $content, null, $mime);
+    ExtractContent::dispatchSync($node->id);
+
+    return $node;
+}
+
 function found(User $user, string $term): array
 {
     return app(NodeSearch::class)->contents($user, $term)->map(fn (array $r) => $r['node']->name)->all();
@@ -116,7 +125,7 @@ describe('extraction', function () {
             $this->markTestSkipped('pdftotext is not installed.');
         }
 
-        indexed($this->user, 'invoice.pdf', minimalPdf('Quarterly invoice zebra'), null, 'application/pdf');
+        indexedByWorker($this->user, 'invoice.pdf', minimalPdf('Quarterly invoice zebra'), 'application/pdf');
 
         expect(NodeContent::sole()->text)->toContain('Quarterly invoice zebra');
     });
@@ -124,7 +133,7 @@ describe('extraction', function () {
     it('records a failure when pdftotext is missing, and retries it', function () {
         config(['ferrite.pdftotext' => 'no-such-pdftotext']);
 
-        $node = indexed($this->user, 'invoice.pdf', minimalPdf('hello'), null, 'application/pdf');
+        $node = indexedByWorker($this->user, 'invoice.pdf', minimalPdf('hello'), 'application/pdf');
 
         expect(NodeContent::sole()->status)->toBe('failed');
 
@@ -136,9 +145,26 @@ describe('extraction', function () {
     it('skips a PDF that is too big', function () {
         config(['ferrite.search_max_pdf_mb' => 1]);
 
-        indexed($this->user, 'big.pdf', minimalPdf('x').str_repeat('%', 1_100_000), null, 'application/pdf');
+        indexedByWorker($this->user, 'big.pdf', minimalPdf('x').str_repeat('%', 1_100_000), 'application/pdf');
 
         expect(NodeContent::sole()->reason)->toBe('PDF too big');
+    });
+
+    it('leaves PDFs to the scheduled index when there is no queue worker', function () {
+        if ((new ExecutableFinder)->find('pdftotext') === null) {
+            $this->markTestSkipped('pdftotext is not installed.');
+        }
+
+        expect(config('queue.default'))->toBe('sync');
+
+        indexed($this->user, 'invoice.pdf', minimalPdf('Quarterly invoice zebra'), null, 'application/pdf');
+        indexed($this->user, 'notes.txt', 'plain text is read at once');
+
+        expect(NodeContent::query()->pluck('status', 'sha256')->count())->toBe(1);
+
+        $this->artisan('search:index')->expectsOutputToContain('Queued 1 files')->assertSuccessful();
+
+        expect(found($this->user, 'zebra'))->toBe(['invoice.pdf']);
     });
 
     it('reads identical files once', function () {

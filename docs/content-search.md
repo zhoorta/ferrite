@@ -33,7 +33,8 @@ Whitespace is collapsed, so a snippet reads as one line.
 - `FERRITE_SEARCH_CONTENTS=false` turns indexing and content results off. Names stay searchable. Existing rows stay until `search:prune` finds nothing uses them; truncate `node_contents` to remove them at once.
 - `php artisan search:index` queues extraction for every stored file that has no row yet (run it once after upgrading from a version without content search). `--retry` also clears failed rows first, for example after installing `pdftotext`.
 - `php artisan search:prune` (daily, from the scheduler) deletes rows no file uses any more.
-- Without a queue worker (`QUEUE_CONNECTION=sync`) extraction runs inside the upload request's job, which is fine for small files.
+- Without a queue worker (`QUEUE_CONNECTION=sync`) text files are read inside the upload request, which is quick. PDFs are not (a slow one could hit a time limit), so they wait for the scheduler, which runs `search:index` every hour: a PDF becomes searchable within the hour instead of at once.
+- The scheduler runs `search:index` hourly in any case, which also picks up anything whose job was lost.
 
 ## Security
 
