@@ -70,6 +70,9 @@ class ShareFileController extends Controller
     private function authorizeShare(string $token): Share
     {
         $share = $this->access->find($token);
+
+        // An upload link shows and serves nothing.
+        abort_if($share->isDropbox(), 404);
         abort_unless($this->access->isUnlocked($share), 403);
 
         return $share;

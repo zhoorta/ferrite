@@ -22,6 +22,9 @@ new #[Layout('layouts::share')] class extends Component {
         $this->token = $token;
         $this->nodeId = $node?->id;
 
+        // An upload link has one page and nothing to browse.
+        abort_if($this->share->isDropbox() && $this->nodeId !== null, 404);
+
         if ($this->unlocked) {
             $this->node();
         }
@@ -114,6 +117,50 @@ new #[Layout('layouts::share')] class extends Component {
                 <flux:input wire:model="password" type="password" :label="__('Password')" autofocus viewable />
                 <flux:button type="submit" variant="primary" class="w-full">{{ __('Continue') }}</flux:button>
             </form>
+        </div>
+    @elseif ($this->share->isDropbox())
+        <div class="mx-auto w-full max-w-xl space-y-6 pt-8" data-test="dropbox"
+            x-data="{ dragging: false, target: { parentId: null, baseUrl: @js('/s/'.$token) } }">
+            <div class="space-y-1 text-center">
+                <flux:icon name="arrow-up-tray" class="mx-auto size-8 text-zinc-400" />
+                <flux:heading size="lg">{{ __('Send files to :name', ['name' => $this->node->name]) }}</flux:heading>
+                <flux:text>{{ __('Add files here. You will not see what is in the folder, and files you send cannot be changed afterwards.') }}</flux:text>
+            </div>
+
+            <div wire:ignore>
+                <div class="rounded-xl border-2 border-dashed border-zinc-300 p-10 text-center transition dark:border-zinc-700"
+                    :class="dragging && 'border-accent bg-accent/5'"
+                    x-on:dragover.prevent="dragging = true" x-on:dragleave="dragging = false"
+                    x-on:drop.prevent="dragging = false; $store.uploads.drop($event, target)">
+                    <p class="text-sm text-zinc-500">{{ __('Drop files here, or') }}</p>
+                    <flux:button class="mt-3" icon="arrow-up-tray" variant="primary" x-on:click="$refs.files.click()">{{ __('Choose files') }}</flux:button>
+                    <input type="file" multiple class="hidden" x-ref="files" x-on:change="$store.uploads.pick($event.target.files, target); $event.target.value = ''" data-test="dropbox-input">
+                </div>
+
+                <ul class="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800" x-show="$store.uploads.items.length" x-cloak>
+                    <template x-for="item in $store.uploads.items" :key="item.key">
+                        <li class="space-y-1 py-2 text-sm">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="truncate" x-text="item.file.name"></span>
+                                <span class="shrink-0 text-xs text-zinc-500" x-show="item.status === 'done'">{{ __('Sent') }}</span>
+                                <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="['queued', 'uploading'].includes(item.status)" x-on:click="$store.uploads.cancel(item)">{{ __('Cancel') }}</button>
+                                <button type="button" class="shrink-0 text-xs text-zinc-500 hover:underline" x-show="item.status === 'error'" x-on:click="$store.uploads.retry(item)">{{ __('Retry') }}</button>
+                            </div>
+                            <div class="upload-bar h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700" x-show="['queued', 'uploading', 'processing', 'done'].includes(item.status)">
+                                <div class="upload-fill h-full bg-accent transition-all"
+                                    :style="`width: ${item.file.size ? Math.round(item.sent / item.file.size * 100) : (item.status === 'done' ? 100 : 0)}%`"></div>
+                            </div>
+                            <p class="text-xs text-zinc-500" x-show="item.status === 'processing'">{{ __('Sent. Storing the file…') }}</p>
+                            <p class="text-xs text-red-600" x-show="item.status === 'error'" x-text="item.error"></p>
+                            <p class="text-xs text-zinc-500" x-show="item.status === 'cancelled'">{{ __('Cancelled') }}</p>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            @if ($this->share->max_bytes !== null)
+                <flux:text size="sm" class="text-center">{{ __('Room left on this link: :size.', ['size' => \Illuminate\Support\Number::fileSize((int) $this->share->remainingBytes())]) }}</flux:text>
+            @endif
         </div>
     @else
         <div class="flex flex-wrap items-center justify-between gap-3">

@@ -69,6 +69,7 @@ class Activity extends Model
             ActivityAction::LinkCreated => __(':who created a share link for :name', ['who' => $who, 'name' => $name]),
             ActivityAction::LinkRevoked => __(':who revoked a share link for :name', ['who' => $who, 'name' => $name]),
             ActivityAction::LinkDownloaded => __(':who downloaded :name through a share link', ['who' => $who, 'name' => $name]),
+            ActivityAction::LinkUploaded => __(':name was uploaded through an upload link', ['name' => $name]),
             ActivityAction::Shared => __(':who shared :name with :person (:permission)', ['who' => $who, 'name' => $name, 'person' => $person, 'permission' => ($meta['permission'] ?? 'view') === 'edit' ? __('can edit') : __('can view')]),
             ActivityAction::Unshared => __(':who stopped sharing :name with :person', ['who' => $who, 'name' => $name, 'person' => $person]),
         };

@@ -22,6 +22,7 @@ class ShareFactory extends Factory
             'node_id' => Node::factory(),
             'created_by' => fn (array $attributes) => Node::query()->findOrFail((int) $attributes['node_id'])->owner_id,
             'token' => Str::random(40),
+            'kind' => Share::VIEW,
             'password_hash' => null,
             'expires_at' => null,
             'allow_download' => true,
@@ -42,6 +43,11 @@ class ShareFactory extends Factory
     public function revoked(): static
     {
         return $this->state(['revoked_at' => now()]);
+    }
+
+    public function dropbox(?int $maxBytes = null): static
+    {
+        return $this->state(['kind' => Share::DROPBOX, 'allow_download' => false, 'max_bytes' => $maxBytes]);
     }
 
     public function viewOnly(): static

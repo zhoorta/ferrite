@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DemoController;
+use App\Http\Controllers\DropboxUploadController;
 use App\Http\Controllers\NodeFileController;
 use App\Http\Controllers\ShareFileController;
 use App\Http\Controllers\UploadController;
@@ -24,6 +25,16 @@ Route::get('/', function () {
 Route::post('demo', DemoController::class)->middleware(['guest', 'throttle:6,60'])->name('demo.start');
 
 // Public share links. Node ids must be numeric so they never clash with the action segments.
+// Guest uploads through a drop-box link: more requests than a page view (one per chunk, plus polling).
+Route::middleware([DisableInDemo::class, SharePageHeaders::class])->prefix('s/{token}/uploads')->group(function () {
+    Route::post('/', [DropboxUploadController::class, 'start'])->middleware('throttle:60,1')->name('share.uploads.store');
+    Route::middleware('throttle:1200,1')->group(function () {
+        Route::get('{upload}', [DropboxUploadController::class, 'status'])->name('share.uploads.show');
+        Route::patch('{upload}', [DropboxUploadController::class, 'append'])->name('share.uploads.update');
+        Route::delete('{upload}', [DropboxUploadController::class, 'cancel'])->name('share.uploads.destroy');
+    });
+});
+
 Route::middleware([DisableInDemo::class, 'throttle:120,1', SharePageHeaders::class])->prefix('s/{token}')->group(function () {
     Route::get('download/{node?}', [ShareFileController::class, 'download'])->whereNumber('node')->name('share.download');
     Route::get('preview/{node}', [ShareFileController::class, 'preview'])->whereNumber('node')->name('share.preview');

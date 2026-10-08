@@ -22,4 +22,15 @@ A link is a random 40-character token in the URL (`/s/{token}`), for a file or a
 - "View only" removes the download buttons and refuses `download` and ZIP. Anything the browser can show inline (images, video, PDF, text) can still be saved from the preview, so this is a convenience, not copy protection. Types that could only be downloaded are refused outright.
 - Tokens are stored in plain text so the owner can see and copy a link again later. The database already holds everything needed to read the files' metadata, but not the blobs; if that tradeoff does not suit you, hash the token and show the link only once.
 
-Guests cannot upload or change anything.
+Guests cannot change anything through a view link.
+
+## Upload links (drop-box)
+
+A folder can also get an **upload link** (`shares.kind = dropbox`). Whoever has it can add files to that folder and nothing else: the page shows a drop zone, not the folder's contents, and download, preview, thumbnail and ZIP routes answer 404 for it.
+
+- Password and expiry work as for view links; revoking, expiry or trashing the folder end it at once (404). An optional **size limit** (GB) caps what the link accepts in total (`shares.max_bytes`, `received_bytes`); it is checked when an upload starts (counting uploads on their way) and again when the file is stored, which is what really enforces it.
+- Uploads use the same chunked protocol as signed-in users, at `/s/{token}/uploads` (`DropboxUploadController`, `StartDropboxUpload`). The upload belongs to the folder's owner (`user_id`) and carries `share_id`. A guest can only touch uploads started in their own session through that link: the ids are remembered in the session.
+- Files land directly in the shared folder, owned by the folder's owner and counted against their quota. A name that is taken gets a suffix (nothing is ever overwritten), and a dropped folder is flattened to its file names.
+- The owner sees "name was uploaded through an upload link" in the activity log. Disabled owners and full quotas refuse the upload.
+- Guests cannot delete or change what they sent, and cannot see it afterwards beyond the progress list on the page.
+- Not included: e-mail notification, download limits, per-IP caps beyond the request throttles.

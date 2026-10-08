@@ -20,7 +20,7 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
 - **Files and folders** with upload (chunked and resumable, so multi-gigabyte files and flaky connections are fine; whole folders by drag and drop), download with Range support, rename, move, and folder download as ZIP.
 - **Previews** for images, PDF, video, audio and text, plus image thumbnails.
 - **Trash** with restore, permanent delete and automatic purge.
-- **Sharing**: with other users (view or edit) and with **links** (optional password and expiry, view-only, revoke).
+- **Sharing**: with other users (view or edit) and with **links** (optional password and expiry, view-only, revoke), and **upload links** that let guests add files to one folder without seeing it.
 - **Several users** with quotas, an admin screen, two-factor authentication and passkeys.
 - **Storage disks**: local folder, S3-compatible or SFTP, switchable per instance. New uploads go to the default disk.
 - **Search** by name and an **activity log**.

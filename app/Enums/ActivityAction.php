@@ -16,6 +16,7 @@ enum ActivityAction: string
     case LinkCreated = 'link_created';
     case LinkRevoked = 'link_revoked';
     case LinkDownloaded = 'link_downloaded';
+    case LinkUploaded = 'link_uploaded';
     case Shared = 'shared';
     case Unshared = 'unshared';
 }

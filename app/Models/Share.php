@@ -12,16 +12,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A public link to a file or folder. The token is the credential, so it is long and random;
+ * A public link to a file or folder, or (kind `dropbox`) an upload-only link to a folder. The token is the credential, so it is long and random;
  * an optional password and expiry narrow it, and revoking it ends access at once.
  *
  * @property int $id
  * @property int $node_id
  * @property int $created_by
  * @property string $token
+ * @property string $kind
  * @property string|null $password_hash
  * @property CarbonInterface|null $expires_at
  * @property bool $allow_download
+ * @property int|null $max_bytes
+ * @property int $received_bytes
  * @property CarbonInterface|null $revoked_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
@@ -33,6 +36,10 @@ class Share extends Model
     /** @use HasFactory<ShareFactory> */
     use HasFactory;
 
+    public const VIEW = 'view';
+
+    public const DROPBOX = 'dropbox';
+
     /**
      * @return array<string, string>
      */
@@ -40,6 +47,8 @@ class Share extends Model
     {
         return [
             'allow_download' => 'boolean',
+            'max_bytes' => 'integer',
+            'received_bytes' => 'integer',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
@@ -75,6 +84,19 @@ class Share extends Model
     public function isActive(): bool
     {
         return $this->revoked_at === null && ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
+    public function isDropbox(): bool
+    {
+        return $this->kind === self::DROPBOX;
+    }
+
+    /**
+     * Bytes a drop-box link may still take, or null without a cap.
+     */
+    public function remainingBytes(): ?int
+    {
+        return $this->max_bytes === null ? null : max(0, $this->max_bytes - $this->received_bytes);
     }
 
     public function hasPassword(): bool

@@ -6,6 +6,7 @@ use App\Actions\Nodes\NodeName;
 use App\Enums\ActivityAction;
 use App\Enums\NodeType;
 use App\Models\Node;
+use App\Models\Share;
 use App\Models\Upload;
 use App\Models\User;
 use App\Support\ActivityLog;
@@ -77,6 +78,7 @@ class CompleteUpload
                 }
 
                 $owner = User::query()->lockForUpdate()->findOrFail($ownerId);
+                $share = $this->claimLink($upload);
 
                 if ($owner->quota_bytes !== null && $upload->size > $owner->remainingBytes()) {
                     throw ValidationException::withMessages(['size' => __('Not enough storage space left.')]);
@@ -106,6 +108,7 @@ class CompleteUpload
                 $node->save();
 
                 $owner->increment('used_bytes', $upload->size);
+                $share?->increment('received_bytes', $upload->size);
                 $current->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
 
                 return $node;
@@ -127,9 +130,39 @@ class CompleteUpload
         @unlink($tmp);
         $upload->refresh();
 
-        ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
+        if ($upload->share_id !== null) {
+            ActivityLog::record(ActivityAction::LinkUploaded, $node, null, ['size' => $node->size, 'share_id' => $upload->share_id]);
+        } else {
+            ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]);
+        }
 
         return $node;
+    }
+
+    /**
+     * For an upload through a drop-box link: the link, locked, if it still accepts this file. A link
+     * revoked or expired while the file was on its way, or one the file would push over its size
+     * limit, refuses it. Null for an ordinary upload.
+     *
+     * @throws ValidationException
+     */
+    private function claimLink(Upload $upload): ?Share
+    {
+        if ($upload->share_id === null) {
+            return null;
+        }
+
+        $share = Share::query()->lockForUpdate()->find($upload->share_id);
+
+        if ($share === null || ! $share->isDropbox() || ! $share->isActive()) {
+            throw ValidationException::withMessages(['size' => __('This upload link is no longer active.')]);
+        }
+
+        if ($share->max_bytes !== null && $share->received_bytes + $upload->size > $share->max_bytes) {
+            throw ValidationException::withMessages(['size' => __('This upload link has reached its size limit.')]);
+        }
+
+        return $share;
     }
 
     /**

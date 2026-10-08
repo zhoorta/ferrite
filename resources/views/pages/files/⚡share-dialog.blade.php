@@ -25,6 +25,10 @@ new class extends Component {
 
     public bool $allowDownload = true;
 
+    public string $linkKind = 'view';
+
+    public string $maxSize = '';
+
     public string $email = '';
 
     public string $permission = 'view';
@@ -35,7 +39,7 @@ new class extends Component {
         $node = Node::findOrFail($id);
         Gate::authorize('share', $node);
 
-        $this->reset('linkPassword', 'expiry', 'allowDownload', 'email', 'permission');
+        $this->reset('linkPassword', 'expiry', 'allowDownload', 'linkKind', 'maxSize', 'email', 'permission');
         $this->resetErrorBag();
         $this->nodeId = $node->id;
 
@@ -75,6 +79,8 @@ new class extends Component {
         $this->validate([
             'expiry' => ['required', 'in:never,1d,7d,30d'],
             'linkPassword' => ['nullable', 'string', 'max:255'],
+            'linkKind' => ['required', 'in:view,dropbox'],
+            'maxSize' => ['nullable', 'numeric', 'min:0.001', 'max:1000000'],
         ]);
 
         $expiresAt = match ($this->expiry) {
@@ -84,9 +90,12 @@ new class extends Component {
             default => null,
         };
 
-        $action->handle(Auth::user(), Node::findOrFail($this->nodeId), $this->linkPassword, $expiresAt, $this->allowDownload);
+        $dropbox = $this->linkKind === 'dropbox';
+        $maxBytes = $dropbox && $this->maxSize !== '' ? (int) round((float) $this->maxSize * 1024 ** 3) : null;
 
-        $this->reset('linkPassword', 'expiry');
+        $action->handle(Auth::user(), Node::findOrFail($this->nodeId), $this->linkPassword, $expiresAt, $this->allowDownload, $dropbox, $maxBytes);
+
+        $this->reset('linkPassword', 'expiry', 'maxSize');
         unset($this->links);
     }
 
@@ -157,6 +166,15 @@ new class extends Component {
                     <flux:text size="sm">{{ __('Anyone with a link can open this, without an account.') }}</flux:text>
 
                     <form wire:submit="createLink" class="space-y-3">
+                        @if ($this->node->isFolder())
+                            <flux:radio.group wire:model.live="linkKind" variant="segmented" :label="__('Type')">
+                                <flux:radio value="view" :label="__('Download link')" />
+                                <flux:radio value="dropbox" :label="__('Upload link')" />
+                            </flux:radio.group>
+                            @if ($linkKind === 'dropbox')
+                                <flux:text size="sm">{{ __('Guests can add files to this folder. They cannot see, open or change anything in it.') }}</flux:text>
+                            @endif
+                        @endif
                         <div class="grid gap-3 sm:grid-cols-2">
                             <flux:input wire:model="linkPassword" type="password" :label="__('Password (optional)')" autocomplete="new-password" />
                             <flux:select wire:model="expiry" :label="__('Expires')">
@@ -166,8 +184,15 @@ new class extends Component {
                                 <flux:select.option value="30d">{{ __('In 30 days') }}</flux:select.option>
                             </flux:select>
                         </div>
+                        @if ($linkKind === 'dropbox')
+                            <div>
+                                <flux:input wire:model="maxSize" type="number" step="any" min="0" :label="__('Size limit in GB (optional)')" :description="__('Total the link will accept; leave empty for no limit apart from your quota.')" />
+                                <flux:error name="maxSize" />
+                            </div>
+                        @else
                         <flux:switch wire:model="allowDownload" :label="__('Allow downloads')" :description="__('When off, the page shows no download buttons. Files that can be shown in the browser can still be saved from it.')" />
-                        <flux:button type="submit" variant="primary" icon="link">{{ __('Create link') }}</flux:button>
+                        @endif
+                        <flux:button type="submit" variant="primary" icon="link">{{ $linkKind === 'dropbox' ? __('Create upload link') : __('Create link') }}</flux:button>
                     </form>
 
                     <ul class="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -182,8 +207,12 @@ new class extends Component {
                                     <flux:button size="xs" variant="ghost" wire:click="revokeLink({{ $link->id }})">{{ __('Revoke') }}</flux:button>
                                 </div>
                                 <div class="flex flex-wrap gap-1">
+                                    @if ($link->isDropbox())
+                                        <flux:badge size="sm" icon="arrow-up-tray">{{ __('Upload') }}</flux:badge>
+                                        <flux:badge size="sm">{{ $link->max_bytes === null ? \Illuminate\Support\Number::fileSize($link->received_bytes).' '.__('received') : \Illuminate\Support\Number::fileSize($link->received_bytes).' / '.\Illuminate\Support\Number::fileSize($link->max_bytes) }}</flux:badge>
+                                    @endif
                                     @if ($link->hasPassword())<flux:badge size="sm" icon="lock-closed">{{ __('Password') }}</flux:badge>@endif
-                                    @unless ($link->allow_download)<flux:badge size="sm">{{ __('View only') }}</flux:badge>@endunless
+                                    @if (! $link->allow_download && ! $link->isDropbox())<flux:badge size="sm">{{ __('View only') }}</flux:badge>@endif
                                     @if ($link->expires_at)
                                         <flux:badge size="sm" :color="$link->isActive() ? 'zinc' : 'red'">{{ $link->isActive() ? __('Expires :when', ['when' => $link->expires_at->diffForHumans()]) : __('Expired') }}</flux:badge>
                                     @endif

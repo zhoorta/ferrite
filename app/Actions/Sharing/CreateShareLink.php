@@ -18,7 +18,7 @@ class CreateShareLink
     /**
      * @throws ValidationException
      */
-    public function handle(User $actor, Node $node, ?string $password = null, ?CarbonInterface $expiresAt = null, bool $allowDownload = true): Share
+    public function handle(User $actor, Node $node, ?string $password = null, ?CarbonInterface $expiresAt = null, bool $allowDownload = true, bool $dropbox = false, ?int $maxBytes = null): Share
     {
         Gate::forUser($actor)->authorize('share', $node);
 
@@ -26,14 +26,24 @@ class CreateShareLink
             throw ValidationException::withMessages(['expiry' => __('The expiry date must be in the future.')]);
         }
 
-        $share = new Share(['allow_download' => $allowDownload, 'expires_at' => $expiresAt]);
+        if ($dropbox && ! $node->isFolder()) {
+            throw ValidationException::withMessages(['kind' => __('An upload link needs a folder.')]);
+        }
+
+        if ($maxBytes !== null && $maxBytes < 1) {
+            throw ValidationException::withMessages(['maxSize' => __('The size limit must be above zero.')]);
+        }
+
+        $share = new Share(['allow_download' => $dropbox ? false : $allowDownload, 'expires_at' => $expiresAt]);
+        $share->kind = $dropbox ? Share::DROPBOX : Share::VIEW;
+        $share->max_bytes = $dropbox ? $maxBytes : null;
         $share->node_id = $node->id;
         $share->created_by = $actor->id;
         $share->token = Str::random(40);
         $share->password_hash = $password === null || $password === '' ? null : Hash::make($password);
         $share->save();
 
-        ActivityLog::record(ActivityAction::LinkCreated, $node, $actor, ['share_id' => $share->id]);
+        ActivityLog::record(ActivityAction::LinkCreated, $node, $actor, ['share_id' => $share->id] + ($dropbox ? ['kind' => Share::DROPBOX] : []));
 
         return $share;
     }

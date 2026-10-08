@@ -35,7 +35,7 @@ class UploadController extends Controller
     {
         $this->authorizeOwner($request, $upload);
 
-        return response()->json($this->state($upload));
+        return $this->report($upload);
     }
 
     /**
@@ -46,6 +46,23 @@ class UploadController extends Controller
     {
         $this->authorizeOwner($request, $upload);
 
+        return $this->receive($request, $upload, $append, $fail);
+    }
+
+    public function destroy(Request $request, Upload $upload): JsonResponse
+    {
+        $this->authorizeOwner($request, $upload);
+
+        return $this->discard($upload);
+    }
+
+    protected function report(Upload $upload): JsonResponse
+    {
+        return response()->json($this->state($upload));
+    }
+
+    protected function receive(Request $request, Upload $upload, AppendChunk $append, FailUpload $fail): JsonResponse
+    {
         $lock = Cache::lock("upload:{$upload->id}", 120);
 
         if (! $lock->get()) {
@@ -97,10 +114,8 @@ class UploadController extends Controller
         };
     }
 
-    public function destroy(Request $request, Upload $upload): JsonResponse
+    protected function discard(Upload $upload): JsonResponse
     {
-        $this->authorizeOwner($request, $upload);
-
         // Being stored: the job owns the temporary file until it reports back.
         if ($upload->status === Upload::PROCESSING) {
             return response()->json($this->state($upload), 409);
@@ -114,7 +129,7 @@ class UploadController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function state(Upload $upload): array
+    protected function state(Upload $upload): array
     {
         return [
             'id' => $upload->id,

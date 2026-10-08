@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property string $id
  * @property int $user_id
+ * @property int|null $share_id
  * @property int|null $parent_id
  * @property string $name
  * @property int $size
@@ -60,6 +61,14 @@ class Upload extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Share, $this>
+     */
+    public function share(): BelongsTo
+    {
+        return $this->belongsTo(Share::class);
     }
 
     /**
