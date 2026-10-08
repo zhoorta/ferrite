@@ -34,7 +34,7 @@ Project page: https://ferrite.stackcare.pt · Live demo: https://demo.ferrite.st
 | | |
 | --- | --- |
 | ![Usage page: quota, breakdown by type, biggest folders and files](docs/img/screenshots/usage.png) | ![Classic Mac theme](public/img/themes/mac.png) |
-| The usage page: where your space goes. | Thirteen themes, picked per user. Here: Classic Mac. |
+| The usage page: where your space goes. | Fifteen themes, picked per user. Here: Classic Mac. |
 | ![Amber terminal theme](public/img/themes/amber.png) | ![Bubblegum 98 theme](public/img/themes/bubblegum.png) |
 | Amber terminal. | Bubblegum 98. |
 

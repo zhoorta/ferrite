@@ -4,7 +4,7 @@
     $themes = [
         'ferrite' => 'Ferrite', 'ferrite-light' => 'Ferrite light', 'mac' => 'Classic Mac', 'desk95' => 'Desktop 95', 'zine' => 'Plain page',
         'bubblegum' => 'Bubblegum 98', 'amber' => 'Amber terminal', 'phosphor' => 'Green phosphor', 'commodore' => 'Commodore',
-        'amiga' => 'Amiga', 'wallstreet' => 'Wall Street', 'lotus' => 'Lotus 1-2-3', 'memphis' => 'Memphis',
+        'amiga' => 'Amiga', 'nokia' => 'Nokia 3310', 'miami' => 'Miami Vice', 'wallstreet' => 'Wall Street', 'lotus' => 'Lotus 1-2-3', 'memphis' => 'Memphis',
     ];
     $features = [
         ['Files and folders', 'Chunked, resumable uploads that cope with multi-gigabyte files and flaky connections. Drag in whole folders, rename, move, copy, download a folder as a ZIP.'],
@@ -61,7 +61,7 @@
 
             <section class="pb-16 text-center">
                 <h2 class="font-serif text-2xl font-semibold">Pick a look</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Thirteen themes, from a calm dark default to Classic Mac, Amiga and green phosphor. Try one, this whole page changes. Every user picks their own.</p>
+                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Fifteen themes, from a calm dark default to Classic Mac, Amiga and green phosphor. Try one, this whole page changes. Every user picks their own.</p>
                 <div class="mt-6 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Theme">
                     @foreach ($themes as $key => $label)
                         <button type="button" role="radio" data-palette-choice="{{ $key }}" aria-checked="false"

@@ -29,6 +29,28 @@ class AppearanceTest extends TestCase
         $this->get(route('appearance.edit'))->assertSee('data-palette="amiga"', false);
     }
 
+    public function test_nokia_3310_can_be_picked_and_is_a_light_theme(): void
+    {
+        $this->actingAs($user = User::factory()->create());
+
+        Livewire::test('pages::settings.appearance')->set('palette', 'nokia')->assertHasNoErrors()->assertSee('Nokia 3310');
+
+        $this->assertSame('nokia', $user->fresh()->palette);
+        $this->assertFalse(User::isDarkPalette('nokia'));
+        $this->get(route('appearance.edit'))->assertSee('data-palette="nokia"', false);
+    }
+
+    public function test_miami_vice_can_be_picked_and_is_a_dark_theme(): void
+    {
+        $this->actingAs($user = User::factory()->create());
+
+        Livewire::test('pages::settings.appearance')->set('palette', 'miami')->assertHasNoErrors()->assertSee('Miami Vice');
+
+        $this->assertSame('miami', $user->fresh()->palette);
+        $this->assertTrue(User::isDarkPalette('miami'));
+        $this->get(route('appearance.edit'))->assertSee('data-palette="miami"', false);
+    }
+
     public function test_classic_mac_is_a_light_theme(): void
     {
         $this->actingAs($user = User::factory()->create(['palette' => 'mac']));
@@ -67,7 +89,7 @@ class AppearanceTest extends TestCase
             );
         }
 
-        $this->assertSame(['ferrite-light', 'mac', 'desk95', 'zine', 'bubblegum', 'memphis'], User::LIGHT_PALETTES);
+        $this->assertSame(['ferrite-light', 'mac', 'desk95', 'zine', 'bubblegum', 'memphis', 'nokia'], User::LIGHT_PALETTES);
     }
 
     public function test_unknown_palette_is_rejected(): void

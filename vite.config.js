@@ -68,6 +68,18 @@ export default defineConfig({
                     weights: [400, 500, 600, 700],
                     preload: false,
                 }),
+                bunny('Righteous', {
+                    weights: [400],
+                    preload: false,
+                }),
+                bunny('Outfit', {
+                    weights: [400, 500, 600, 700],
+                    preload: false,
+                }),
+                bunny('Jersey 10', {
+                    weights: [400],
+                    preload: false,
+                }),
                 bunny('Pixelify Sans', {
                     weights: [500, 600, 700],
                     preload: false,

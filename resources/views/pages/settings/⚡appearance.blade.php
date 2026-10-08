@@ -44,6 +44,8 @@ new #[Title('Appearance settings')] class extends Component {
                     'phosphor' => [__('Green phosphor'), 'tv'],
                     'commodore' => [__('Commodore'), 'gamepad-2'],
                     'amiga' => [__('Amiga'), 'save'],
+                    'nokia' => [__('Nokia 3310'), 'device-phone-mobile'],
+                    'miami' => [__('Miami Vice'), 'bolt'],
                     'wallstreet' => [__('Wall Street'), 'briefcase'],
                     'lotus' => [__('Lotus 1-2-3'), 'table-cells'],
                     'memphis' => [__('Memphis'), 'star'],
