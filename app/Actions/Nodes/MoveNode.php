@@ -12,11 +12,11 @@ use Illuminate\Validation\ValidationException;
 class MoveNode
 {
     /**
-     * Move a node into a folder, or to the root when $destination is null.
+     * Move a node into a folder, or to the root when $destination is null. $meta goes into the activity entry (the API adds the token's name).
      *
      * @throws ValidationException
      */
-    public function handle(User $actor, Node $node, ?Node $destination): Node
+    public function handle(User $actor, Node $node, ?Node $destination, array $meta = []): Node
     {
         Gate::forUser($actor)->authorize('move', $node);
 
@@ -42,7 +42,7 @@ class MoveNode
 
         $node->update(['parent_id' => $destination?->id]);
 
-        ActivityLog::record(ActivityAction::Moved, $node, $actor, ['to' => $destination !== null ? $destination->name : __('My files')]);
+        ActivityLog::record(ActivityAction::Moved, $node, $actor, ['to' => $destination !== null ? $destination->name : __('My files')] + $meta);
 
         return $node;
     }

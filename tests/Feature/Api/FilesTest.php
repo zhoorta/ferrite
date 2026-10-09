@@ -150,3 +150,68 @@ it('answers 404 for files outside the folder, folders, trashed files and other a
 it('needs a token', function () {
     apiDelete("/api/v1/files/{$this->a->id}")->assertUnauthorized();
 });
+
+function apiMove(int $id, string $folder, string $plain)
+{
+    app('auth')->forgetGuards();
+
+    return test()->patchJson("/api/v1/files/{$id}", ['folder' => $folder], ['Authorization' => "Bearer {$plain}"]);
+}
+
+it('moves a file to another folder with a write token, keeping its name, and logs the token', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+
+    apiMove($this->a->id, '', $write)->assertOk()->assertJson(['id' => $this->a->id, 'path' => 'a.flac']);
+    expect($this->a->fresh()->parent_id)->toBe($this->music->id);
+
+    apiMove($this->a->id, 'New/Deeper', $write)->assertOk()->assertJson(['path' => 'New/Deeper/a.flac']);
+    expect(apiFiles($write)->json('data.*.path'))->toContain('New/Deeper/a.flac');
+
+    $activity = Activity::where('node_id', $this->a->id)->latest('id')->first();
+    expect($activity->action->value)->toBe('moved')->and($activity->meta['token'])->toBe('test');
+});
+
+it('does not replace: a name clash is a 409 and nothing moves', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+    storedFile($this->user, 'a.flac', 'other', $this->music, 'audio/flac');
+
+    apiMove($this->a->id, '', $write)->assertStatus(409)->assertJson(['error' => 'exists']);
+
+    expect($this->a->fresh()->parent_id)->toBe($this->album->id);
+});
+
+it('does not let a read token move anything', function () {
+    apiMove($this->a->id, '', $this->plain)->assertForbidden();
+
+    expect($this->a->fresh()->parent_id)->toBe($this->album->id);
+});
+
+it('answers 404 for files outside the folder, folders, trashed files and other accounts, and cannot leave the folder', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+    $theirs = storedFile(User::factory()->create(), 'theirs.flac', 'x', null);
+    $this->b->forceFill(['trashed_at' => now()])->save();
+
+    foreach ([$this->outside, $this->album, $this->b, $theirs] as $node) {
+        apiMove($node->id, '', $write)->assertNotFound();
+    }
+
+    foreach (['..', '../Elsewhere', 'a/../b', '.', "ctl\x01"] as $bad) {
+        apiMove($this->a->id, $bad, $write)->assertUnprocessable();
+    }
+
+    expect($this->a->fresh()->parent_id)->toBe($this->album->id);
+});
+
+it('needs a token and a folder field', function () {
+    app('auth')->forgetGuards();
+    $this->patchJson("/api/v1/files/{$this->a->id}", ['folder' => ''])->assertUnauthorized();
+
+    apiMoveRaw($this->a->id, [], apiToken($this->user, $this->music, ['read', 'write']))->assertUnprocessable();
+});
+
+function apiMoveRaw(int $id, array $body, string $plain)
+{
+    app('auth')->forgetGuards();
+
+    return test()->patchJson("/api/v1/files/{$id}", $body, ['Authorization' => "Bearer {$plain}"]);
+}

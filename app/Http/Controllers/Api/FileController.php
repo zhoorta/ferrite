@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Nodes\EnsureFolderPath;
+use App\Actions\Nodes\MoveNode;
+use App\Actions\Nodes\NodeName;
 use App\Actions\Nodes\TrashNode;
 use App\Enums\NodeType;
 use App\Http\Controllers\Controller;
@@ -33,6 +36,47 @@ class FileController extends Controller
         $trash->handle($request->user(), $node, ['token' => $token->name]);
 
         return response()->json(['id' => $node->id, 'trashed' => true]);
+    }
+
+    /**
+     * Move a file to another folder of the token's folder, keeping its name: `folder` is the path of the destination
+     * relative to the token's folder ("" for the folder itself); missing folders on the way are created, like uploads.
+     * Never replaces: a file with that name already there is a 409 and nothing changes. Needs a write token.
+     */
+    public function move(Request $request, Node $node, EnsureFolderPath $ensure, MoveNode $mover): JsonResponse
+    {
+        $data = $request->validate(['folder' => ['present', 'nullable', 'string', 'max:2048']]);
+
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        abort_unless($node->isFile() && $token->reaches($node), 404);
+
+        $root = $token->rootFolder();
+        $folder = trim((string) $data['folder'], '/');
+        $segments = $folder === '' ? [] : explode('/', $folder);
+        $destination = $ensure->handle($request->user(), $root, $segments);
+
+        // A missing destination was just created and is empty, so a clash can only be with something that was there.
+        if ($node->parent_id !== $destination?->id && NodeName::taken($node->owner_id, $destination?->id, $node->name, $node->id)) {
+            return response()->json(['error' => 'exists'], 409);
+        }
+
+        $mover->handle($request->user(), $node, $destination, ['token' => $token->name]);
+
+        return response()->json(['id' => $node->id, 'path' => $this->relativePath($node->fresh(), $root?->id)]);
+    }
+
+    /** The file's path below the token's folder, with the names as stored. */
+    private function relativePath(Node $file, ?int $rootId): string
+    {
+        $parts = [$file->name];
+
+        for ($parent = $file->parent; $parent !== null && $parent->id !== $rootId; $parent = $parent->parent) {
+            $parts[] = $parent->name;
+        }
+
+        return implode('/', array_reverse($parts));
     }
 
     /**

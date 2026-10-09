@@ -10,7 +10,7 @@ Personal access tokens (Sanctum), created in Settings > API tokens.
 - The token is shown once, with a copy button, together with the base URL of the API. Stored hashed (Sanctum default). The list shows name, folder, access, created, expires, last used (time and IP), and Revoke.
 - A token reaches its folder and what is inside it, never the parents or siblings (same rule as share links, `ShareAccess::reaches`). Anything outside answers 404. Folders are addressed by id, so renaming or moving the folder does not break the token; trashing it ends the token's access (404).
 - Revoked, expired or unknown: 401. A disabled owner: 403. `read` token on a write route: 403. Tokens do not need 2FA; they are the thing you give to a machine.
-- v1 has no rename, move or purge through tokens. A `read + write` token can add files (until the quota is full) but not destroy any. A token created with **trash** access can also move files to the trash; they stay restorable in the web app (and count against the quota until purged), and only the signed-in owner can purge them.
+- v1 has no rename or purge through tokens. A `read + write` token can add files (until the quota is full) and move them between folders of its own folder, but not destroy any. A token created with **trash** access can also move files to the trash; they stay restorable in the web app (and count against the quota until purged), and only the signed-in owner can purge them.
 
 ## Endpoints
 
@@ -22,6 +22,7 @@ Base `/api/v1`, `Authorization: Bearer <token>`, JSON. Throttled per token (like
 | `GET /files?cursor=` | Every file below the root, in id order, 1000 per page (the cursor is the last id, so files added meanwhile never shift a page; trashed files and folders are left out): `{id, path, size, sha256, mtime, mime}`. `path` is relative to the root, with `/`. `next_cursor` or null. Folders are implied by paths; empty folders are not listed. |
 | `GET /files/{id}/content` | The bytes, through `NodeResponder`: Range, 206, `Accept-Ranges`, `ETag: "<sha256>"`, `If-None-Match` and `If-Range` honoured, `nosniff`. The disposition is `attachment`; the caller decides how to present it. |
 | `DELETE /files/{id}` | Needs the `trash` ability. Moves a file to the trash and answers `{id, trashed: true}`; folders and anything outside the token's folder are 404. The activity log says which token did it. |
+| `PATCH /files/{id}` | Needs `write`. Body `{folder}`: the destination folder as a path relative to the token's folder (`""` for the folder itself; missing folders are created like uploads; `..`, `.` and control characters are 422). Moves a file and keeps its name; answers `{id, path}`. Never replaces: a file of that name already there is `409 {error: "exists"}` and nothing changes. Folders and anything outside the token's folder are 404. The activity log says which token did it. |
 | `POST /uploads` | Start. `path` (relative to the root, missing folders are created), `size`, `fingerprint`. Same chunked protocol as `docs/uploads.md`. |
 | `PATCH /uploads/{id}` | Chunk with `Upload-Offset`; wrong offset gives 409 with the real one. The last chunk answers 202. |
 | `GET /uploads/{id}` | `receiving`, `processing`, `done` (with the file's `id`, `sha256`) or `failed` (with the reason). |
@@ -33,7 +34,7 @@ Why `sha256` and not only `mtime`: Ferrite already stores it for dedup. It is th
 
 **Quota and activity.** Uploads count against the folder owner's quota (402-style `422 {error: "quota"}`), and the activity log says "uploaded through token *name*". Dedup, `FinalizeUpload`, `FailUpload` and `uploads:prune` are shared with browser uploads. Every route goes through `NodePolicy` with the token's ability, not a second permission system.
 
-**Not in v1.** Purge, folder trashing, rename, move, mkdir on its own (uploads create folders), sharing, search, thumbnails, change feeds (`since=` with tombstones). A caller lists everything and diffs; for libraries of tens of thousands of files that is a few pages. Add `since` when a real caller feels it.
+**Not in v1.** Purge, folder trashing, rename, moving folders, mkdir on its own (uploads create folders), sharing, search, thumbnails, change feeds (`since=` with tombstones). A caller lists everything and diffs; for libraries of tens of thousands of files that is a few pages. Add `since` when a real caller feels it.
 
 ## How uploads behave (built)
 
