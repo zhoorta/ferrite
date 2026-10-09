@@ -19,8 +19,6 @@ class RootController extends Controller
         $token = $user->currentAccessToken();
         $folder = $token->rootFolder();
 
-        $token->forceFill(['last_used_at' => now()])->save();
-
         return response()->json([
             'name' => $folder?->name ?? 'Whole drive',
             'id' => $folder?->id,

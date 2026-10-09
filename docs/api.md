@@ -1,4 +1,4 @@
-# API (design, not built yet)
+# API (built: root, files, content; uploads and the Settings page are next)
 
 A small HTTP API for scripts and other apps, first user: Magnetite, which keeps its music library in one Ferrite folder (see Magnetite's `docs/ferrite-storage.md`). Not sync, not WebDAV: list, read, add.
 
@@ -19,7 +19,7 @@ Base `/api/v1`, `Authorization: Bearer <token>`, JSON. Throttled per token (like
 | Route | Purpose |
 |---|---|
 | `GET /root` | Test connection: `{name, id, access, expires_at, quota: {used, limit}}`. The name is the folder's, not its path. |
-| `GET /files?cursor=` | Every file below the root, depth first, 1000 per page: `{id, path, size, sha256, mtime, mime}`. `path` is relative to the root, with `/`. `next_cursor` or null. Folders are implied by paths; empty folders are not listed. |
+| `GET /files?cursor=` | Every file below the root, in id order, 1000 per page (the cursor is the last id, so files added meanwhile never shift a page; trashed files and folders are left out): `{id, path, size, sha256, mtime, mime}`. `path` is relative to the root, with `/`. `next_cursor` or null. Folders are implied by paths; empty folders are not listed. |
 | `GET /files/{id}/content` | The bytes, through `NodeResponder`: Range, 206, `Accept-Ranges`, `ETag: "<sha256>"`, `If-None-Match` and `If-Range` honoured, `nosniff`. The disposition is `attachment`; the caller decides how to present it. |
 | `POST /uploads` | Start. `path` (relative to the root, missing folders are created), `size`, `fingerprint`. Same chunked protocol as `docs/uploads.md`. |
 | `PATCH /uploads/{id}` | Chunk with `Upload-Offset`; wrong offset gives 409 with the real one. The last chunk answers 202. |

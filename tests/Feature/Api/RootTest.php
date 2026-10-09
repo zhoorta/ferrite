@@ -13,6 +13,9 @@ function apiToken(User $user, ?Node $folder, array $abilities = ['read'], $expir
 
 function apiGet(string $uri, ?string $token = null)
 {
+    // The guard keeps the user it resolved for the previous request of the same test.
+    app('auth')->forgetGuards();
+
     return test()->getJson($uri, $token ? ['Authorization' => "Bearer {$token}"] : []);
 }
 
