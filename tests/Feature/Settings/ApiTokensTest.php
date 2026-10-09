@@ -94,3 +94,15 @@ it('records the address a token was last used from', function () {
 
     expect(ApiToken::first()->last_used_ip)->toBe('203.0.113.9');
 });
+
+it('creates a token that may move files to the trash', function () {
+    Livewire::actingAs($this->user)->test('pages::settings.api-tokens')
+        ->set('name', 'Magnetite')
+        ->set('folder', (string) $this->folder->id)
+        ->set('access', 'trash')
+        ->call('create')
+        ->assertHasNoErrors()
+        ->assertSee('read + write + trash');
+
+    expect(ApiToken::first()->abilities)->toBe(['read', 'write', 'trash']);
+});

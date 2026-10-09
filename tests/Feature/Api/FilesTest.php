@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Activity;
 use App\Models\Node;
 use App\Models\User;
 use Illuminate\Support\Facades\File;
@@ -113,4 +114,39 @@ it('does not let a token from another account reach these files', function () {
 it('needs a valid token for files and content', function () {
     apiGet('/api/v1/files')->assertUnauthorized();
     apiGet("/api/v1/files/{$this->a->id}/content")->assertUnauthorized();
+});
+
+it('moves a file to the trash with a trash token, and logs the token', function () {
+    $plain = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+
+    apiDelete("/api/v1/files/{$this->a->id}", $plain)->assertOk()->assertJson(['id' => $this->a->id, 'trashed' => true]);
+
+    expect($this->a->fresh()->isTrashed())->toBeTrue()
+        ->and(apiFiles($plain)->json('data.*.path'))->toBe(['b.flac']);
+    $activity = Activity::where('node_id', $this->a->id)->latest('id')->first();
+    expect($activity->action->value)->toBe('trashed')->and($activity->meta)->toBe(['token' => 'test']);
+});
+
+it('does not let read or write tokens trash anything', function () {
+    apiDelete("/api/v1/files/{$this->a->id}", $this->plain)->assertForbidden();
+    apiDelete("/api/v1/files/{$this->a->id}", apiToken($this->user, $this->music, ['read', 'write']))->assertForbidden();
+
+    expect($this->a->fresh()->isTrashed())->toBeFalse();
+});
+
+it('answers 404 for files outside the folder, folders, trashed files and other accounts', function () {
+    $plain = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    $theirs = storedFile(User::factory()->create(), 'theirs.flac', 'x', null);
+    $this->b->forceFill(['trashed_at' => now()])->save();
+
+    apiDelete("/api/v1/files/{$this->outside->id}", $plain)->assertNotFound();
+    apiDelete("/api/v1/files/{$this->album->id}", $plain)->assertNotFound();
+    apiDelete("/api/v1/files/{$this->b->id}", $plain)->assertNotFound();
+    apiDelete("/api/v1/files/{$theirs->id}", $plain)->assertNotFound();
+
+    expect($this->outside->fresh()->isTrashed())->toBeFalse()->and($this->album->fresh()->isTrashed())->toBeFalse();
+});
+
+it('needs a token', function () {
+    apiDelete("/api/v1/files/{$this->a->id}")->assertUnauthorized();
 });

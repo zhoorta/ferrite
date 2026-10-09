@@ -77,12 +77,16 @@ new #[Title('API tokens')] class extends Component {
         $this->validate([
             'name' => ['required', 'string', 'max:100'],
             'folder' => ['nullable', 'in:'.implode(',', array_keys($this->folders))],
-            'access' => ['required', 'in:read,write'],
+            'access' => ['required', 'in:read,write,trash'],
             'expiry' => ['required', 'in:'.implode(',', array_keys(self::EXPIRY_DAYS))],
         ]);
 
         $days = self::EXPIRY_DAYS[$this->expiry];
-        $abilities = $this->access === 'write' ? ['read', 'write'] : ['read'];
+        $abilities = match ($this->access) {
+            'trash' => ['read', 'write', 'trash'],
+            'write' => ['read', 'write'],
+            default => ['read'],
+        };
 
         $created = Auth::user()->createToken($this->name, $abilities, $days === null ? null : now()->addDays($days));
         $created->accessToken->forceFill(['folder_id' => $this->folder === '' ? null : (int) $this->folder])->save();
@@ -143,6 +147,7 @@ new #[Title('API tokens')] class extends Component {
                 <flux:select wire:model="access" :label="__('Access')">
                     <flux:select.option value="read">{{ __('Read') }}</flux:select.option>
                     <flux:select.option value="write">{{ __('Read and add files (never delete)') }}</flux:select.option>
+                    <flux:select.option value="trash">{{ __('Read, add files and move files to the trash (you restore or purge them here)') }}</flux:select.option>
                 </flux:select>
 
                 <flux:select wire:model="expiry" :label="__('Expires')">
@@ -165,7 +170,7 @@ new #[Title('API tokens')] class extends Component {
                                 <div class="font-medium">{{ $token->name }}</div>
                                 <div class="text-xs text-zinc-500">
                                     {{ $token->folder_id === null ? __('Whole drive') : ($token->folder?->name ?? __('Folder gone')) }}
-                                    · {{ $token->can('write') ? __('read + write') : __('read') }}
+                                    · {{ $token->can('trash') ? __('read + write + trash') : ($token->can('write') ? __('read + write') : __('read')) }}
                                     · {{ $token->expires_at ? ($token->expires_at->isPast() ? __('expired') : __('expires :when', ['when' => $token->expires_at->diffForHumans()])) : __('never expires') }}
                                 </div>
                                 <div class="text-xs text-zinc-500">

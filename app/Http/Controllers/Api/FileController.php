@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Nodes\TrashNode;
 use App\Enums\NodeType;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
@@ -17,6 +18,22 @@ class FileController extends Controller
     private const PAGE = 1000;
 
     public function __construct(private NodeResponder $responder) {}
+
+    /**
+     * Move a file to the trash (never purge): the owner can still restore it from the web app. Folders cannot be
+     * trashed through a token, and a node outside the token's folder is a 404.
+     */
+    public function trash(Request $request, Node $node, TrashNode $trash): JsonResponse
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        abort_unless($node->isFile() && $token->reaches($node), 404);
+
+        $trash->handle($request->user(), $node, ['token' => $token->name]);
+
+        return response()->json(['id' => $node->id, 'trashed' => true]);
+    }
 
     /**
      * Every file below the token's folder, 1000 per page in id order, with its path relative to

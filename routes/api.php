@@ -12,6 +12,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'api.token:read', 'throttle:api
     Route::get('files/{node}/content', [FileController::class, 'content'])->withoutMiddleware('throttle:api-read')->middleware('throttle:api-content');
 });
 
+// Trashing needs a token with the trash ability (never purge or delete for good; the owner restores from the web app).
+Route::delete('v1/files/{node}', [FileController::class, 'trash'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
+
 // Uploads need a write token; one request per chunk plus polling, so the limits are higher than for reads.
 Route::prefix('v1/uploads')->middleware(['auth:sanctum', 'api.token:write'])->group(function () {
     Route::post('/', [UploadController::class, 'start'])->middleware('throttle:api-upload-start');

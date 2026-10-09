@@ -19,6 +19,13 @@ function apiGet(string $uri, ?string $token = null)
     return test()->getJson($uri, $token ? ['Authorization' => "Bearer {$token}"] : []);
 }
 
+function apiDelete(string $uri, ?string $token = null)
+{
+    app('auth')->forgetGuards();
+
+    return test()->deleteJson($uri, [], $token ? ['Authorization' => "Bearer {$token}"] : []);
+}
+
 beforeEach(function () {
     $this->user = User::factory()->create(['quota_bytes' => 1000, 'used_bytes' => 10]);
     $this->folder = Node::factory()->for($this->user, 'owner')->create(['name' => 'Music']);

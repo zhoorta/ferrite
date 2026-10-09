@@ -13,13 +13,16 @@ class TrashNode
     /**
      * Only the node itself is marked; its descendants are trashed implicitly.
      */
-    public function handle(User $actor, Node $node): Node
+    /**
+     * @param  array<string, mixed>  $meta  extra activity details, e.g. the API token that did it
+     */
+    public function handle(User $actor, Node $node, array $meta = []): Node
     {
         Gate::forUser($actor)->authorize('trash', $node);
 
         $node->forceFill(['trashed_at' => now()])->save();
 
-        ActivityLog::record(ActivityAction::Trashed, $node, $actor);
+        ActivityLog::record(ActivityAction::Trashed, $node, $actor, $meta);
 
         return $node;
     }
