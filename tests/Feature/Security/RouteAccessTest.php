@@ -21,6 +21,8 @@ const PUBLIC_ROUTES = [
     'passkeys/login/options',
     '.well-known/passkey-endpoints',
     's/*',
+    'robots.txt',
+    'sitemap.xml',
 ];
 
 /** Assets and framework endpoints with their own protection (signed URLs, static files). */
