@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property int $id
@@ -41,7 +42,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /** Themes a user can pick in the appearance settings: the default Ferrite theme and the vintage ones. */
     public const PALETTES = ['ferrite', 'ferrite-light', 'mac', 'desk95', 'zine', 'bubblegum', 'amber', 'phosphor', 'commodore', 'amiga', 'nokia', 'miami', 'wallstreet', 'lotus', 'memphis'];

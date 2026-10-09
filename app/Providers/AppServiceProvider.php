@@ -2,17 +2,21 @@
 
 namespace App\Providers;
 
+use App\Models\ApiToken;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureTrustedProxies();
+
+        Sanctum::usePersonalAccessTokenModel(ApiToken::class);
+        RateLimiter::for('api-read', fn (Request $request) => Limit::perMinute(120)->by($request->user()?->currentAccessToken()?->id ?? $request->ip()));
 
         Gate::define('admin', fn (User $user) => $user->isAdmin());
 
