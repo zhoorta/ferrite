@@ -1,4 +1,4 @@
-# API (built: root, files, content; uploads and the Settings page are next)
+# API (built: root, files, content and the Settings page; uploads are next)
 
 A small HTTP API for scripts and other apps, first user: Magnetite, which keeps its music library in one Ferrite folder (see Magnetite's `docs/ferrite-storage.md`). Not sync, not WebDAV: list, read, add.
 

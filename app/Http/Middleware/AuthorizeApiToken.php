@@ -24,6 +24,11 @@ class AuthorizeApiToken
         abort_unless($token->can($ability), 403, 'This token cannot do that.');
         $token->rootFolder();
 
+        // Only written when the address changes, so streaming a library does not write on every request.
+        if ($token->last_used_ip !== $request->ip()) {
+            $token->forceFill(['last_used_ip' => $request->ip()])->save();
+        }
+
         $response = $next($request);
 
         if (! $response->headers->has('ETag')) {

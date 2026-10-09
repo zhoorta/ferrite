@@ -12,6 +12,10 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('settings/appearance', 'pages::settings.appearance')->name('appearance.edit');
 
+    Route::livewire('settings/api-tokens', 'pages::settings.api-tokens')
+        ->middleware([BlockInDemo::class, 'password.confirm'])
+        ->name('api-tokens.edit');
+
     Route::livewire('settings/security', 'pages::settings.security')
         ->middleware([
             BlockInDemo::class,

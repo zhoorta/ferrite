@@ -10,12 +10,13 @@ use Laravel\Sanctum\PersonalAccessToken;
  * `folder_id` null means the whole drive. Abilities are `read` and, for uploads, `write`.
  *
  * @property int|null $folder_id
+ * @property string|null $last_used_ip
  */
 class ApiToken extends PersonalAccessToken
 {
     protected $table = 'personal_access_tokens';
 
-    protected $fillable = ['name', 'token', 'abilities', 'expires_at', 'folder_id'];
+    protected $fillable = ['name', 'token', 'abilities', 'expires_at', 'folder_id', 'last_used_ip'];
 
     /**
      * @return BelongsTo<Node, $this>
