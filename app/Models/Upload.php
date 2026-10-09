@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $id
  * @property int $user_id
  * @property int|null $share_id
+ * @property int|null $api_token_id
+ * @property string|null $api_token_name
+ * @property string $on_conflict
  * @property int|null $parent_id
  * @property string $name
  * @property int $size

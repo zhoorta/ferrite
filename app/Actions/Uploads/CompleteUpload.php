@@ -85,6 +85,11 @@ class CompleteUpload
                 $owner = User::query()->lockForUpdate()->findOrFail($ownerId);
                 $share = $this->claimLink($upload);
 
+                // An API upload never keeps both: a name that appeared while the file was on its way refuses it.
+                if ($upload->on_conflict === 'fail' && NodeName::taken($ownerId, $parent?->id, $upload->name)) {
+                    throw ValidationException::withMessages(['path' => __('Something with that name already exists here.')]);
+                }
+
                 $existing = $upload->replace ? $this->replaceable($actor, $ownerId, $parent?->id, $upload->name) : null;
 
                 // Replacing only needs room for what the file grows by.
@@ -155,7 +160,9 @@ class CompleteUpload
         if ($upload->share_id !== null) {
             ActivityLog::record(ActivityAction::LinkUploaded, $node, null, ['size' => $node->size, 'share_id' => $upload->share_id]);
         } else {
-            ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size] + ($replaced !== null ? ['replaced' => true] : []));
+            ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]
+                + ($replaced !== null ? ['replaced' => true] : [])
+                + ($upload->api_token_name !== null ? ['token' => $upload->api_token_name] : []));
         }
 
         ExtractContent::queueFor($node);

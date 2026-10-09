@@ -5,6 +5,7 @@ namespace App\Actions\Uploads;
 use App\Actions\Nodes\EnsureFolderPath;
 use App\Actions\Nodes\NodeName;
 use App\Enums\NodeType;
+use App\Models\ApiToken;
 use App\Models\Node;
 use App\Models\Upload;
 use App\Models\User;
@@ -23,11 +24,12 @@ class StartUpload
      * into $parent. An unfinished upload of the same file is resumed instead of restarted.
      * (One already being stored, or finished or failed, is not: that is a new upload.)
      * With $replace, a file of the same name in the folder is replaced when the upload is stored
-     * (see CompleteUpload); without it both are kept.
+     * (see CompleteUpload); without it both are kept. Through an API token ($token) an upload belongs to that
+     * token, is only resumed by it, and fails instead of keeping both if the name is taken when it is stored.
      *
      * @throws ValidationException
      */
-    public function handle(User $actor, ?Node $parent, string $path, int $size, ?string $fingerprint = null, bool $replace = false): Upload
+    public function handle(User $actor, ?Node $parent, string $path, int $size, ?string $fingerprint = null, bool $replace = false, ?ApiToken $token = null): Upload
     {
         if ($parent !== null) {
             Gate::forUser($actor)->authorize('update', $parent);
@@ -67,6 +69,7 @@ class StartUpload
 
         $existing = Upload::query()
             ->where('user_id', $actor->id)
+            ->where('api_token_id', $token?->id)
             ->where('status', Upload::RECEIVING)
             ->where('parent_id', $folder?->id)
             ->where('name', $name)
@@ -87,6 +90,9 @@ class StartUpload
         $upload = new Upload(['name' => $name, 'size' => $size, 'fingerprint' => $fingerprint]);
         $upload->offset = 0;
         $upload->replace = $replace;
+        $upload->api_token_id = $token?->id;
+        $upload->api_token_name = $token?->name;
+        $upload->on_conflict = $token === null ? 'keep' : 'fail';
         $upload->user_id = $actor->id;
         $upload->parent_id = $folder?->id;
         $upload->save();

@@ -37,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
         $this->configureTrustedProxies();
 
         Sanctum::usePersonalAccessTokenModel(ApiToken::class);
+        $perToken = fn (int $max) => fn (Request $request) => Limit::perMinute($max)->by($request->user()?->currentAccessToken()?->id ?? $request->ip());
+        RateLimiter::for('api-content', $perToken(1200));
+        RateLimiter::for('api-upload-start', $perToken(120));
+        RateLimiter::for('api-upload', $perToken(1200));
         RateLimiter::for('api-read', fn (Request $request) => Limit::perMinute(120)->by($request->user()?->currentAccessToken()?->id ?? $request->ip()));
 
         Gate::define('admin', fn (User $user) => $user->isAdmin());

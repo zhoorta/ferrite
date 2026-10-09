@@ -1,4 +1,4 @@
-# API (built: root, files, content and the Settings page; uploads are next)
+# API (built: root, files, content, uploads and the Settings page)
 
 A small HTTP API for scripts and other apps, first user: Magnetite, which keeps its music library in one Ferrite folder (see Magnetite's `docs/ferrite-storage.md`). Not sync, not WebDAV: list, read, add.
 
@@ -34,6 +34,16 @@ Why `sha256` and not only `mtime`: Ferrite already stores it for dedup. It is th
 
 **Not in v1.** Delete, rename, move, mkdir on its own (uploads create folders), sharing, search, thumbnails, change feeds (`since=` with tombstones). A caller lists everything and diffs; for libraries of tens of thousands of files that is a few pages. Add `since` when a real caller feels it.
 
+## How uploads behave (built)
+
+- Same code as browser uploads (`StartUpload`, `AppendChunk`, `FinalizeUpload`, `CompleteUpload`, `FailUpload`, `uploads:prune`), `Api\UploadController` on top. `uploads` has `api_token_id`, `api_token_name` and `on_conflict` (`keep` for the browser, `fail` for tokens).
+- **Ownership:** an upload belongs to the token that started it; any other token, even of the same account, gets 404 on it. An unfinished upload is resumed only by the same token (same path, size, fingerprint). Revoking the token orphans its uploads, which `uploads:prune` cleans up.
+- **Paths:** relative to the token's folder, `/` separated; `..`, `.`, empty segments (leading slash, `//`) and control characters are 422. Names compare case-insensitively, like everywhere in Ferrite.
+- **Conflicts:** `POST` answers `409 {error: "exists", id, sha256}` (sha256 null for a folder) before anything is created. If the name appears while the file is on its way, storing it fails (`422`, status `failed`, nothing kept, nothing charged), never "name (2)".
+- **Response shape:** `POST` 201 (200 when resumed) with `id`, `offset`, `chunk_size`, `status`; `PATCH` with `Upload-Offset` gives the new offset, `202` for the last chunk (queue worker) or `200` with `status: done` (sync queue); `done` carries `node: {id, sha256}`. A wrong offset is 409 with the real one.
+- **Activity:** "*who* uploaded *name* through the token *token*".
+- **Limits per token:** reads 120/min, file content 1200/min, upload start 120/min, chunks and polling 1200/min.
+
 ## Security notes
 
 - HTTPS only outside local development; the token is a password.
@@ -46,4 +56,4 @@ Why `sha256` and not only `mtime`: Ferrite already stores it for dedup. It is th
 1. Schema and Sanctum: `personal_access_tokens` with `folder_id`; ability middleware; `GET /root`.
 2. `GET /files` and `GET /files/{id}/content` (read-only tokens), Settings UI to create and revoke.
 3. Uploads with write tokens and `on_conflict=fail`.
-4. Pest: scope (outside the folder, parent, sibling, trashed, moved), abilities, expiry and revocation, listing pagination, Range and `If-Range`, conflict 409 with same and different content, quota, activity entries.
+4. Pest (reads and uploads are covered in `tests/Feature/Api`): scope (outside the folder, parent, sibling, trashed, moved), abilities, expiry and revocation, listing pagination, Range and `If-Range`, conflict 409 with same and different content, quota, activity entries.
