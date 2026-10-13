@@ -20,7 +20,7 @@ class RootController extends Controller
         $folder = $token->rootFolder();
 
         return response()->json([
-            'name' => $folder?->name ?? 'Whole drive',
+            'name' => $folder->name ?? 'Whole drive',
             'id' => $folder?->id,
             'access' => match (true) {
                 $token->can('trash') => 'read+write+trash',

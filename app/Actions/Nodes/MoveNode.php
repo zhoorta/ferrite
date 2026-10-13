@@ -14,6 +14,8 @@ class MoveNode
     /**
      * Move a node into a folder, or to the root when $destination is null. $meta goes into the activity entry (the API adds the token's name).
      *
+     * @param  array<string, mixed>  $meta
+     *
      * @throws ValidationException
      */
     public function handle(User $actor, Node $node, ?Node $destination, array $meta = []): Node
