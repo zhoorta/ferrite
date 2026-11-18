@@ -52,7 +52,7 @@ class StorageUsage
      *     trash: int,
      *     files: int,
      *     kinds: array<string, array{bytes: int, count: int}>,
-     *     largest: list<array{id: int, parent_id: int|null, name: string, size: int, mime: string|null}>,
+     *     largest: list<array{id: int, parent_id: int|null, name: string, path: string, size: int, mime: string|null}>,
      *     folders: list<array{id: int, name: string, bytes: int}>,
      *     loose: int,
      *     saved: int,
