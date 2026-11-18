@@ -23,6 +23,9 @@ const PUBLIC_ROUTES = [
     's/*',
     'robots.txt',
     'sitemap.xml',
+    // An app checks an address, then swaps the one-time code of the browser approval for a token (needs the PKCE verifier).
+    'api/v1/ping',
+    'api/v1/connect/token',
 ];
 
 /** Assets and framework endpoints with their own protection (signed URLs, static files). */

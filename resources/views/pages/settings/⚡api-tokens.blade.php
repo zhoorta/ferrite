@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\NodeType;
+use App\Actions\Tokens\CreateApiToken;
 use App\Models\ApiToken;
-use App\Models\Node;
+use App\Support\ApiAccess;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -11,8 +11,6 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('API tokens')] class extends Component {
-    private const EXPIRY_DAYS = ['never' => null, '30' => 30, '90' => 90, '365' => 365];
-
     public string $name = '';
 
     /** Folder id as a string; empty is the whole drive. */
@@ -34,28 +32,7 @@ new #[Title('API tokens')] class extends Component {
     #[Computed]
     public function folders(): array
     {
-        $rows = Node::query()
-            ->where('owner_id', Auth::id())
-            ->where('type', NodeType::Folder)
-            ->whereNull('trashed_at')
-            ->get(['id', 'parent_id', 'name'])
-            ->keyBy('id');
-
-        $paths = [];
-        foreach ($rows as $row) {
-            $parts = [];
-            for ($node = $row, $guard = 0; $node !== null && $guard < 100; $node = $rows->get($node->parent_id), $guard++) {
-                array_unshift($parts, $node->name);
-            }
-            // A folder whose parent is trashed has a parent missing from $rows: its path is not complete, so skip it.
-            if ($row->parent_id === null || $rows->has($row->parent_id)) {
-                $paths[$row->id] = implode(' / ', $parts);
-            }
-        }
-
-        asort($paths, SORT_NATURAL | SORT_FLAG_CASE);
-
-        return $paths;
+        return ApiAccess::folders(Auth::user());
     }
 
     /**
@@ -72,28 +49,17 @@ new #[Title('API tokens')] class extends Component {
             ->get();
     }
 
-    public function create(): void
+    public function create(CreateApiToken $action): void
     {
         $this->validate([
             'name' => ['required', 'string', 'max:100'],
             'folder' => ['nullable', 'in:'.implode(',', array_keys($this->folders))],
-            'access' => ['required', 'in:read,write,replace,trash,full'],
-            'expiry' => ['required', 'in:'.implode(',', array_keys(self::EXPIRY_DAYS))],
+            'access' => ['required', 'in:'.implode(',', array_keys(ApiAccess::LEVELS))],
+            'expiry' => ['required', 'in:'.implode(',', array_keys(ApiAccess::EXPIRY_DAYS))],
         ]);
 
-        $days = self::EXPIRY_DAYS[$this->expiry];
-        $abilities = match ($this->access) {
-            'full' => ['read', 'write', 'replace', 'trash'],
-            'trash' => ['read', 'write', 'trash'],
-            'replace' => ['read', 'write', 'replace'],
-            'write' => ['read', 'write'],
-            default => ['read'],
-        };
+        [, $this->plainToken] = $action->handle(Auth::user(), $this->name, $this->folder === '' ? null : (int) $this->folder, $this->access, ApiAccess::EXPIRY_DAYS[$this->expiry]);
 
-        $created = Auth::user()->createToken($this->name, $abilities, $days === null ? null : now()->addDays($days));
-        $created->accessToken->forceFill(['folder_id' => $this->folder === '' ? null : (int) $this->folder])->save();
-
-        $this->plainToken = $created->plainTextToken;
         $this->reset('name', 'folder', 'access');
         unset($this->tokens);
     }

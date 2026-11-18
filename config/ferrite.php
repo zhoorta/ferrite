@@ -192,4 +192,17 @@ return [
         'contact' => env('FERRITE_DEMO_CONTACT'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Connecting apps
+    |--------------------------------------------------------------------------
+    |
+    | The native apps sign in through the browser: the app opens `/connect`, you approve there (after the normal
+    | sign-in, with 2FA) and the app receives a token. The page only ever returns to one of these exact addresses,
+    | so a link cannot send the code anywhere else. Comma-separated; see docs/api.md.
+    |
+    */
+
+    'connect_redirects' => array_values(array_filter(array_map('trim', explode(',', (string) env('FERRITE_CONNECT_REDIRECTS', 'ferrite://auth'))))),
+
 ];

@@ -77,6 +77,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('nodes/{node}/thumbnail', [NodeFileController::class, 'thumbnail'])->name('nodes.thumbnail');
     Route::get('nodes/{node}/zip', [NodeFileController::class, 'zip'])->name('nodes.zip');
 
+    // Browser approval for the native apps; like creating a token in Settings, it asks for the password again.
+    Route::livewire('connect', 'pages::connect')->middleware(['password.confirm', DisableInDemo::class])->name('connect');
+
     Route::livewire('admin/users', 'pages::admin.users')->middleware('can:admin')->name('admin.users');
     Route::livewire('admin/storage', 'pages::admin.disks')->middleware('can:admin')->name('admin.storage');
     Route::livewire('search', 'pages::files.search')->name('search');

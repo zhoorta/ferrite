@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\ConnectController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\RootController;
 use App\Http\Controllers\Api\UploadController;
 use Illuminate\Support\Facades\Route;
+
+// Without a token: an app checks an address, then swaps the code from the browser approval for a token (docs/api.md).
+Route::get('v1/ping', [ConnectController::class, 'ping'])->middleware('throttle:60,1');
+Route::post('v1/connect/token', [ConnectController::class, 'token'])->middleware('throttle:20,1');
 
 // Token API for scripts and other apps (docs/api.md). Bearer tokens only; no session, no cookies.
 Route::prefix('v1')->middleware(['auth:sanctum', 'api.token:read', 'throttle:api-read'])->group(function () {

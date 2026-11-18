@@ -12,12 +12,25 @@ Personal access tokens (Sanctum), created in Settings > API tokens.
 - Revoked, expired or unknown: 401. A disabled owner: 403. `read` token on a write route: 403. Tokens do not need 2FA; they are the thing you give to a machine.
 - Abilities are separate on purpose. `write` adds files, moves, renames and makes folders but never overwrites or destroys; `replace` lets an upload overwrite an existing file (with a version kept, see below); `trash` moves files to the trash. v1 has no purge through tokens. A `read + write` token can add files (until the quota is full) and move them between folders of its own folder, but not destroy any. A token created with **trash** access can also move files to the trash; they stay restorable in the web app (and count against the quota until purged), and only the signed-in owner can purge them.
 
+## Connecting an app (browser approval)
+
+The native apps do not ask for a password or a pasted token. They send you to the browser, where you sign in as usual (2FA included), and the server hands them a token:
+
+1. The app generates a random `verifier` (43 to 128 characters of `A-Za-z0-9-._~`) and a `challenge`, the base64url (no padding) SHA-256 of it. It opens `/connect?client=Ferrite for Mac&device=MacBook&redirect=ferrite://auth&challenge=…&state=…` in a web authentication session (`ASWebAuthenticationSession` on Apple, a Custom Tab on Android). `state` is optional and comes back unchanged.
+2. The user signs in, confirms the password (like creating a token in Settings), picks the **folder**, **access** and **expiry**, and allows or cancels. The page only returns to an address listed in `FERRITE_CONNECT_REDIRECTS` (default `ferrite://auth`, comma-separated); anything else shows "This link is not valid", so a crafted link cannot send the code elsewhere.
+3. The browser goes to `ferrite://auth?code=…&state=…` (or `?error=access_denied&state=…` when cancelled).
+4. The app posts `{code, verifier}` to `POST /api/v1/connect/token` and gets the token, shown once. The code lives two minutes and works once, even for a wrong verifier. The token is created at that moment, so only the approved choices wait on the server, never a secret. A code is useless without the verifier, so another app that registers the same scheme cannot use a code it intercepts.
+
+The token is named "`client` (`device`)" and appears in Settings > API tokens, where it can be revoked like any other. Off on the demo.
+
 ## Endpoints
 
 Base `/api/v1`, `Authorization: Bearer <token>`, JSON. Throttled per token (like share links: 120/min for reads, uploads like the drop-box limits). Every response carries `Cache-Control: no-store` except file content.
 
 | Route | Purpose |
 |---|---|
+| `GET /ping` | No token. `{app: "ferrite", api: 1, name, connect}`: lets an app check that an address is a Ferrite server before it opens the browser. Throttled per IP. |
+| `POST /connect/token` | No token. `{code, verifier}` for `{token, name, access, expires_at}`: the last step of the browser approval, see below. 400 when the code is wrong, used or expired. |
 | `GET /root` | Test connection: `{name, id, access, expires_at, quota: {used, limit}}`. The name is the folder's, not its path. |
 | `GET /files?cursor=` | Every file below the root, in id order, 1000 per page (the cursor is the last id, so files added meanwhile never shift a page; trashed files and folders are left out): `{id, path, size, sha256, mtime, mime}`. `path` is relative to the root, with `/`. `next_cursor` or null. Folders are implied by paths; empty folders are not listed (use `parent` to see them). |
 | `GET /files?parent=&cursor=` | One folder level instead of the whole tree. `parent` is `root` (the token's folder, or the top of the drive for a whole-drive token) or the id of a folder the token reaches; anything else is 404, a malformed value 422. Direct children, folders and files, not trashed, 1000 per page in id order with the same cursor (the caller sorts). Each item: `{id, name, type: "file"\|"folder", path, size, sha256, mtime, mime}`; folders have `size`, `sha256` and `mime` null. `path` is relative to the root. Without `parent` the full listing above is unchanged. |
