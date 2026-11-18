@@ -19,11 +19,15 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'api.token:read', 'throttle:api
     Route::get('files/{node}/thumbnail', [FileController::class, 'thumbnail'])->withoutMiddleware('throttle:api-read')->middleware('throttle:api-content');
 });
 
-// Trashing needs a token with the trash ability (never purge or delete for good; the owner restores from the web app).
+// Trashing needs a token with the trash ability; it only moves to the trash, deleting for good is the separate /trash routes below.
 Route::delete('v1/files/{node}', [FileController::class, 'trash'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
 
 // Listing the trash (`GET files?trashed=1`, checked in the controller) and restoring need the trash ability; purging never goes through a token.
 Route::post('v1/files/{node}/restore', [FileController::class, 'restore'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
+
+// Deleting from the trash for good also needs the trash ability: it cannot be undone, so apps ask first.
+Route::delete('v1/trash/{node}', [FileController::class, 'purge'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
+Route::delete('v1/trash', [FileController::class, 'emptyTrash'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
 
 // Creating a folder needs a write token (it only adds, and never replaces).
 Route::post('v1/files', [FileController::class, 'store'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);

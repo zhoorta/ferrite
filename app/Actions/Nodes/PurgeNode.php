@@ -21,13 +21,16 @@ class PurgeNode
      * Permanently delete a trashed node, everything inside it and its files' blobs, and give the
      * space back to the owner's quota.
      */
-    public function handle(User $actor, Node $node): void
+    /**
+     * @param  array<string, mixed>  $meta  extra activity details, e.g. the API token that did it
+     */
+    public function handle(User $actor, Node $node, array $meta = []): void
     {
         Gate::forUser($actor)->authorize('forceDelete', $node);
 
         abort_unless($node->trashed_at !== null, 422, 'Only items in the trash can be deleted permanently.');
 
-        ActivityLog::record(ActivityAction::Purged, $node, $actor);
+        ActivityLog::record(ActivityAction::Purged, $node, $actor, $meta);
 
         $this->purge($node);
     }

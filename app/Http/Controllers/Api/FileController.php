@@ -6,6 +6,7 @@ use App\Actions\Nodes\CreateFolder;
 use App\Actions\Nodes\EnsureFolderPath;
 use App\Actions\Nodes\MoveNode;
 use App\Actions\Nodes\NodeName;
+use App\Actions\Nodes\PurgeNode;
 use App\Actions\Nodes\RenameNode;
 use App\Actions\Nodes\RestoreNode;
 use App\Actions\Nodes\TrashNode;
@@ -29,7 +30,7 @@ class FileController extends Controller
     public function __construct(private NodeResponder $responder) {}
 
     /**
-     * Move a file or a folder (with what is in it) to the trash, never purge: the owner can still restore it from the
+     * Move a file or a folder (with what is in it) to the trash (deleting for good is `purge`): it can still be restored from the
      * web app. The token's own folder cannot be trashed through it (403), and a node outside it is a 404.
      */
     public function trash(Request $request, Node $node, TrashNode $trash): JsonResponse
@@ -157,6 +158,46 @@ class FileController extends Controller
         $node = $restore->handle($request->user(), $node, ['token' => $token->name])->fresh();
 
         return response()->json(['id' => $node->id, 'name' => $node->name, 'path' => $this->relativePath($node, $root?->id), 'restored' => true]);
+    }
+
+    /**
+     * Delete a trashed item for good, with everything in it and its files' blobs: this cannot be undone. Needs the trash
+     * ability and the item must be at the top of the trash and have been inside the token's folder (404 otherwise).
+     */
+    public function purge(Request $request, Node $node, PurgeNode $purge): JsonResponse
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+        $root = $token->rootFolder();
+
+        abort_unless($node->owner_id === $token->tokenable_id && $node->trashed_at !== null && $this->wasInside($node, $root), 404);
+
+        $id = $node->id;
+        $purge->handle($request->user(), $node, ['token' => $token->name]);
+
+        return response()->json(['id' => $id, 'purged' => true]);
+    }
+
+    /**
+     * Empty the trash of what was inside the token's folder (the whole drive for a whole-drive token), for good.
+     * Answers how many top-level items went.
+     */
+    public function emptyTrash(Request $request, PurgeNode $purge): JsonResponse
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+        $root = $token->rootFolder();
+        $count = 0;
+
+        foreach (Node::query()->whereKey(Node::trashRootIds($request->user()))->get() as $node) {
+            // An earlier purge may already have removed it as part of its tree.
+            if ($this->wasInside($node, $root) && Node::query()->whereKey($node->id)->exists()) {
+                $purge->handle($request->user(), $node, ['token' => $token->name]);
+                $count++;
+            }
+        }
+
+        return response()->json(['purged' => $count]);
     }
 
     /** Whether the node sits below the token's folder (any node of the drive for a whole-drive token). */

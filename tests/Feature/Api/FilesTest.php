@@ -518,3 +518,44 @@ it('needs the trash ability to restore, and never restores outside the token fol
 
     expect($this->outside->fresh()->isTrashed())->toBeTrue();
 });
+
+function apiDeleteTrash(string $uri, string $plain)
+{
+    app('auth')->forgetGuards();
+
+    return test()->deleteJson($uri, [], ['Authorization' => "Bearer {$plain}"]);
+}
+
+it('deletes a trashed item for good with a trash token, and logs it', function () {
+    $full = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    apiDelete("/api/v1/files/{$this->b->id}", $full)->assertOk();
+
+    apiDeleteTrash("/api/v1/trash/{$this->b->id}", $full)->assertOk()->assertJson(['id' => $this->b->id, 'purged' => true]);
+
+    expect(Node::query()->whereKey($this->b->id)->exists())->toBeFalse()
+        ->and(Activity::where('action', 'purged')->latest('id')->first()->meta)->toBe(['token' => 'test']);
+});
+
+it('refuses to delete for good without the trash ability, what is not trashed or what is outside the token folder', function () {
+    $full = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    $this->outside->forceFill(['trashed_at' => now()])->save();
+
+    apiDeleteTrash("/api/v1/trash/{$this->b->id}", apiToken($this->user, $this->music, ['read', 'write']))->assertForbidden();
+    apiDeleteTrash("/api/v1/trash/{$this->b->id}", $full)->assertNotFound();           // not in the trash
+    apiDeleteTrash("/api/v1/trash/{$this->outside->id}", $full)->assertNotFound();     // trashed, but outside
+
+    expect(Node::query()->whereKey($this->b->id)->exists())->toBeTrue()->and(Node::query()->whereKey($this->outside->id)->exists())->toBeTrue();
+});
+
+it('empties only the trash of the token folder', function () {
+    $full = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    $this->b->forceFill(['trashed_at' => now()])->save();
+    $this->a->forceFill(['trashed_at' => now()])->save();
+    $this->outside->forceFill(['trashed_at' => now()])->save();
+
+    apiDeleteTrash('/api/v1/trash', apiToken($this->user, $this->music, ['read']))->assertForbidden();
+    apiDeleteTrash('/api/v1/trash', $full)->assertOk()->assertJson(['purged' => 2]);
+
+    expect(Node::query()->whereKey([$this->a->id, $this->b->id])->exists())->toBeFalse()
+        ->and(Node::query()->whereKey($this->outside->id)->exists())->toBeTrue();
+});
