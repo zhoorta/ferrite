@@ -697,6 +697,13 @@ it('downloads a folder as a zip with everything in it, for a read token', functi
         ->and(zipEntries($response))->toBe(['Album/' => null, 'Album/a.flac' => 'AAAA', 'b.flac' => 'BBBBBB']);
 });
 
+it('tells how big a zip will be, from the stored sizes, so a client can show progress', function () {
+    app(FolderSizes::class)->recount();
+
+    expect(apiGet("/api/v1/files/{$this->music->id}/zip", $this->plain)->assertOk()->headers->get('X-Zip-Estimated-Size'))->toBe('10')
+        ->and(apiGet("/api/v1/zip?ids={$this->album->id},{$this->b->id}", $this->plain)->assertOk()->headers->get('X-Zip-Estimated-Size'))->toBe('10');
+});
+
 it('downloads a selection as one zip, folders with their content and files under their own name', function () {
     $response = apiGet("/api/v1/zip?ids={$this->album->id},{$this->b->id}", $this->plain)->assertOk();
 

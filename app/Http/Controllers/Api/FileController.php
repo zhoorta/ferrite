@@ -291,6 +291,18 @@ class FileController extends Controller
     }
 
     /**
+     * A zip is built while it is sent, so its length is not known up front. The stored sizes (a folder's is the total of
+     * its files, the trash left out, see docs/folder-sizes.md) tell how many bytes of files go in, which is nearly all of
+     * the archive (it is stored, not compressed): `X-Zip-Estimated-Size` lets a client show a progress bar.
+     */
+    private function withEstimate(Response $response, int $bytes): Response
+    {
+        $response->headers->set('X-Zip-Estimated-Size', (string) $bytes);
+
+        return $response;
+    }
+
+    /**
      * A file or folder as the API shows it in every listing (folders listing, search, trash, favorites): the extra
      * fields of each listing are added by the caller. Folders have a size and a file count, no hash or type.
      *
@@ -322,7 +334,7 @@ class FileController extends Controller
 
         abort_unless($node->isFolder() && $token->reaches($node), 404);
 
-        return $this->responder->zip($node);
+        return $this->withEstimate($this->responder->zip($node), (int) $node->size);
     }
 
     /**
@@ -345,7 +357,7 @@ class FileController extends Controller
 
         abort_if($ids->isEmpty() || $nodes->count() !== $ids->count() || $nodes->contains(fn (Node $node) => ! $token->reaches($node)), 404);
 
-        return $this->responder->zipMany($nodes, 'Ferrite.zip');
+        return $this->withEstimate($this->responder->zipMany($nodes, 'Ferrite.zip'), (int) $nodes->sum('size'));
     }
 
     /** The file's path below the token's folder, with the names as stored. */
