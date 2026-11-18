@@ -12,9 +12,13 @@ use Illuminate\Validation\ValidationException;
 class RenameNode
 {
     /**
+     * $meta goes into the activity entry (the API adds the token's name).
+     *
+     * @param  array<string, mixed>  $meta
+     *
      * @throws ValidationException
      */
-    public function handle(User $actor, Node $node, string $name): Node
+    public function handle(User $actor, Node $node, string $name, array $meta = []): Node
     {
         Gate::forUser($actor)->authorize('update', $node);
 
@@ -26,7 +30,7 @@ class RenameNode
         $node->update(['name' => $name]);
 
         if ($from !== $name) {
-            ActivityLog::record(ActivityAction::Renamed, $node, $actor, ['from' => $from]);
+            ActivityLog::record(ActivityAction::Renamed, $node, $actor, ['from' => $from] + $meta);
         }
 
         return $node;

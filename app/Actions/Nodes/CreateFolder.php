@@ -14,10 +14,14 @@ use Illuminate\Validation\ValidationException;
 class CreateFolder
 {
     /**
+     * $meta goes into the activity entry (the API adds the token's name).
+     *
+     * @param  array<string, mixed>  $meta
+     *
      * @throws ValidationException
      * @throws QueryException When a parallel request took the name between the check and the insert.
      */
-    public function handle(User $actor, ?Node $parent, string $name): Node
+    public function handle(User $actor, ?Node $parent, string $name, array $meta = []): Node
     {
         $name = NodeName::normalize($name);
 
@@ -37,7 +41,7 @@ class CreateFolder
         $folder->owner_id = $ownerId;
         $folder->save();
 
-        ActivityLog::record(ActivityAction::CreatedFolder, $folder, $actor);
+        ActivityLog::record(ActivityAction::CreatedFolder, $folder, $actor, $meta);
 
         return $folder;
     }

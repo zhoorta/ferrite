@@ -56,6 +56,28 @@ expect()->extend('toBeOne', function () {
 */
 
 /**
+ * A Sanctum token for the API tests, limited to $folder (null for the whole drive). Returns the plain text token.
+ *
+ * @param  array<int, string>  $abilities
+ */
+function apiToken(User $user, ?Node $folder, array $abilities = ['read'], $expires = null): string
+{
+    $token = $user->createToken('test', $abilities, $expires);
+    $token->accessToken->forceFill(['folder_id' => $folder?->id])->save();
+
+    return $token->plainTextToken;
+}
+
+/** A GET request with the bearer token, as a fresh guest of the guard. */
+function apiGet(string $uri, ?string $token = null)
+{
+    // The guard keeps the user it resolved for the previous request of the same test.
+    app('auth')->forgetGuards();
+
+    return test()->getJson($uri, $token ? ['Authorization' => "Bearer {$token}"] : []);
+}
+
+/**
  * A file node whose blob really exists on the default disk.
  */
 function storedFile(User $owner, string $name, string $content, ?Node $parent = null, ?string $mime = 'text/plain'): Node

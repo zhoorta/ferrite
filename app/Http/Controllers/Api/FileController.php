@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Nodes\CreateFolder;
 use App\Actions\Nodes\EnsureFolderPath;
 use App\Actions\Nodes\MoveNode;
 use App\Actions\Nodes\NodeName;
+use App\Actions\Nodes\RenameNode;
 use App\Actions\Nodes\TrashNode;
 use App\Enums\NodeType;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\Node;
 use App\Support\NodeResponder;
+use App\Support\NodeSearch;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class FileController extends Controller
@@ -39,32 +44,57 @@ class FileController extends Controller
     }
 
     /**
-     * Move a file to another folder of the token's folder, keeping its name: `folder` is the path of the destination
-     * relative to the token's folder ("" for the folder itself); missing folders on the way are created, like uploads.
-     * Never replaces: a file with that name already there is a 409 and nothing changes. Needs a write token.
+     * Change a node, one thing per request. `folder` moves a file to another folder of the token's folder, keeping its
+     * name: the path of the destination relative to the token's folder ("" for the folder itself); missing folders on the
+     * way are created, like uploads. `name` renames a file or a folder inside the token's folder (never the token's own
+     * folder). Neither replaces: a name already taken there is a 409 and nothing changes. Folders cannot be moved.
+     * Needs a write token.
      */
-    public function move(Request $request, Node $node, EnsureFolderPath $ensure, MoveNode $mover): JsonResponse
+    public function update(Request $request, Node $node, EnsureFolderPath $ensure, MoveNode $mover, RenameNode $renamer): JsonResponse
     {
-        $data = $request->validate(['folder' => ['present', 'nullable', 'string', 'max:2048']]);
+        $data = $request->validate([
+            'folder' => ['nullable', 'string', 'max:2048'],
+            'name' => ['string', 'max:255'],
+        ]);
+
+        if ($request->has('folder') === $request->has('name')) {
+            throw ValidationException::withMessages(['name' => __('Send either a folder to move to or a name to rename to.')]);
+        }
 
         /** @var ApiToken $token */
         $token = $request->user()->currentAccessToken();
-
-        abort_unless($node->isFile() && $token->reaches($node), 404);
-
         $root = $token->rootFolder();
-        $folder = trim((string) $data['folder'], '/');
-        $segments = $folder === '' ? [] : explode('/', $folder);
-        $destination = $ensure->handle($request->user(), $root, $segments);
 
-        // A missing destination was just created and is empty, so a clash can only be with something that was there.
-        if ($node->parent_id !== $destination?->id && NodeName::taken($node->owner_id, $destination?->id, $node->name, $node->id)) {
-            return response()->json(['error' => 'exists'], 409);
+        abort_unless($token->reaches($node), 404);
+
+        if ($request->has('name')) {
+            abort_if($node->id === $root?->id, 404);
+
+            $name = NodeName::normalize($data['name']);
+
+            if (NodeName::taken($node->owner_id, $node->parent_id, $name, $node->id)) {
+                return response()->json(['error' => 'exists'], 409);
+            }
+
+            $renamer->handle($request->user(), $node, $name, ['token' => $token->name]);
+        } else {
+            abort_unless($node->isFile(), 404);
+
+            $folder = trim((string) $data['folder'], '/');
+            $segments = $folder === '' ? [] : explode('/', $folder);
+            $destination = $ensure->handle($request->user(), $root, $segments);
+
+            // A missing destination was just created and is empty, so a clash can only be with something that was there.
+            if ($node->parent_id !== $destination?->id && NodeName::taken($node->owner_id, $destination?->id, $node->name, $node->id)) {
+                return response()->json(['error' => 'exists'], 409);
+            }
+
+            $mover->handle($request->user(), $node, $destination, ['token' => $token->name]);
         }
 
-        $mover->handle($request->user(), $node, $destination, ['token' => $token->name]);
+        $node = $node->fresh();
 
-        return response()->json(['id' => $node->id, 'path' => $this->relativePath($node->fresh(), $root?->id)]);
+        return response()->json(['id' => $node->id, 'name' => $node->name, 'path' => $this->relativePath($node, $root?->id)]);
     }
 
     /** The file's path below the token's folder, with the names as stored. */
@@ -86,12 +116,25 @@ class FileController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $request->validate(['cursor' => ['nullable', 'integer', 'min:0']]);
+        $request->validate([
+            'cursor' => ['nullable', 'integer', 'min:0'],
+            'parent' => ['nullable', 'string', 'regex:/^(root|\d+)$/'],
+            'q' => ['nullable', 'string', 'max:200'],
+            'scope' => ['nullable', 'in:name,content'],
+        ]);
 
         $user = $request->user();
         /** @var ApiToken $token */
         $token = $user->currentAccessToken();
         $root = $token->rootFolder();
+
+        if ($request->filled('q')) {
+            return $this->search($request, $root);
+        }
+
+        if ($request->filled('parent')) {
+            return $this->children($request, $token, $root);
+        }
 
         $tree = $this->folders($user->id, $root?->id);
         $names = collect($tree)->keyBy('id');
@@ -125,6 +168,143 @@ class FileController extends Controller
                 'mime' => $file->mime,
             ])->values(),
             'next_cursor' => $more ? $files->last()->id : null,
+        ]);
+    }
+
+    /**
+     * Search below the token's folder (the whole drive for a whole-drive token), only in the token owner's own files:
+     * `scope=name` (default) matches names, files and folders; `scope=content` matches the text of files, each with a
+     * plain-text `snippet`, and is empty when content search is off. The limits are the web app's (50 and 30), best
+     * match first, with no cursor. Trashed items and anything outside the token's folder never appear.
+     */
+    private function search(Request $request, ?Node $root): JsonResponse
+    {
+        $user = $request->user();
+        $term = (string) $request->query('q');
+        $within = $root?->id;
+        $content = $request->query('scope') === 'content';
+
+        $results = $content
+            ? app(NodeSearch::class)->contents($user, $term, ownOnly: true, within: $within)
+            : app(NodeSearch::class)->search($user, $term, ownOnly: true, within: $within);
+
+        return response()->json([
+            'data' => $results->map(function (array $result) use ($root, $content) {
+                /** @var Node $node */
+                $node = $result['node'];
+
+                return [
+                    'id' => $node->id,
+                    'name' => $node->name,
+                    'type' => $node->isFolder() ? 'folder' : 'file',
+                    'path' => $this->relativePath($node, $root?->id),
+                    'size' => $node->isFile() ? $node->size : null,
+                    'sha256' => $node->isFile() ? $node->sha256 : null,
+                    'mtime' => $node->updated_at?->timestamp,
+                    'mime' => $node->isFile() ? $node->mime : null,
+                ] + ($content ? ['snippet' => str_replace(["\x01", "\x02"], '', $result['snippet'])] : []);
+            })->values(),
+            'next_cursor' => null,
+        ]);
+    }
+
+    /**
+     * The folder a `parent` value names: `root` is the token's folder (null for a whole-drive token, the top of the
+     * drive), otherwise the id of a folder the token reaches; anything else is a 404.
+     */
+    private function parentFolder(string $parent, ApiToken $token, ?Node $root): ?Node
+    {
+        if ($parent === 'root') {
+            return $root;
+        }
+
+        $folder = Node::query()->find((int) $parent);
+        abort_unless($folder !== null && $folder->isFolder() && $token->reaches($folder), 404);
+
+        return $folder;
+    }
+
+    /**
+     * Create a folder in `parent` (`root` or a folder id inside the token's folder) with a name. Needs a write token.
+     * A name already taken there, by a file or a folder, is `409 {error: "exists", id, type}` so a caller can reuse an
+     * existing folder; nothing is replaced.
+     */
+    public function store(Request $request, CreateFolder $create): JsonResponse
+    {
+        $data = $request->validate([
+            'parent' => ['required', 'string', 'regex:/^(root|\d+)$/'],
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+        $root = $token->rootFolder();
+        $parent = $this->parentFolder($data['parent'], $token, $root);
+        $name = NodeName::normalize($data['name']);
+
+        $existing = Node::query()
+            ->where('owner_id', $request->user()->id)
+            ->where('parent_id', $parent?->id)
+            ->whereNull('trashed_at')
+            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        if ($existing !== null) {
+            return response()->json(['error' => 'exists', 'id' => $existing->id, 'type' => $existing->isFolder() ? 'folder' : 'file'], 409);
+        }
+
+        try {
+            $folder = $create->handle($request->user(), $parent, $name, ['token' => $token->name]);
+        } catch (QueryException) {
+            // A parallel request took the name between the check and the insert.
+            return response()->json(['error' => 'exists'], 409);
+        }
+
+        return response()->json([
+            'id' => $folder->id,
+            'name' => $folder->name,
+            'type' => 'folder',
+            'path' => $this->relativePath($folder, $root?->id),
+        ], 201);
+    }
+
+    /**
+     * One folder level: the direct children (folders and files) of `parent`, which is `root` (the token's folder, or the
+     * top of the drive for a whole-drive token) or the id of a folder the token reaches. 1000 per page in id order with
+     * the same cursor as the full listing; the caller sorts. Trashed items are left out; anything else is a 404.
+     * Each item carries `name` and `type` next to the usual fields, folders have no size, sha256 or mime.
+     */
+    private function children(Request $request, ApiToken $token, ?Node $root): JsonResponse
+    {
+        $user = $request->user();
+        $folder = $this->parentFolder((string) $request->query('parent'), $token, $root);
+
+        $base = $folder === null || $folder->id === $root?->id ? '' : $this->relativePath($folder, $root?->id).'/';
+
+        $items = Node::query()
+            ->where('owner_id', $user->id)
+            ->whereNull('trashed_at')
+            ->where('parent_id', $folder?->id)
+            ->where('id', '>', (int) $request->query('cursor', 0))
+            ->orderBy('id')
+            ->limit(self::PAGE + 1)
+            ->get();
+
+        $more = $items->count() > self::PAGE;
+        $items = $items->take(self::PAGE);
+
+        return response()->json([
+            'data' => $items->map(fn (Node $node) => [
+                'id' => $node->id,
+                'name' => $node->name,
+                'type' => $node->isFolder() ? 'folder' : 'file',
+                'path' => $base.$node->name,
+                'size' => $node->isFile() ? $node->size : null,
+                'sha256' => $node->isFile() ? $node->sha256 : null,
+                'mtime' => $node->updated_at?->timestamp,
+                'mime' => $node->isFile() ? $node->mime : null,
+            ])->values(),
+            'next_cursor' => $more ? $items->last()->id : null,
         ]);
     }
 

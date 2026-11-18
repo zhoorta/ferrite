@@ -15,8 +15,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'api.token:read', 'throttle:api
 // Trashing needs a token with the trash ability (never purge or delete for good; the owner restores from the web app).
 Route::delete('v1/files/{node}', [FileController::class, 'trash'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
 
-// Moving a file inside the token's folder needs a write token (it adds nothing and destroys nothing, and never replaces).
-Route::patch('v1/files/{node}', [FileController::class, 'move'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
+// Creating a folder needs a write token (it only adds, and never replaces).
+Route::post('v1/files', [FileController::class, 'store'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
+
+// Moving a file or renaming a file or folder inside the token's folder needs a write token (it adds nothing and destroys nothing, and never replaces).
+Route::patch('v1/files/{node}', [FileController::class, 'update'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
 
 // Uploads need a write token; one request per chunk plus polling, so the limits are higher than for reads.
 Route::prefix('v1/uploads')->middleware(['auth:sanctum', 'api.token:write'])->group(function () {

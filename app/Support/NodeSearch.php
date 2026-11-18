@@ -17,9 +17,12 @@ use Illuminate\Support\Facades\DB;
 class NodeSearch
 {
     /**
+     * $ownOnly leaves out what is shared with the user, and $within (a folder id) keeps only what is below that folder;
+     * the API uses both for a token, which never reaches into other accounts. Both apply before the limit.
+     *
      * @return Collection<int, array{node: Node, path: string, folder_id: int|null}>
      */
-    public function search(User $user, string $term, int $limit = 50): Collection
+    public function search(User $user, string $term, int $limit = 50, bool $ownOnly = false, ?int $within = null): Collection
     {
         $term = trim($term);
 
@@ -29,7 +32,7 @@ class NodeSearch
 
         $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($term)).'%';
 
-        $candidates = $this->visibleTo(Node::query(), $user)
+        $candidates = $this->visibleTo(Node::query(), $user, $ownOnly, $within)
             ->whereNull('nodes.trashed_at')
             ->whereRaw("lower(nodes.name) like ? escape '!'", [$like])
             ->orderByRaw('case when lower(nodes.name) = ? then 0 else 1 end', [mb_strtolower($term)])
@@ -56,7 +59,7 @@ class NodeSearch
      *
      * @return Collection<int, array{node: Node, path: string, folder_id: int|null, snippet: string}>
      */
-    public function contents(User $user, string $term, int $limit = 30): Collection
+    public function contents(User $user, string $term, int $limit = 30, bool $ownOnly = false, ?int $within = null): Collection
     {
         $driver = ContentSearch::driver();
         $term = trim($term);
@@ -66,7 +69,7 @@ class NodeSearch
         }
 
         $query = $driver->match(
-            $this->visibleTo(Node::query(), $user)->where('nodes.type', NodeType::File)->whereNull('nodes.trashed_at'),
+            $this->visibleTo(Node::query(), $user, $ownOnly, $within)->where('nodes.type', NodeType::File)->whereNull('nodes.trashed_at'),
             $term,
         );
 
@@ -96,8 +99,23 @@ class NodeSearch
      * @param  Builder<Node>  $query
      * @return Builder<Node>
      */
-    private function visibleTo(Builder $query, User $user): Builder
+    private function visibleTo(Builder $query, User $user, bool $ownOnly = false, ?int $within = null): Builder
     {
+        if ($within !== null) {
+            $query->whereRaw(
+                'nodes.id in (with recursive below (id) as (
+                    select id from nodes where parent_id = ?
+                    union all
+                    select n.id from nodes n join below on n.parent_id = below.id
+                ) select id from below)',
+                [$within],
+            );
+        }
+
+        if ($ownOnly) {
+            return $query->where('nodes.owner_id', $user->id);
+        }
+
         return $query->where(fn ($query) => $query
             ->where('nodes.owner_id', $user->id)
             ->orWhereRaw(

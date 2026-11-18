@@ -3,22 +3,6 @@
 use App\Models\Node;
 use App\Models\User;
 
-function apiToken(User $user, ?Node $folder, array $abilities = ['read'], $expires = null): string
-{
-    $token = $user->createToken('test', $abilities, $expires);
-    $token->accessToken->forceFill(['folder_id' => $folder?->id])->save();
-
-    return $token->plainTextToken;
-}
-
-function apiGet(string $uri, ?string $token = null)
-{
-    // The guard keeps the user it resolved for the previous request of the same test.
-    app('auth')->forgetGuards();
-
-    return test()->getJson($uri, $token ? ['Authorization' => "Bearer {$token}"] : []);
-}
-
 function apiDelete(string $uri, ?string $token = null)
 {
     app('auth')->forgetGuards();
