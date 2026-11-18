@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ConnectController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\RootController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\UsageController;
 use Illuminate\Support\Facades\Route;
 
 // Without a token: an app checks an address, then swaps the code from the browser approval for a token (docs/api.md).
@@ -13,6 +14,7 @@ Route::post('v1/connect/token', [ConnectController::class, 'token'])->middleware
 // Token API for scripts and other apps (docs/api.md). Bearer tokens only; no session, no cookies.
 Route::prefix('v1')->middleware(['auth:sanctum', 'api.token:read', 'throttle:api-read'])->group(function () {
     Route::get('root', [RootController::class, 'show']);
+    Route::get('usage', [UsageController::class, 'show']);
     Route::get('files', [FileController::class, 'index']);
     Route::get('files/{node}/content', [FileController::class, 'content'])->withoutMiddleware('throttle:api-read')->middleware('throttle:api-content');
     // Zips are downloads like content: a folder (`files/{id}/zip`) or a selection (`zip?ids=`).

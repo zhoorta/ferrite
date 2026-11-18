@@ -56,18 +56,24 @@ class StorageUsage
      *     folders: list<array{id: int, name: string, bytes: int}>,
      *     loose: int,
      *     saved: int,
+     *     versions: int,
+     *     largest_folders: list<array{id: int, name: string, path: string, bytes: int, files: int}>,
      * }
      */
-    public function forUser(User $user): array
+    public function forUser(User $user, ?Node $within = null, int $limit = 0): array
     {
         $nodes = Node::query()
             ->where('owner_id', $user->id)
-            ->get(['id', 'parent_id', 'type', 'name', 'size', 'mime', 'trashed_at', 'disk_id', 'path'])
+            ->get(['id', 'parent_id', 'type', 'name', 'size', 'files_count', 'mime', 'trashed_at', 'disk_id', 'path'])
             ->keyBy('id');
+
+        // Within a folder, only what is below it counts, and its direct children take the place of the top level.
+        $inside = $within === null ? null : $this->below($nodes->all(), $within->id);
+        $topParent = $within?->id;
 
         $trashed = [];
         $root = [];
-        $resolve = function (Node $node) use ($nodes, &$trashed, &$root): void {
+        $resolve = function (Node $node) use ($nodes, $within, &$trashed, &$root): void {
             // Walk up once per node, remembering what each ancestor resolves to.
             $chain = [];
             $current = $node;
@@ -81,7 +87,7 @@ class StorageUsage
 
             foreach (array_reverse($chain) as $link) {
                 $inTrash = $inTrash || $link->trashed_at !== null;
-                $top = $link->parent_id === null || $nodes->get($link->parent_id) === null ? $link->id : $top;
+                $top = ($within === null ? ($link->parent_id === null || $nodes->get($link->parent_id) === null) : $link->parent_id === $within->id) ? $link->id : $top;
                 $trashed[$link->id] = $inTrash;
                 $root[$link->id] = $top;
             }
@@ -95,12 +101,14 @@ class StorageUsage
         $files = 0;
         $loose = 0;
         $largest = [];
+        $fileIds = [];
 
         foreach ($nodes as $node) {
-            if ($node->type !== NodeType::File) {
+            if ($node->type !== NodeType::File || ($inside !== null && ! isset($inside[$node->id]))) {
                 continue;
             }
 
+            $fileIds[] = $node->id;
             $resolve($node);
 
             if ($trashed[$node->id]) {
@@ -129,6 +137,34 @@ class StorageUsage
         usort($largest, fn (Node $a, Node $b) => $b->size <=> $a->size);
         arsort($folderBytes);
 
+        // The way to a node from the top (or from the folder asked about), with the names as stored.
+        $pathOf = function (Node $node) use ($nodes, $topParent): string {
+            $parts = [$node->name];
+
+            for ($current = $node; $current->parent_id !== null && $current->parent_id !== $topParent && ($parent = $nodes->get($current->parent_id)) !== null; $current = $parent) {
+                $parts[] = $parent->name;
+            }
+
+            return implode('/', array_reverse($parts));
+        };
+
+        // The folders that hold the most, at any depth, from the sizes the actions keep (docs/folder-sizes.md).
+        $bigFolders = [];
+
+        foreach ($nodes as $node) {
+            if ($node->type !== NodeType::Folder || $node->size === 0 || ($inside !== null && ! isset($inside[$node->id])) || $node->id === $within?->id) {
+                continue;
+            }
+
+            $resolve($node);
+
+            if (! $trashed[$node->id]) {
+                $bigFolders[] = $node;
+            }
+        }
+
+        usort($bigFolders, fn (Node $a, Node $b) => $b->size <=> $a->size);
+
         $kinds = [];
 
         foreach (self::KINDS as $kind) {
@@ -146,16 +182,76 @@ class StorageUsage
                 'id' => $node->id,
                 'parent_id' => $node->parent_id,
                 'name' => $node->name,
+                'path' => $pathOf($node),
                 'size' => $node->size,
                 'mime' => $node->mime,
-            ], array_slice($largest, 0, 10)),
+            ], array_slice($largest, 0, $limit ?: 10)),
+            'largest_folders' => array_map(fn (Node $node) => [
+                'id' => $node->id,
+                'name' => $node->name,
+                'path' => $pathOf($node),
+                'bytes' => $node->size,
+                'files' => $node->files_count,
+            ], array_slice($bigFolders, 0, $limit ?: 8)),
+            'versions' => $this->versionBytes($user, $inside === null ? null : $fileIds),
             'folders' => array_values(collect($folderBytes)
-                ->take(8)
+                ->take($limit ?: 8)
                 ->map(fn (int $bytes, int $id) => ['id' => $id, 'name' => $nodes[$id]->name, 'bytes' => $bytes])
                 ->all()),
             'loose' => $loose,
-            'saved' => $this->dedupSaved($nodes->all()),
+            'saved' => $this->dedupSaved($inside === null ? $nodes->all() : $nodes->only(array_keys($inside))->all()),
         ];
+    }
+
+    /**
+     * The ids of everything below a folder (not the folder itself), as keys.
+     *
+     * @param  array<int, Node>  $nodes
+     * @return array<int, true>
+     */
+    private function below(array $nodes, int $folderId): array
+    {
+        $children = [];
+
+        foreach ($nodes as $node) {
+            $children[$node->parent_id ?? 0][] = $node->id;
+        }
+
+        $inside = [];
+        $queue = [$folderId];
+
+        while ($queue !== []) {
+            foreach ($children[array_shift($queue)] ?? [] as $id) {
+                $inside[$id] = true;
+                $queue[] = $id;
+            }
+        }
+
+        return $inside;
+    }
+
+    /**
+     * The space earlier versions of replaced files take (they count against the quota, see docs/versions.md): all of the
+     * user's, or those of the given files.
+     *
+     * @param  list<int>|null  $fileIds
+     */
+    private function versionBytes(User $user, ?array $fileIds): int
+    {
+        if ($fileIds === null) {
+            return (int) DB::table('node_versions')
+                ->join('nodes', 'nodes.id', '=', 'node_versions.node_id')
+                ->where('nodes.owner_id', $user->id)
+                ->sum('node_versions.size');
+        }
+
+        $bytes = 0;
+
+        foreach (array_chunk($fileIds, 500) as $chunk) {
+            $bytes += (int) DB::table('node_versions')->whereIn('node_id', $chunk)->sum('size');
+        }
+
+        return $bytes;
     }
 
     /**
