@@ -401,6 +401,7 @@ class FileController extends Controller
             ->where('owner_id', $user->id)
             ->whereNull('trashed_at')
             ->where('parent_id', $folder?->id)
+            ->withExists(['children as has_subfolders' => fn ($query) => $query->where('type', NodeType::Folder)->whereNull('trashed_at')])
             ->when($request->query('type') === 'folder', fn ($query) => $query->where('type', NodeType::Folder))
             ->where('id', '>', (int) $request->query('cursor', 0))
             ->orderBy('id')
@@ -418,6 +419,7 @@ class FileController extends Controller
                 'path' => $base.$node->name,
                 'size' => $node->size,
                 'file_count' => $node->isFolder() ? $node->files_count : null,
+                'has_subfolders' => $node->isFolder() ? (bool) $node->getAttribute('has_subfolders') : null,
                 'sha256' => $node->isFile() ? $node->sha256 : null,
                 'mtime' => $node->updated_at?->timestamp,
                 'mime' => $node->isFile() ? $node->mime : null,

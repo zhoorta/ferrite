@@ -584,3 +584,19 @@ it('empties only the trash of the token folder', function () {
     expect(Node::query()->whereKey([$this->a->id, $this->b->id])->exists())->toBeFalse()
         ->and(Node::query()->whereKey($this->outside->id)->exists())->toBeTrue();
 });
+
+it('says which folders have subfolders in a folder listing', function () {
+    $empty = Node::factory()->for($this->user, 'owner')->create(['name' => 'Empty', 'parent_id' => $this->music->id]);
+    Node::factory()->for($this->user, 'owner')->create(['name' => 'Gone', 'parent_id' => $empty->id, 'trashed_at' => now()]);
+
+    $rows = collect(apiGet('/api/v1/files?parent=root', $this->plain)->assertOk()->json('data'))->keyBy('name');
+
+    expect($rows['Album']['has_subfolders'])->toBeFalse()
+        ->and($rows['Empty']['has_subfolders'])->toBeFalse()   // a trashed subfolder does not count
+        ->and($rows['b.flac']['has_subfolders'])->toBeNull();
+
+    Node::factory()->for($this->user, 'owner')->create(['name' => 'Inner', 'parent_id' => $this->album->id]);
+
+    $again = collect(apiGet('/api/v1/files?parent=root', $this->plain)->json('data'))->keyBy('name');
+    expect($again['Album']['has_subfolders'])->toBeTrue();
+});
