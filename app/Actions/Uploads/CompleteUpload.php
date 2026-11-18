@@ -14,6 +14,7 @@ use App\Models\Upload;
 use App\Models\User;
 use App\Support\ActivityLog;
 use App\Support\Demo;
+use App\Support\FolderSizes;
 use App\Support\StorageManager;
 use App\Support\VersionKeeper;
 use Illuminate\Support\Facades\DB;
@@ -135,6 +136,8 @@ class CompleteUpload
                     [$written, $keyId] = $this->write($upload, $disk, $key, $tmp);
                 }
 
+                $folderGrowth = $upload->size - ($existing === null ? 0 : $existing->size);
+
                 if ($existing !== null) {
                     // Same node, new content: share links, favorites and the activity history stay with it.
                     if ($keptVersion) {
@@ -167,6 +170,7 @@ class CompleteUpload
                 }
 
                 $owner->increment('used_bytes', $growth);
+                app(FolderSizes::class)->add($node->parent_id, $folderGrowth);
                 $share?->increment('received_bytes', $upload->size);
                 $current->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
 

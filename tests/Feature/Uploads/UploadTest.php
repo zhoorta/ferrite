@@ -6,6 +6,7 @@ use App\Jobs\FinalizeUpload;
 use App\Models\Node;
 use App\Models\Upload;
 use App\Models\User;
+use App\Support\FolderSizes;
 use App\Support\StorageManager;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
@@ -466,4 +467,14 @@ describe('finalizing in the background', function () {
             ->and(Upload::find($id)->status)->toBe('done')
             ->and(Node::count())->toBe(1);
     });
+});
+
+it('adds a stored file to the size of its folders', function () {
+    $outer = Node::factory()->for($this->user, 'owner')->create();
+    $inner = Node::factory()->inside($outer)->create();
+
+    uploadAll('a.txt', '12345678', $inner->id)->assertSuccessful();
+
+    expect($inner->fresh()->size)->toBe(8)->and($outer->fresh()->size)->toBe(8)
+        ->and(app(FolderSizes::class)->recount(fix: false)['wrong'])->toBe(0);
 });

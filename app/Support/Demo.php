@@ -131,6 +131,7 @@ class Demo
             $node->save();
 
             $user->increment('used_bytes', strlen($content));
+            app(FolderSizes::class)->add($parent?->id, strlen($content));
         };
 
         $store(null, 'Welcome to Ferrite.md', $this->welcome(), 'text/markdown');

@@ -8,6 +8,7 @@ use App\Models\Node;
 use App\Models\StorageDisk;
 use App\Models\User;
 use App\Support\ActivityLog;
+use App\Support\FolderSizes;
 use App\Support\StorageManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -80,6 +81,8 @@ class CopyNode
                     $owner->increment('used_bytes', $bytes);
                 }
 
+                app(FolderSizes::class)->add($destination?->id, $copy->size);
+
                 return $copy;
             });
         } catch (Throwable $e) {
@@ -104,7 +107,7 @@ class CopyNode
             'name' => $isRoot ? NodeName::available($ownerId, $parentId, $source->name, $source->isFile()) : $source->name,
             'disk_id' => $written[$source->id]['disk_id'] ?? $source->disk_id,
             'path' => $written[$source->id]['path'] ?? $source->path,
-            'size' => $source->size ?? 0,
+            'size' => $source->isFolder() ? 0 : ($source->size ?? 0),
             'mime' => $source->mime,
             'sha256' => $source->sha256,
             // A duplicated blob is a byte for byte copy of the stored form, so it is encrypted the same way.
@@ -114,9 +117,13 @@ class CopyNode
         $copy->save();
 
         if ($source->isFolder()) {
+            $total = 0;
+
             foreach (Node::query()->where('parent_id', $source->id)->notTrashed()->orderBy('id')->get() as $child) {
-                $this->copyTree($child, $copy->id, $ownerId, $written, false);
+                $total += $this->copyTree($child, $copy->id, $ownerId, $written, false)->size;
             }
+
+            $copy->forceFill(['size' => $total])->save();
         }
 
         return $copy;

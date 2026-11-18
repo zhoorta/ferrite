@@ -65,7 +65,7 @@ it('signs a visitor in to a seeded throwaway account', function () {
         ->and($user->quota_bytes)->toBe(20 * 1024 * 1024)
         ->and($user->used_bytes)->toBeGreaterThan(0)
         ->and(Node::query()->where('owner_id', $user->id)->whereNull('parent_id')->count())->toBe(4)
-        ->and((int) Node::query()->where('owner_id', $user->id)->sum('size'))->toBe($user->used_bytes);
+        ->and((int) Node::query()->where('owner_id', $user->id)->where('type', 'file')->sum('size'))->toBe($user->used_bytes);
     $this->assertAuthenticatedAs($user);
     $this->get(route('files'))->assertOk()->assertSee('Welcome to Ferrite.md');
 });

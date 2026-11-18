@@ -7,6 +7,7 @@ use App\Models\Node;
 use App\Models\NodeVersion;
 use App\Models\User;
 use App\Support\ActivityLog;
+use App\Support\FolderSizes;
 use App\Support\VersionKeeper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -35,6 +36,8 @@ class RestoreVersion
             // The current content goes into the version's place (same quota), then the version's content moves up.
             $this->versions->keep($node, $actor);
 
+            $before = $node->size;
+
             $node->forceFill([
                 'disk_id' => $version->disk_id,
                 'path' => $version->path,
@@ -46,6 +49,8 @@ class RestoreVersion
             ])->save();
 
             $version->delete();
+
+            app(FolderSizes::class)->add($node->parent_id, $node->size - $before);
 
             ActivityLog::record(ActivityAction::RestoredVersion, $node, $actor, ['date' => $version->content_at?->toDateTimeString()]);
 
