@@ -1,8 +1,7 @@
 # Versions
 
 Replacing a file keeps its earlier content, so a bad edit or a wrong upload can be undone. Versions exist only for
-**replace**: uploading over a file of the same name and answering "Replace" in the dialog (or, later, the API's
-replace). Renaming, moving and copying do not make versions.
+**replace**: uploading over a file of the same name and answering "Replace" in the dialog (or an API replace). Renaming, moving and copying do not make versions.
 
 ## How it works
 
@@ -45,4 +44,4 @@ with date, size and who replaced them, and offers:
 
 - A version is a whole copy: a big file edited often costs its full size per version (no delta storage). Keep the
   limit low for big files, or set `FERRITE_VERSIONS_KEEP=0`.
-- Versions are not in the API yet; replace through the API comes with the Mac client work (`PLAN.md`).
+- Listing, downloading and restoring versions are not in the API; an API replace does keep the old content as a version (`docs/api.md`).

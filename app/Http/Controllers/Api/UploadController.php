@@ -16,7 +16,8 @@ use Illuminate\Http\Request;
 /**
  * Chunked uploads through a write token (`/api/v1/uploads`). Same protocol as the browser's
  * UploadController, with two differences: paths are relative to the token's folder, and a name
- * that is taken is refused (409), never replaced or renamed. An upload belongs to the token that
+ * that is taken is refused (409), never renamed. It is only replaced when the upload says `replace`, names the
+ * content it is based on (`base`, a sha256) and the token has the `replace` ability. An upload belongs to the token that
  * started it; any other token gets 404.
  */
 class UploadController extends BaseUploadController
@@ -27,6 +28,8 @@ class UploadController extends BaseUploadController
             'path' => ['required', 'string', 'max:2048'],
             'size' => ['required', 'integer', 'min:0'],
             'fingerprint' => ['nullable', 'string', 'max:100'],
+            'replace' => ['sometimes', 'boolean'],
+            'base' => ['required_if_accepted:replace', 'nullable', 'string', 'regex:/^[0-9a-f]{64}$/'],
         ]);
 
         $user = $request->user();
@@ -35,11 +38,29 @@ class UploadController extends BaseUploadController
 
         // Refuse before anything is created or received; the real check is made again when the file is stored.
         $taken = $this->nodeAt($user->id, $root, explode('/', $data['path']));
-        if ($taken !== null) {
+        $replace = (bool) ($data['replace'] ?? false);
+
+        if ($replace) {
+            // Replacing is its own ability: a token that may add files may not overwrite them.
+            abort_unless($token->can('replace'), 403, 'This token cannot do that.');
+
+            if ($taken === null) {
+                return response()->json(['error' => 'not_found'], 404);
+            }
+
+            if (! $taken->isFile()) {
+                return response()->json(['error' => 'exists', 'id' => $taken->id, 'type' => 'folder'], 409);
+            }
+
+            // The client's copy is out of date: tell it what is there now, store nothing.
+            if (! hash_equals((string) $taken->sha256, (string) $data['base'])) {
+                return response()->json(['error' => 'changed', 'id' => $taken->id, 'sha256' => $taken->sha256], 409);
+            }
+        } elseif ($taken !== null) {
             return response()->json(['error' => 'exists', 'id' => $taken->id, 'sha256' => $taken->sha256], 409);
         }
 
-        $upload = $start->handle($user, $root, $data['path'], $data['size'], $data['fingerprint'] ?? null, false, $token);
+        $upload = $start->handle($user, $root, $data['path'], $data['size'], $data['fingerprint'] ?? null, $replace, $token, $replace ? $data['base'] : null, $replace ? $taken : null);
         $created = $upload->wasRecentlyCreated;
 
         // Fills in the column defaults (status) that a freshly inserted model does not have yet.

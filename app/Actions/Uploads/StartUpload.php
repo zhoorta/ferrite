@@ -26,10 +26,13 @@ class StartUpload
      * With $replace, a file of the same name in the folder is replaced when the upload is stored
      * (see CompleteUpload); without it both are kept. Through an API token ($token) an upload belongs to that
      * token, is only resumed by it, and fails instead of keeping both if the name is taken when it is stored.
+     * An API replace also names the content it is based on ($replaceBase, a sha256) and the file it will replace
+     * ($replacing, whose size is credited to the quota): it only goes through if the file still has that content
+     * when the new one is stored.
      *
      * @throws ValidationException
      */
-    public function handle(User $actor, ?Node $parent, string $path, int $size, ?string $fingerprint = null, bool $replace = false, ?ApiToken $token = null): Upload
+    public function handle(User $actor, ?Node $parent, string $path, int $size, ?string $fingerprint = null, bool $replace = false, ?ApiToken $token = null, ?string $replaceBase = null, ?Node $replacing = null): Upload
     {
         if ($parent !== null) {
             Gate::forUser($actor)->authorize('update', $parent);
@@ -53,13 +56,13 @@ class StartUpload
 
         // Replacing a file of the same name only needs room for what the new one adds. Only looked up
         // for a plain name: inside folders that may not exist yet, the full size is required.
-        $credit = $replace && $segments === [] ? (int) Node::query()
+        $credit = $replacing !== null ? $replacing->size : ($replace && $segments === [] ? (int) Node::query()
             ->where('owner_id', $ownerId)
             ->where('parent_id', $parent?->id)
             ->where('type', NodeType::File)
             ->whereNull('trashed_at')
             ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
-            ->value('size') : 0;
+            ->value('size') : 0);
 
         if ($remaining !== null && $size - $credit > $remaining) {
             throw ValidationException::withMessages(['size' => __('Not enough storage space left.')]);
@@ -75,6 +78,7 @@ class StartUpload
             ->where('name', $name)
             ->where('size', $size)
             ->where('fingerprint', $fingerprint)
+            ->where('replace_base', $replaceBase)
             ->first();
 
         if ($existing !== null) {
@@ -90,6 +94,7 @@ class StartUpload
         $upload = new Upload(['name' => $name, 'size' => $size, 'fingerprint' => $fingerprint]);
         $upload->offset = 0;
         $upload->replace = $replace;
+        $upload->replace_base = $replaceBase;
         $upload->api_token_id = $token?->id;
         $upload->api_token_name = $token?->name;
         $upload->on_conflict = $token === null ? 'keep' : 'fail';

@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $offset
  * @property string|null $fingerprint
  * @property bool $replace
+ * @property string|null $replace_base
  * @property string $status
  * @property string|null $error
  * @property int|null $node_id

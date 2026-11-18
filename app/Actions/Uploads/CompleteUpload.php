@@ -91,12 +91,19 @@ class CompleteUpload
                 $owner = User::query()->lockForUpdate()->findOrFail($ownerId);
                 $share = $this->claimLink($upload);
 
-                // An API upload never keeps both: a name that appeared while the file was on its way refuses it.
-                if ($upload->on_conflict === 'fail' && NodeName::taken($ownerId, $parent?->id, $upload->name)) {
+                // An API upload never keeps both: a name that appeared while the file was on its way refuses it
+                // (unless it is a replace, which is checked below).
+                if ($upload->on_conflict === 'fail' && ! $upload->replace && NodeName::taken($ownerId, $parent?->id, $upload->name)) {
                     throw ValidationException::withMessages(['path' => __('Something with that name already exists here.')]);
                 }
 
                 $existing = $upload->replace ? $this->replaceable($actor, $ownerId, $parent?->id, $upload->name) : null;
+
+                // An API replace is based on the content the client had: if the file is gone or changed since, the new
+                // content would overwrite someone else's work, so it is refused and nothing is stored.
+                if ($upload->replace_base !== null && ($existing === null || ! hash_equals((string) $existing->sha256, $upload->replace_base))) {
+                    throw ValidationException::withMessages(['path' => __('The file changed or was removed while the new content was on its way, so it was not replaced.')]);
+                }
 
                 // Replacing only needs room for what the file grows by, or for the whole new content when the old one
                 // stays as a version. Versions never get in the way of a replace: when the quota cannot hold them

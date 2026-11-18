@@ -22,11 +22,7 @@ class RootController extends Controller
         return response()->json([
             'name' => $folder->name ?? 'Whole drive',
             'id' => $folder?->id,
-            'access' => match (true) {
-                $token->can('trash') => 'read+write+trash',
-                $token->can('write') => 'read+write',
-                default => 'read',
-            },
+            'access' => collect(['read', 'write', 'replace', 'trash'])->filter(fn (string $ability) => $token->can($ability))->implode('+'),
             'expires_at' => $token->expires_at?->toIso8601String(),
             'quota' => ['used' => $user->used_bytes, 'limit' => $user->quota_bytes],
         ]);

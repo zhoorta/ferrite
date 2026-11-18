@@ -77,13 +77,15 @@ new #[Title('API tokens')] class extends Component {
         $this->validate([
             'name' => ['required', 'string', 'max:100'],
             'folder' => ['nullable', 'in:'.implode(',', array_keys($this->folders))],
-            'access' => ['required', 'in:read,write,trash'],
+            'access' => ['required', 'in:read,write,replace,trash,full'],
             'expiry' => ['required', 'in:'.implode(',', array_keys(self::EXPIRY_DAYS))],
         ]);
 
         $days = self::EXPIRY_DAYS[$this->expiry];
         $abilities = match ($this->access) {
+            'full' => ['read', 'write', 'replace', 'trash'],
             'trash' => ['read', 'write', 'trash'],
+            'replace' => ['read', 'write', 'replace'],
             'write' => ['read', 'write'],
             default => ['read'],
         };
@@ -147,7 +149,9 @@ new #[Title('API tokens')] class extends Component {
                 <flux:select wire:model="access" :label="__('Access')">
                     <flux:select.option value="read">{{ __('Read') }}</flux:select.option>
                     <flux:select.option value="write">{{ __('Read and add files (never delete)') }}</flux:select.option>
+                    <flux:select.option value="replace">{{ __('Read, add files and replace existing ones (the old content is kept as a version while versions are on)') }}</flux:select.option>
                     <flux:select.option value="trash">{{ __('Read, add files and move files to the trash (you restore or purge them here)') }}</flux:select.option>
+                    <flux:select.option value="full">{{ __('Read, add, replace and move files to the trash') }}</flux:select.option>
                 </flux:select>
 
                 <flux:select wire:model="expiry" :label="__('Expires')">
@@ -170,7 +174,7 @@ new #[Title('API tokens')] class extends Component {
                                 <div class="font-medium">{{ $token->name }}</div>
                                 <div class="text-xs text-zinc-500">
                                     {{ $token->folder_id === null ? __('Whole drive') : ($token->folder?->name ?? __('Folder gone')) }}
-                                    · {{ $token->can('trash') ? __('read + write + trash') : ($token->can('write') ? __('read + write') : __('read')) }}
+                                    · {{ collect(['read', 'write', 'replace', 'trash'])->filter(fn ($ability) => $token->can($ability))->implode(' + ') }}
                                     · {{ $token->expires_at ? ($token->expires_at->isPast() ? __('expired') : __('expires :when', ['when' => $token->expires_at->diffForHumans()])) : __('never expires') }}
                                 </div>
                                 <div class="text-xs text-zinc-500">
