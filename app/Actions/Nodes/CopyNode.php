@@ -29,7 +29,10 @@ class CopyNode
      *
      * @throws ValidationException
      */
-    public function handle(User $actor, Node $node, ?Node $destination): Node
+    /**
+     * @param  array<string, mixed>  $meta  extra activity details, e.g. the API token that did it
+     */
+    public function handle(User $actor, Node $node, ?Node $destination, array $meta = []): Node
     {
         Gate::forUser($actor)->authorize('view', $node);
 
@@ -91,7 +94,7 @@ class CopyNode
             throw $e;
         }
 
-        ActivityLog::record(ActivityAction::Copied, $copy, $actor, ['from' => $node->name, 'to' => $destination === null ? __('My files') : $destination->name]);
+        ActivityLog::record(ActivityAction::Copied, $copy, $actor, ['from' => $node->name, 'to' => $destination === null ? __('My files') : $destination->name] + $meta);
 
         return $copy;
     }

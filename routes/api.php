@@ -32,6 +32,9 @@ Route::delete('v1/trash', [FileController::class, 'emptyTrash'])->middleware(['a
 // Creating a folder needs a write token (it only adds, and never replaces).
 Route::post('v1/files', [FileController::class, 'store'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
 
+// Copying a file or folder (also into its own folder, as a duplicate) adds files, so it needs a write token like uploads.
+Route::post('v1/files/{node}/copy', [FileController::class, 'copy'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
+
 // Moving a file or renaming a file or folder inside the token's folder needs a write token (it adds nothing and destroys nothing, and never replaces).
 Route::patch('v1/files/{node}', [FileController::class, 'update'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
 

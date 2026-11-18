@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Nodes\CopyNode;
 use App\Actions\Nodes\CreateFolder;
 use App\Actions\Nodes\EnsureFolderPath;
 use App\Actions\Nodes\MoveNode;
@@ -204,6 +205,35 @@ class FileController extends Controller
     private function wasInside(Node $node, ?Node $root): bool
     {
         return $root === null || ($node->id !== $root->id && in_array($root->id, $node->selfAndAncestorIds(), true));
+    }
+
+    /**
+     * Copy a file, or a folder with everything in it (not what is in the trash), into the folder `folder` names: a path
+     * relative to the token's folder, "" for the folder itself, missing folders created like uploads. The copy keeps the
+     * name, with a " (2)" suffix when it is taken (so copying into the same folder duplicates). It costs quota like any
+     * file; a folder cannot be copied into itself. Needs a write token. Answers 201 with the copy's `{id, name, type, path}`.
+     */
+    public function copy(Request $request, Node $node, EnsureFolderPath $ensure, CopyNode $copier): JsonResponse
+    {
+        $data = $request->validate(['folder' => ['present', 'nullable', 'string', 'max:2048']]);
+
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+        $root = $token->rootFolder();
+
+        abort_unless($token->reaches($node), 404);
+
+        $folder = trim((string) ($data['folder'] ?? ''), '/');
+        $destination = $ensure->handle($request->user(), $root, $folder === '' ? [] : explode('/', $folder));
+
+        $copy = $copier->handle($request->user(), $node, $destination, ['token' => $token->name]);
+
+        return response()->json([
+            'id' => $copy->id,
+            'name' => $copy->name,
+            'type' => $copy->isFolder() ? 'folder' : 'file',
+            'path' => $this->relativePath($copy, $root?->id),
+        ], 201);
     }
 
     /** The file's path below the token's folder, with the names as stored. */

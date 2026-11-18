@@ -600,3 +600,40 @@ it('says which folders have subfolders in a folder listing', function () {
     $again = collect(apiGet('/api/v1/files?parent=root', $this->plain)->json('data'))->keyBy('name');
     expect($again['Album']['has_subfolders'])->toBeTrue();
 });
+
+function apiCopy(int $id, ?string $folder, string $plain)
+{
+    app('auth')->forgetGuards();
+
+    return test()->postJson("/api/v1/files/{$id}/copy", ['folder' => $folder], ['Authorization' => "Bearer {$plain}"]);
+}
+
+it('copies a file into another folder and duplicates it in its own, charging the quota', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+
+    apiCopy($this->b->id, 'Album', $write)->assertCreated()->assertJson(['name' => 'b.flac', 'type' => 'file', 'path' => 'Album/b.flac']);
+    apiCopy($this->b->id, '', $write)->assertCreated()->assertJson(['name' => 'b (2).flac', 'path' => 'b (2).flac']);
+
+    expect($this->user->fresh()->used_bytes)->toBe(12)
+        ->and(Activity::where('action', 'copied')->latest('id')->first()->meta['token'])->toBe('test');
+});
+
+it('copies a folder with its files, keeping the folder sizes right, and not into itself', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+    app(FolderSizes::class)->recount();
+
+    apiCopy($this->album->id, '', $write)->assertCreated()->assertJson(['name' => 'Album (2)', 'type' => 'folder']);
+
+    expect($this->music->fresh()->size)->toBe(14)
+        ->and(app(FolderSizes::class)->recount(fix: false)['wrong'])->toBe(0);
+
+    apiCopy($this->album->id, 'Album', $write)->assertUnprocessable();
+});
+
+it('needs a write token for copies and keeps them inside the token folder', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+
+    apiCopy($this->b->id, '', $this->plain)->assertForbidden();
+    apiCopy($this->outside->id, '', $write)->assertNotFound();
+    apiCopy($this->b->id, '../Elsewhere', $write)->assertUnprocessable();
+});
