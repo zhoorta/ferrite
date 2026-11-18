@@ -780,6 +780,9 @@ new #[Title('Files')] class extends Component {
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
                             {{ \Illuminate\Support\Number::fileSize($item->size) }}
+                            @if ($item->isFolder())
+                                <span class="block text-xs text-zinc-500">{{ trans_choice(':count file|:count files', $item->files_count) }}</span>
+                            @endif
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->updated_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">

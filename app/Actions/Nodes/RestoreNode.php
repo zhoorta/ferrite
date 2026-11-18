@@ -30,7 +30,7 @@ class RestoreNode
 
         $node->forceFill(['parent_id' => $parentId, 'name' => $name, 'trashed_at' => null])->save();
 
-        app(FolderSizes::class)->add($parentId, (int) $node->size);
+        app(FolderSizes::class)->add($parentId, (int) $node->size, FolderSizes::filesIn($node));
 
         ActivityLog::record(ActivityAction::Restored, $node, $actor);
 

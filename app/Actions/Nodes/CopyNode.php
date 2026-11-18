@@ -81,7 +81,7 @@ class CopyNode
                     $owner->increment('used_bytes', $bytes);
                 }
 
-                app(FolderSizes::class)->add($destination?->id, $copy->size);
+                app(FolderSizes::class)->add($destination?->id, $copy->size, FolderSizes::filesIn($copy));
 
                 return $copy;
             });
@@ -118,12 +118,15 @@ class CopyNode
 
         if ($source->isFolder()) {
             $total = 0;
+            $count = 0;
 
             foreach (Node::query()->where('parent_id', $source->id)->notTrashed()->orderBy('id')->get() as $child) {
-                $total += $this->copyTree($child, $copy->id, $ownerId, $written, false)->size;
+                $made = $this->copyTree($child, $copy->id, $ownerId, $written, false);
+                $total += $made->size;
+                $count += FolderSizes::filesIn($made);
             }
 
-            $copy->forceFill(['size' => $total])->save();
+            $copy->forceFill(['size' => $total, 'files_count' => $count])->save();
         }
 
         return $copy;

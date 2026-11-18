@@ -7,22 +7,31 @@ use App\Models\Node;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The size of a folder: its files and the folders inside, not counting what is in the trash, kept in `nodes.size`.
+ * What a folder holds: `nodes.size` is the bytes of the files inside it (subfolders included, the trash and old
+ * versions left out) and `nodes.files_count` how many files that is. Reading either costs nothing.
  *
- * Reading it costs nothing. Every action that adds, removes, resizes or moves a file moves the difference up the
- * folders above it with `add()`, the way `used_bytes` follows the owner's quota. A folder in the trash keeps its own
- * size (what is inside it), and the folders above it no longer count it. `recount()` rebuilds all of them from the
- * files, and `ferrite:folders:recount` is its command; versions are not counted, only the current content.
+ * Every action that adds, removes, resizes or moves a file moves the difference up the folders above it with
+ * `add()`, the way `used_bytes` follows the owner's quota. A folder in the trash keeps its own totals (what is
+ * inside it), and the folders above it no longer count it. `recount()` rebuilds everything from the files, and
+ * `ferrite:folders:recount` is its command.
  */
 class FolderSizes
 {
     /**
-     * Add (or, negative, remove) bytes to a folder and every folder above it. The climb stops after a folder in the
-     * trash, because nothing above it counts what is inside.
+     * How many files a node stands for: one for a file, what is inside for a folder.
      */
-    public function add(?int $folderId, int $delta): void
+    public static function filesIn(Node $node): int
     {
-        if ($folderId === null || $delta === 0) {
+        return $node->isFile() ? 1 : (int) $node->files_count;
+    }
+
+    /**
+     * Add (or, negative, remove) bytes and files to a folder and every folder above it. The climb stops after a
+     * folder in the trash, because nothing above it counts what is inside.
+     */
+    public function add(?int $folderId, int $bytes, int $files = 0): void
+    {
+        if ($folderId === null || ($bytes === 0 && $files === 0)) {
             return;
         }
 
@@ -49,25 +58,37 @@ class FolderSizes
             return;
         }
 
-        $amount = abs($delta);
+        $this->shift($ids, 'size', $bytes);
+        $this->shift($ids, 'files_count', $files);
+    }
+
+    /**
+     * @param  list<int>  $ids
+     */
+    private function shift(array $ids, string $column, int $delta): void
+    {
+        if ($delta === 0) {
+            return;
+        }
 
         $rows = DB::table('nodes')->whereIn('id', $ids);
+        $amount = abs($delta);
 
         if ($delta > 0) {
-            $rows->increment('size', $amount);
+            $rows->increment($column, $amount);
 
             return;
         }
 
         // Never below zero, whatever drifted: rows that cannot take it go to zero first.
-        (clone $rows)->where('size', '<', $amount)->update(['size' => 0]);
-        $rows->where('size', '>=', $amount)->decrement('size', $amount);
+        (clone $rows)->where($column, '<', $amount)->update([$column => 0]);
+        $rows->where($column, '>=', $amount)->decrement($column, $amount);
     }
 
     /**
-     * Compute every folder's size from the files and compare it with what is stored.
+     * Compute every folder's totals from the files and compare them with what is stored.
      *
-     * @return array{checked: int, wrong: int} folders looked at, and folders whose stored size was off (fixed unless $fix is false)
+     * @return array{checked: int, wrong: int} folders looked at, and folders with a wrong size or count (fixed unless $fix is false)
      */
     public function recount(bool $fix = true, ?int $ownerId = null): array
     {
@@ -77,7 +98,7 @@ class FolderSizes
         $owners = $ownerId !== null ? [$ownerId] : Node::query()->distinct()->pluck('owner_id')->all();
 
         foreach ($owners as $owner) {
-            $nodes = Node::query()->where('owner_id', $owner)->get(['id', 'parent_id', 'type', 'size', 'trashed_at']);
+            $nodes = Node::query()->where('owner_id', $owner)->get(['id', 'parent_id', 'type', 'size', 'files_count', 'trashed_at']);
 
             $children = [];
             $folders = [];
@@ -90,34 +111,43 @@ class FolderSizes
                 }
             }
 
+            /** @var array<int, array{int, int}> $totals bytes and files per folder */
             $totals = [];
-            $total = function (int $id) use (&$total, &$totals, $children, $folders): int {
+            $total = function (int $id) use (&$total, &$totals, $children, $folders): array {
                 if (isset($totals[$id])) {
                     return $totals[$id];
                 }
 
-                $sum = 0;
+                $bytes = 0;
+                $files = 0;
 
                 foreach ($children[$id] ?? [] as $child) {
                     if ($child->trashed_at !== null) {
                         continue;
                     }
 
-                    $sum += isset($folders[$child->id]) ? $total($child->id) : $child->size;
+                    if (isset($folders[$child->id])) {
+                        [$childBytes, $childFiles] = $total($child->id);
+                        $bytes += $childBytes;
+                        $files += $childFiles;
+                    } else {
+                        $bytes += $child->size;
+                        $files++;
+                    }
                 }
 
-                return $totals[$id] = $sum;
+                return $totals[$id] = [$bytes, $files];
             };
 
             foreach ($folders as $id => $folder) {
                 $checked++;
-                $right = $total($id);
+                [$bytes, $files] = $total($id);
 
-                if ($folder->size !== $right) {
+                if ($folder->size !== $bytes || $folder->files_count !== $files) {
                     $wrong++;
 
                     if ($fix) {
-                        DB::table('nodes')->where('id', $id)->update(['size' => $right]);
+                        DB::table('nodes')->where('id', $id)->update(['size' => $bytes, 'files_count' => $files]);
                     }
                 }
             }

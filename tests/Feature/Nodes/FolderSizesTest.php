@@ -108,3 +108,24 @@ it('shows the size of a folder in the file list', function () {
 
     Livewire::test('pages::files.browser')->assertSee('Docs')->assertSee(Number::fileSize(10));
 });
+
+it('keeps the number of files next to the bytes through moves, trash and copies', function () {
+    expect($this->docs->fresh()->files_count)->toBe(2)->and($this->sub->fresh()->files_count)->toBe(1);
+
+    app(MoveNode::class)->handle($this->user, $this->sub->fresh(), $this->other);
+    expect($this->docs->fresh()->files_count)->toBe(1)->and($this->other->fresh()->files_count)->toBe(1);
+
+    app(TrashNode::class)->handle($this->user, $this->sub->fresh());
+    expect($this->other->fresh()->files_count)->toBe(0);
+
+    app(RestoreNode::class)->handle($this->user, $this->sub->fresh());
+    $copy = app(CopyNode::class)->handle($this->user, $this->docs->fresh(), null);
+
+    expect($copy->files_count)->toBe(1)->and(sizesAreRight())->toBeTrue();
+});
+
+it('shows the number of files in the API listing', function () {
+    $rows = collect(apiGet('/api/v1/files?parent=root', apiToken($this->user, null, ['read']))->json('data'));
+
+    expect($rows->firstWhere('name', 'Docs')['file_count'])->toBe(2)->and($rows->firstWhere('name', 'Other')['file_count'])->toBe(0);
+});

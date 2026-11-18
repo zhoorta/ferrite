@@ -1,6 +1,6 @@
 # Folder sizes
 
-A folder's `nodes.size` is the total of the files inside it, subfolders included, not counting what is in the trash and not counting old versions (only each file's current content). Reading it costs nothing.
+A folder's `nodes.size` is the bytes of the files inside it, subfolders included, and `nodes.files_count` how many files that is. Neither counts what is in the trash or old versions (only each file's current content). Reading it costs nothing.
 
 ## How it stays right
 
@@ -8,7 +8,7 @@ A folder's `nodes.size` is the total of the files inside it, subfolders included
 
 | Event | Change |
 |---|---|
-| Upload completes | `+size` (a replace: the new size minus the old) |
+| Upload completes | `+size` and `+1` file (a replace: the new size minus the old, no new file) |
 | Restore an earlier version | the size difference |
 | Copy | `+` the copy's total, into the destination |
 | Move | `-size` from the old folders, `+size` to the new ones |
@@ -20,7 +20,7 @@ A folder in the trash keeps its own total (what is inside it) and the folders ab
 
 ## Checking and repairing
 
-`php artisan ferrite:folders:recount` rebuilds every folder from the files. `--check` only reports (exit code 1 when a size is wrong), `--user=ID` limits it to one account. It is safe to run any time; a wrong size can only come from a code path that changes files without going through the actions above (a direct database edit, for instance).
+`php artisan ferrite:folders:recount` rebuilds every folder's size and file count from the files. `--check` only reports (exit code 1 when a size is wrong), `--user=ID` limits it to one account. It is safe to run any time; a wrong size can only come from a code path that changes files without going through the actions above (a direct database edit, for instance).
 
 The migration `backfill_folder_sizes` runs it once on deploy, so existing folders are filled in by `php artisan migrate`.
 

@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
  * @property int|null $disk_id
  * @property string|null $path
  * @property int $size
+ * @property int $files_count
  * @property string|null $mime
  * @property string|null $sha256
  * @property int|null $encryption_key_id
@@ -49,6 +50,7 @@ class Node extends Model
         return [
             'type' => NodeType::class,
             'size' => 'integer',
+            'files_count' => 'integer',
             'encryption_key_id' => 'integer',
             'verified_at' => 'datetime',
             'trashed_at' => 'datetime',

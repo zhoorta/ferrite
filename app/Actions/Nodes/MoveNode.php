@@ -48,8 +48,9 @@ class MoveNode
         $node->update(['parent_id' => $destination?->id]);
 
         if (! $node->isTrashed()) {
-            app(FolderSizes::class)->add($from, -(int) $node->size);
-            app(FolderSizes::class)->add($destination?->id, (int) $node->size);
+            $files = FolderSizes::filesIn($node);
+            app(FolderSizes::class)->add($from, -(int) $node->size, -$files);
+            app(FolderSizes::class)->add($destination?->id, (int) $node->size, $files);
         }
 
         ActivityLog::record(ActivityAction::Moved, $node, $actor, ['to' => $destination !== null ? $destination->name : __('My files')] + $meta);

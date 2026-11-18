@@ -26,7 +26,7 @@ class TrashNode
         $node->forceFill(['trashed_at' => now()])->save();
 
         if ($wasActive) {
-            app(FolderSizes::class)->add($node->parent_id, -(int) $node->size);
+            app(FolderSizes::class)->add($node->parent_id, -(int) $node->size, -FolderSizes::filesIn($node));
         }
 
         ActivityLog::record(ActivityAction::Trashed, $node, $actor, $meta);

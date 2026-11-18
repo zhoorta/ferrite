@@ -170,7 +170,7 @@ class CompleteUpload
                 }
 
                 $owner->increment('used_bytes', $growth);
-                app(FolderSizes::class)->add($node->parent_id, $folderGrowth);
+                app(FolderSizes::class)->add($node->parent_id, $folderGrowth, $existing === null ? 1 : 0);
                 $share?->increment('received_bytes', $upload->size);
                 $current->forceFill(['status' => Upload::DONE, 'node_id' => $node->id, 'error' => null])->save();
 
