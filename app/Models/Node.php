@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $mime
  * @property string|null $sha256
  * @property int|null $encryption_key_id
+ * @property CarbonInterface|null $verified_at
  * @property CarbonInterface|null $trashed_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
@@ -49,6 +50,7 @@ class Node extends Model
             'type' => NodeType::class,
             'size' => 'integer',
             'encryption_key_id' => 'integer',
+            'verified_at' => 'datetime',
             'trashed_at' => 'datetime',
         ];
     }

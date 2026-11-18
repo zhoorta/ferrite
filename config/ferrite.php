@@ -50,6 +50,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Integrity scrub
+    |--------------------------------------------------------------------------
+    |
+    | How many stored blobs the nightly scrub reads back and compares with their sha256 (the least recently
+    | verified first, so it covers everything over time). 0 turns the schedule off; you can still run
+    | `php artisan ferrite:storage:check --verify` by hand. See docs/storage-check.md.
+    |
+    */
+
+    'scrub_blobs' => (int) env('FERRITE_SCRUB_BLOBS', 0),
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption at rest
     |--------------------------------------------------------------------------
     |
