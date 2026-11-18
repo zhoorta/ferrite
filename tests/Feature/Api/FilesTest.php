@@ -637,3 +637,55 @@ it('needs a write token for copies and keeps them inside the token folder', func
     apiCopy($this->outside->id, '', $write)->assertNotFound();
     apiCopy($this->b->id, '../Elsewhere', $write)->assertUnprocessable();
 });
+
+function apiPut(string $uri, string $plain)
+{
+    app('auth')->forgetGuards();
+
+    return test()->putJson($uri, [], ['Authorization' => "Bearer {$plain}"]);
+}
+
+it('stars and unstars with a write token, and lists the stars of the token folder', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+
+    apiPut("/api/v1/files/{$this->album->id}/favorite", $write)->assertOk()->assertJson(['favorite' => true]);
+    apiPut("/api/v1/files/{$this->b->id}/favorite", $write)->assertOk();
+    apiPut("/api/v1/files/{$this->b->id}/favorite", $write)->assertOk();   // idempotent
+
+    $rows = apiGet('/api/v1/files?favorites=1', $write)->assertOk()->json('data');
+
+    expect(collect($rows)->pluck('name')->all())->toBe(['Album', 'b.flac'])
+        ->and(collect($rows)->pluck('path')->all())->toBe(['Album', 'b.flac'])
+        ->and($this->user->favorites()->count())->toBe(2);
+
+    apiDeleteTrash("/api/v1/files/{$this->album->id}/favorite", $write)->assertOk()->assertJson(['favorite' => false]);
+
+    expect($this->user->favorites()->count())->toBe(1);
+});
+
+it('needs a write token to star, keeps stars inside the token folder and shows them in listings', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+
+    apiPut("/api/v1/files/{$this->b->id}/favorite", $this->plain)->assertForbidden();            // read token
+    apiPut("/api/v1/files/{$this->outside->id}/favorite", $write)->assertNotFound();               // outside
+    apiPut("/api/v1/files/{$this->music->id}/favorite", $write)->assertNotFound();                 // the token's own folder
+
+    $this->user->favorites()->attach($this->outside->id);                                          // starred on the web, out of reach
+    apiPut("/api/v1/files/{$this->b->id}/favorite", $write)->assertOk();
+
+    expect(collect(apiGet('/api/v1/files?favorites=1', $this->plain)->json('data'))->pluck('name')->all())->toBe(['b.flac']);
+
+    $rows = collect(apiGet('/api/v1/files?parent=root', $this->plain)->json('data'))->keyBy('name');
+    expect($rows['b.flac']['favorite'])->toBeTrue()->and($rows['Album']['favorite'])->toBeFalse();
+});
+
+it('leaves trashed items out of the stars', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    apiPut("/api/v1/files/{$this->b->id}/favorite", $write)->assertOk();
+    $this->b->forceFill(['trashed_at' => now()])->save();
+
+    expect(apiGet('/api/v1/files?favorites=1', $write)->json('data'))->toBe([]);
+
+    $this->b->forceFill(['trashed_at' => null])->save();
+    expect(collect(apiGet('/api/v1/files?favorites=1', $write)->json('data'))->pluck('name')->all())->toBe(['b.flac']);
+});

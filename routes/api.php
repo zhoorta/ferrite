@@ -29,6 +29,10 @@ Route::post('v1/files/{node}/restore', [FileController::class, 'restore'])->midd
 Route::delete('v1/trash/{node}', [FileController::class, 'purge'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
 Route::delete('v1/trash', [FileController::class, 'emptyTrash'])->middleware(['auth:sanctum', 'api.token:trash', 'throttle:api-upload']);
 
+// Stars are the account's own bookmarks: listing them is a read (`GET files?favorites=1`), setting or clearing one needs a write token.
+Route::put('v1/files/{node}/favorite', [FileController::class, 'favorite'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
+Route::delete('v1/files/{node}/favorite', [FileController::class, 'unfavorite'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
+
 // Creating a folder needs a write token (it only adds, and never replaces).
 Route::post('v1/files', [FileController::class, 'store'])->middleware(['auth:sanctum', 'api.token:write', 'throttle:api-upload']);
 

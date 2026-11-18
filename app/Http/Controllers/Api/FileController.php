@@ -20,6 +20,7 @@ use App\Support\NodeSearch;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
@@ -133,6 +134,81 @@ class FileController extends Controller
             ])->values(),
             'next_cursor' => null,
         ]);
+    }
+
+    /**
+     * The account's starred files and folders that are inside the token's folder, folders first, with the path they have.
+     * Stars on anything trashed, outside the token's folder or shared with the account rather than owned are left out.
+     */
+    private function favorites(Request $request, ApiToken $token, ?Node $root): JsonResponse
+    {
+        $items = $request->user()->favorites()->get()
+            ->filter(fn (Node $node) => $node->id !== $root?->id && $token->reaches($node))
+            ->sort(fn (Node $a, Node $b) => [$a->isFolder() ? 0 : 1, mb_strtolower($a->name)] <=> [$b->isFolder() ? 0 : 1, mb_strtolower($b->name)])
+            ->take(self::PAGE)
+            ->values();
+
+        return response()->json([
+            'data' => $items->map(fn (Node $node) => [
+                'id' => $node->id,
+                'name' => $node->name,
+                'type' => $node->isFolder() ? 'folder' : 'file',
+                'path' => $this->relativePath($node, $root?->id),
+                'size' => $node->size,
+                'file_count' => $node->isFolder() ? $node->files_count : null,
+                'sha256' => $node->isFile() ? $node->sha256 : null,
+                'mtime' => $node->updated_at?->timestamp,
+                'mime' => $node->isFile() ? $node->mime : null,
+                'favorite' => true,
+            ])->values(),
+            'next_cursor' => null,
+        ]);
+    }
+
+    /**
+     * Star a file or folder (idempotent). A star is the account's own bookmark, not a change to the file, but it is still a
+     * change, so it needs a write token. Only what the token reaches can be starred, and not the token's own folder.
+     */
+    public function favorite(Request $request, Node $node): JsonResponse
+    {
+        $this->reachable($request, $node);
+
+        $request->user()->favorites()->syncWithoutDetaching([$node->id]);
+
+        return response()->json(['id' => $node->id, 'favorite' => true]);
+    }
+
+    /** Remove the star (idempotent), under the same rules as `favorite`. */
+    public function unfavorite(Request $request, Node $node): JsonResponse
+    {
+        $this->reachable($request, $node);
+
+        $request->user()->favorites()->detach($node->id);
+
+        return response()->json(['id' => $node->id, 'favorite' => false]);
+    }
+
+    private function reachable(Request $request, Node $node): void
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        abort_unless($token->reaches($node) && $node->id !== $token->rootFolder()?->id, 404);
+    }
+
+    /**
+     * The ids among $nodes that the account has starred, with one query.
+     *
+     * @param  Collection<int, Node>  $nodes
+     * @return list<int>
+     */
+    private function starred(Request $request, $nodes): array
+    {
+        if ($nodes->isEmpty()) {
+            return [];
+        }
+
+        return array_values($request->user()->favorites()->whereIn('nodes.id', $nodes->pluck('id'))->pluck('nodes.id')->map(fn ($id) => (int) $id)->all());
     }
 
     /**
@@ -261,6 +337,7 @@ class FileController extends Controller
             'q' => ['nullable', 'string', 'max:200'],
             'scope' => ['nullable', 'in:name,content'],
             'trashed' => ['nullable', 'in:1'],
+            'favorites' => ['nullable', 'in:1'],
             'type' => ['nullable', 'in:folder'],
         ]);
 
@@ -271,6 +348,10 @@ class FileController extends Controller
 
         if ($request->filled('trashed')) {
             return $this->trashed($request, $token, $root);
+        }
+
+        if ($request->filled('favorites')) {
+            return $this->favorites($request, $token, $root);
         }
 
         if ($request->filled('q')) {
@@ -440,6 +521,7 @@ class FileController extends Controller
 
         $more = $items->count() > self::PAGE;
         $items = $items->take(self::PAGE);
+        $starred = $this->starred($request, $items);
 
         return response()->json([
             'data' => $items->map(fn (Node $node) => [
@@ -450,6 +532,7 @@ class FileController extends Controller
                 'size' => $node->size,
                 'file_count' => $node->isFolder() ? $node->files_count : null,
                 'has_subfolders' => $node->isFolder() ? (bool) $node->getAttribute('has_subfolders') : null,
+                'favorite' => in_array($node->id, $starred, true),
                 'sha256' => $node->isFile() ? $node->sha256 : null,
                 'mtime' => $node->updated_at?->timestamp,
                 'mime' => $node->isFile() ? $node->mime : null,
