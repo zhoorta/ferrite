@@ -92,6 +92,15 @@ describe('the approval page', function () {
 });
 
 describe('swapping the code for a token', function () {
+    it('gives every permission by default', function () {
+        $this->actingAs($this->user);
+        $code = approveInBrowser($this->query);
+        auth()->logout();
+
+        $this->postJson('/api/v1/connect/token', ['code' => $code, 'verifier' => $this->verifier])
+            ->assertOk()->assertJson(['access' => 'read+write+replace+trash']);
+    });
+
     it('makes a token with the approved folder and access, listed with the others', function () {
         $this->actingAs($this->user);
         $code = approveInBrowser($this->query, ['folder' => (string) $this->folder->id, 'access' => 'write', 'expiry' => '30']);

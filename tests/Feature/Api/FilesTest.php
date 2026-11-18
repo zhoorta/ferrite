@@ -465,3 +465,56 @@ it('makes a thumbnail of an encrypted image and keeps its cache encrypted', func
     expect(getimagesizefromstring($response->getContent())[0])->toBe(256)
         ->and(str_starts_with($cached, 'FRT1'))->toBeTrue();
 });
+
+function apiPost(string $uri, string $plain)
+{
+    app('auth')->forgetGuards();
+
+    return test()->postJson($uri, [], ['Authorization' => "Bearer {$plain}"]);
+}
+
+it('lists the trash of the token folder for a trash token only', function () {
+    $full = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    $this->b->forceFill(['trashed_at' => now()])->save();
+    $this->outside->forceFill(['trashed_at' => now()])->save();
+    $gone = Node::factory()->for($this->user, 'owner')->create(['name' => 'Old', 'parent_id' => $this->album->id, 'trashed_at' => now()]);
+
+    $names = collect(apiGet('/api/v1/files?trashed=1', $full)->assertOk()->json('data'))->pluck('name')->all();
+
+    expect($names)->toContain('b.flac', 'Old')->not->toContain('secret.txt');
+    apiGet('/api/v1/files?trashed=1', $this->plain)->assertForbidden();
+
+    $whole = collect(apiGet('/api/v1/files?trashed=1', apiToken($this->user, null, ['read', 'trash']))->json('data'))->pluck('name')->all();
+    expect($whole)->toContain('secret.txt', 'b.flac');
+    expect($gone->fresh()->isTrashed())->toBeTrue();
+});
+
+it('restores an item, logs the token, and keeps the folder sizes right', function () {
+    $full = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    app(FolderSizes::class)->recount();
+    apiDelete("/api/v1/files/{$this->b->id}", $full)->assertOk();
+
+    apiPost("/api/v1/files/{$this->b->id}/restore", $full)->assertOk()->assertJson(['restored' => true, 'path' => 'b.flac']);
+
+    expect($this->b->fresh()->isTrashed())->toBeFalse()
+        ->and($this->music->fresh()->size)->toBe(10)
+        ->and(app(FolderSizes::class)->recount(fix: false)['wrong'])->toBe(0);
+    $activity = Activity::where('node_id', $this->b->id)->latest('id')->first();
+    expect($activity->action->value)->toBe('restored')->and($activity->meta)->toBe(['token' => 'test']);
+});
+
+it('needs the trash ability to restore, and never restores outside the token folder or into a trashed one', function () {
+    $full = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    $this->b->forceFill(['trashed_at' => now()])->save();
+    $this->outside->forceFill(['trashed_at' => now()])->save();
+
+    apiPost("/api/v1/files/{$this->b->id}/restore", apiToken($this->user, $this->music, ['read', 'write']))->assertForbidden();
+    apiPost("/api/v1/files/{$this->outside->id}/restore", $full)->assertNotFound();
+    apiPost("/api/v1/files/{$this->a->id}/restore", $full)->assertNotFound();   // not trashed
+
+    $this->album->forceFill(['trashed_at' => now()])->save();
+    $inside = Node::factory()->for($this->user, 'owner')->create(['name' => 'Inside', 'parent_id' => $this->album->id, 'trashed_at' => now()]);
+    apiPost("/api/v1/files/{$inside->id}/restore", $full)->assertStatus(409)->assertJson(['error' => 'parent_trashed']);
+
+    expect($this->outside->fresh()->isTrashed())->toBeTrue();
+});

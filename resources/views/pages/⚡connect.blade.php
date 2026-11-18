@@ -26,7 +26,7 @@ new #[Layout('layouts::auth'), Title('Connect an app')] class extends Component 
     /** Folder id as a string; empty is the whole drive. */
     public string $folder = '';
 
-    public string $access = 'replace';
+    public string $access = 'full';
 
     public string $expiry = '365';
 

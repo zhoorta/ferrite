@@ -15,7 +15,10 @@ class RestoreNode
      * Put a trashed node back where it was. If the folder it lived in is gone or trashed too, it
      * goes to the root; if its name is taken meanwhile, a " (2)", " (3)"... suffix is added.
      */
-    public function handle(User $actor, Node $node): Node
+    /**
+     * @param  array<string, mixed>  $meta  extra activity details, e.g. the API token that did it
+     */
+    public function handle(User $actor, Node $node, array $meta = []): Node
     {
         Gate::forUser($actor)->authorize('restore', $node);
 
@@ -32,7 +35,7 @@ class RestoreNode
 
         app(FolderSizes::class)->add($parentId, (int) $node->size, FolderSizes::filesIn($node));
 
-        ActivityLog::record(ActivityAction::Restored, $node, $actor);
+        ActivityLog::record(ActivityAction::Restored, $node, $actor, $meta);
 
         return $node;
     }

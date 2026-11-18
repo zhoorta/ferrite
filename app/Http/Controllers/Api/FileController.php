@@ -7,6 +7,7 @@ use App\Actions\Nodes\EnsureFolderPath;
 use App\Actions\Nodes\MoveNode;
 use App\Actions\Nodes\NodeName;
 use App\Actions\Nodes\RenameNode;
+use App\Actions\Nodes\RestoreNode;
 use App\Actions\Nodes\TrashNode;
 use App\Enums\NodeType;
 use App\Http\Controllers\Controller;
@@ -98,6 +99,72 @@ class FileController extends Controller
         return response()->json(['id' => $node->id, 'name' => $node->name, 'path' => $this->relativePath($node, $root?->id)]);
     }
 
+    /**
+     * What was thrown away from inside the token's folder (the whole drive for a whole-drive token): the items that sit
+     * at the top of the trash, newest first, with the path they had. Needs the trash ability, which also lets the token
+     * restore them; purging stays with the signed-in owner.
+     */
+    private function trashed(Request $request, ApiToken $token, ?Node $root): JsonResponse
+    {
+        abort_unless($token->can('trash'), 403, 'This token cannot do that.');
+
+        $items = Node::query()
+            ->whereKey(Node::trashRootIds($request->user()))
+            ->orderByDesc('trashed_at')
+            ->get()
+            ->filter(fn (Node $node) => $this->wasInside($node, $root))
+            ->take(self::PAGE)
+            ->values();
+
+        return response()->json([
+            'data' => $items->map(fn (Node $node) => [
+                'id' => $node->id,
+                'name' => $node->name,
+                'type' => $node->isFolder() ? 'folder' : 'file',
+                'path' => $this->relativePath($node, $root?->id),
+                'size' => $node->size,
+                'file_count' => $node->isFolder() ? $node->files_count : null,
+                'sha256' => $node->isFile() ? $node->sha256 : null,
+                'mtime' => $node->updated_at?->timestamp,
+                'mime' => $node->isFile() ? $node->mime : null,
+                'trashed_at' => $node->trashed_at?->timestamp,
+            ])->values(),
+            'next_cursor' => null,
+        ]);
+    }
+
+    /**
+     * Put a trashed item back where it was. A token limited to a folder only restores what was inside it and only when
+     * the folder it sat in is still there (it never lands outside the token's folder): otherwise 409 `parent_trashed`.
+     * A name taken meanwhile gets a " (2)" suffix, as in the web app.
+     */
+    public function restore(Request $request, Node $node, RestoreNode $restore): JsonResponse
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+        $root = $token->rootFolder();
+
+        abort_unless($node->owner_id === $token->tokenable_id && $node->trashed_at !== null && $this->wasInside($node, $root), 404);
+
+        if ($root !== null) {
+            $parent = $node->parent;
+
+            if ($parent === null || $parent->isTrashed()) {
+                return response()->json(['error' => 'parent_trashed'], 409);
+            }
+        }
+
+        $node = $restore->handle($request->user(), $node, ['token' => $token->name])->fresh();
+
+        return response()->json(['id' => $node->id, 'name' => $node->name, 'path' => $this->relativePath($node, $root?->id), 'restored' => true]);
+    }
+
+    /** Whether the node sits below the token's folder (any node of the drive for a whole-drive token). */
+    private function wasInside(Node $node, ?Node $root): bool
+    {
+        return $root === null || ($node->id !== $root->id && in_array($root->id, $node->selfAndAncestorIds(), true));
+    }
+
     /** The file's path below the token's folder, with the names as stored. */
     private function relativePath(Node $file, ?int $rootId): string
     {
@@ -122,12 +189,17 @@ class FileController extends Controller
             'parent' => ['nullable', 'string', 'regex:/^(root|\d+)$/'],
             'q' => ['nullable', 'string', 'max:200'],
             'scope' => ['nullable', 'in:name,content'],
+            'trashed' => ['nullable', 'in:1'],
         ]);
 
         $user = $request->user();
         /** @var ApiToken $token */
         $token = $user->currentAccessToken();
         $root = $token->rootFolder();
+
+        if ($request->filled('trashed')) {
+            return $this->trashed($request, $token, $root);
+        }
 
         if ($request->filled('q')) {
             return $this->search($request, $root);
