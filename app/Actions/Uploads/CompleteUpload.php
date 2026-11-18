@@ -54,7 +54,8 @@ class CompleteUpload
         }
 
         $ownerId = $parent !== null ? $parent->owner_id : $actor->id;
-        $disk = $this->storage->default();
+        // The folder owner's disk, so a shared folder or a drop box never splits across disks.
+        $disk = $this->storage->forUser($ownerId === $actor->id ? $actor : User::query()->findOrFail($ownerId));
         $filesystem = $this->storage->filesystem($disk);
         $key = $this->storage->newKey();
 

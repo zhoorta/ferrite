@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Node;
 use App\Models\StorageDisk;
+use App\Models\User;
 use App\Support\Encryption\BlobCipher;
 use App\Support\Encryption\DecryptionFailed;
 use App\Support\Encryption\KeyRing;
@@ -21,6 +22,14 @@ use RuntimeException;
  */
 class StorageManager
 {
+    /**
+     * The disk a user's new files go to: the one an admin assigned, else the default.
+     */
+    public function forUser(User $user): StorageDisk
+    {
+        return ($user->disk_id !== null ? StorageDisk::query()->find($user->disk_id) : null) ?? $this->default();
+    }
+
     /**
      * The disk new files go to. A local disk is created on first use.
      */

@@ -23,6 +23,10 @@ class DeleteStorageDisk
             throw ValidationException::withMessages(['disk' => __('Make another disk the default first.')]);
         }
 
+        if (User::query()->where('disk_id', $disk->id)->exists()) {
+            throw ValidationException::withMessages(['disk' => __('This disk is still assigned to users.')]);
+        }
+
         if ($disk->nodes()->exists() || $disk->versions()->exists()) {
             throw ValidationException::withMessages(['disk' => __('This disk still holds files.')]);
         }

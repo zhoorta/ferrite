@@ -17,7 +17,7 @@ class SaveUser
     /**
      * Create a user, or update one, on behalf of an admin. Admins cannot remove their own admin role.
      *
-     * @param  array{name?: mixed, email?: mixed, password?: mixed, role?: mixed, quota_gb?: mixed}  $data
+     * @param  array{name?: mixed, email?: mixed, password?: mixed, role?: mixed, quota_gb?: mixed, disk_id?: mixed}  $data
      *
      * @throws ValidationException
      */
@@ -37,7 +37,7 @@ class SaveUser
      * `ferrite:user` command. Accounts made this way are trusted, so e-mail is marked verified. On edit
      * a blank password keeps the current one and a blank quota means unlimited.
      *
-     * @param  array{name?: mixed, email?: mixed, password?: mixed, role?: mixed, quota_gb?: mixed}  $data
+     * @param  array{name?: mixed, email?: mixed, password?: mixed, role?: mixed, quota_gb?: mixed, disk_id?: mixed}  $data
      *
      * @throws ValidationException
      */
@@ -49,12 +49,18 @@ class SaveUser
             'password' => [$user === null ? 'required' : 'nullable', 'string', Password::default()],
             'role' => ['required', Rule::enum(UserRole::class)],
             'quota_gb' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'disk_id' => ['nullable', 'integer', Rule::exists('storage_disks', 'id')],
         ])->validate();
 
         $user ??= new User;
         $user->fill(['name' => $validated['name'], 'email' => $validated['email']]);
         $user->role = UserRole::from($validated['role']);
         $user->quota_bytes = blank($validated['quota_gb'] ?? null) ? null : (int) round((float) $validated['quota_gb'] * self::BYTES_PER_GB);
+
+        // Only touched when given, so `ferrite:user` leaves an assigned disk alone.
+        if (array_key_exists('disk_id', $data)) {
+            $user->disk_id = blank($validated['disk_id'] ?? null) ? null : (int) $validated['disk_id'];
+        }
 
         if (filled($validated['password'] ?? null)) {
             $user->password = $validated['password'];

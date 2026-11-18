@@ -4,6 +4,7 @@ use App\Actions\Users\DeleteUser;
 use App\Actions\Users\SaveUser;
 use App\Actions\Users\SetUserDisabled;
 use App\Enums\UserRole;
+use App\Models\StorageDisk;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,6 +28,8 @@ new #[Title('Users')] class extends Component {
 
     public string $quotaGb = '';
 
+    public string $diskId = '';
+
     public function mount(): void
     {
         Gate::authorize('admin');
@@ -41,11 +44,20 @@ new #[Title('Users')] class extends Component {
         return User::query()->orderBy('name')->get();
     }
 
+    /**
+     * @return Collection<int, StorageDisk>
+     */
+    #[Computed]
+    public function disks(): Collection
+    {
+        return StorageDisk::query()->orderBy('name')->get();
+    }
+
     public function add(): void
     {
         Gate::authorize('admin');
 
-        $this->reset('userId', 'name', 'email', 'password', 'quotaGb');
+        $this->reset('userId', 'name', 'email', 'password', 'quotaGb', 'diskId');
         $this->role = 'user';
         $this->resetErrorBag();
         Flux::modal('user')->show();
@@ -63,6 +75,7 @@ new #[Title('Users')] class extends Component {
         $this->password = '';
         $this->role = $user->role->value;
         $this->quotaGb = $user->quota_bytes === null ? '' : (string) round($user->quota_bytes / 1024 ** 3, 2);
+        $this->diskId = (string) ($user->disk_id ?? '');
         $this->resetErrorBag();
         Flux::modal('user')->show();
     }
@@ -75,6 +88,7 @@ new #[Title('Users')] class extends Component {
             'password' => $this->password,
             'role' => $this->role,
             'quota_gb' => $this->quotaGb,
+            'disk_id' => $this->diskId,
         ]);
 
         $this->reset('password');
@@ -181,6 +195,16 @@ new #[Title('Users')] class extends Component {
             <flux:error name="role" />
 
             <flux:input wire:model="quotaGb" type="number" min="0" step="any" :label="__('Quota (GB)')" :placeholder="__('Unlimited')" />
+
+            @if ($this->disks->count() > 1)
+                <flux:select wire:model="diskId" :label="__('Storage disk')" :description="__('Where new files go. Files already stored stay where they are.')">
+                    <flux:select.option value="">{{ __('Default disk') }}</flux:select.option>
+                    @foreach ($this->disks as $disk)
+                        <flux:select.option value="{{ $disk->id }}">{{ $disk->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="disk_id" />
+            @endif
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="filled">{{ __('Cancel') }}</flux:button></flux:modal.close>

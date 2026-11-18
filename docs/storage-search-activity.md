@@ -11,6 +11,7 @@ Admins manage disks under **Storage** (`/admin/storage`, gate `admin`, i.e. `use
 | SFTP | host, port, username, password and/or private key (+ passphrase), host fingerprint, absolute folder |
 
 - **New uploads go to the default disk.** Files already stored stay on the disk they were written to (`nodes.disk_id`), so changing the default never moves data and old files keep working.
+- **A user can have their own disk.** An admin can pick a disk for a user in the user's edit dialog (shown once there is more than one disk); empty means the default disk, so nobody needs configuring. It decides where *new* files go and never moves existing ones. A file uploaded into someone else's shared folder, or through a drop-box link, goes to the *folder owner's* disk, so a folder does not split across disks. Identical content is only shared between files on the same disk. A disk assigned to users, the default, or one that holds files cannot be removed. Quota is per user, whatever the disk. Encryption follows the disk (see `encryption.md`), and backups must cover every disk.
 - **Test** writes, reads back and deletes a probe file and shows the error if it fails. Do it after adding a disk.
 - Secrets are stored encrypted, are never sent back to the browser, and a blank secret field keeps the stored value. The driver of an existing disk cannot be changed.
 - A disk that is the default, or still holds files, cannot be removed. Removing a disk never touches the remote storage.

@@ -22,7 +22,7 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
 - **Trash** with restore, permanent delete and automatic purge.
 - **Sharing**: with other users (view or edit) and with **links** (optional password and expiry, view-only, revoke), and **upload links** that let guests add files to one folder without seeing it.
 - **Several users** with quotas, an admin screen, two-factor authentication and passkeys.
-- **Storage disks**: local folder, S3-compatible or SFTP, switchable per instance. New uploads go to the default disk.
+- **Storage disks**: local folder, S3-compatible or SFTP, switchable per instance. New uploads go to the default disk, or to a disk an admin assigns to a user.
 - **Search** by name and **inside files** (text, Markdown, code, CSV and PDF; SQLite, MySQL and MariaDB), plus an **activity log**.
 
 Not included (on purpose, for now): sync clients, WebDAV, office document previews, real-time collaboration, OCR for scanned documents, versioning.
