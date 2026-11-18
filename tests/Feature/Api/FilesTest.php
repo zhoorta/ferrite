@@ -251,12 +251,12 @@ it('does not let a read token move anything', function () {
     expect($this->a->fresh()->parent_id)->toBe($this->album->id);
 });
 
-it('answers 404 for files outside the folder, folders, trashed files and other accounts, and cannot leave the folder', function () {
+it('answers 404 for files outside the folder, trashed files and other accounts, and cannot leave the folder', function () {
     $write = apiToken($this->user, $this->music, ['read', 'write']);
     $theirs = storedFile(User::factory()->create(), 'theirs.flac', 'x', null);
     $this->b->forceFill(['trashed_at' => now()])->save();
 
-    foreach ([$this->outside, $this->album, $this->b, $theirs] as $node) {
+    foreach ([$this->outside, $this->b, $theirs] as $node) {
         apiMove($node->id, '', $write)->assertNotFound();
     }
 
@@ -329,10 +329,35 @@ it('does not let a read token rename, and 404s outside the folder, trashed or ot
     expect($this->outside->fresh()->name)->toBe('secret.txt');
 });
 
-it('still cannot move a folder', function () {
+it('moves a folder with what is in it, keeping the sizes right, but not into itself or the token folder', function () {
     $write = apiToken($this->user, $this->music, ['read', 'write']);
+    $other = Node::factory()->for($this->user, 'owner')->create(['name' => 'Other', 'parent_id' => $this->music->id]);
+    app(FolderSizes::class)->recount();
 
-    apiMoveRaw($this->album->id, ['folder' => ''], $write)->assertNotFound();
+    apiMoveRaw($this->album->id, ['folder' => 'Other'], $write)->assertOk()->assertJson(['path' => 'Other/Album']);
+
+    expect($this->album->fresh()->parent_id)->toBe($other->id)
+        ->and($other->fresh()->size)->toBe(4)
+        ->and(app(FolderSizes::class)->recount(fix: false)['wrong'])->toBe(0);
+
+    apiMoveRaw($this->album->id, ['folder' => 'Other/Album'], $write)->assertUnprocessable();
+    apiMoveRaw($this->music->id, ['folder' => ''], $write)->assertNotFound();
+    apiMoveRaw($this->outside->id, ['folder' => ''], $write)->assertNotFound();
+});
+
+it('refuses to move a folder where its name is taken', function () {
+    $write = apiToken($this->user, $this->music, ['read', 'write']);
+    $other = Node::factory()->for($this->user, 'owner')->create(['name' => 'Other', 'parent_id' => $this->music->id]);
+    Node::factory()->for($this->user, 'owner')->create(['name' => 'Album', 'parent_id' => $other->id]);
+
+    apiMoveRaw($this->album->id, ['folder' => 'Other'], $write)->assertStatus(409);
+});
+
+it('lists only the folders of a folder with type=folder', function () {
+    $rows = apiGet('/api/v1/files?parent=root&type=folder', $this->plain)->assertOk()->json('data');
+
+    expect(collect($rows)->pluck('name')->all())->toBe(['Album']);
+    apiGet('/api/v1/files?parent=root&type=nope', $this->plain)->assertUnprocessable();
 });
 
 function apiMkdir(array $body, ?string $plain)

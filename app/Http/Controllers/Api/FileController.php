@@ -47,10 +47,10 @@ class FileController extends Controller
     }
 
     /**
-     * Change a node, one thing per request. `folder` moves a file to another folder of the token's folder, keeping its
+     * Change a node, one thing per request. `folder` moves a file or a folder (with what is in it) to another folder of the token's folder, keeping its
      * name: the path of the destination relative to the token's folder ("" for the folder itself); missing folders on the
      * way are created, like uploads. `name` renames a file or a folder inside the token's folder (never the token's own
-     * folder). Neither replaces: a name already taken there is a 409 and nothing changes. Folders cannot be moved.
+     * folder). Neither replaces: a name already taken there is a 409 and nothing changes.
      * Needs a write token.
      */
     public function update(Request $request, Node $node, EnsureFolderPath $ensure, MoveNode $mover, RenameNode $renamer): JsonResponse
@@ -81,7 +81,7 @@ class FileController extends Controller
 
             $renamer->handle($request->user(), $node, $name, ['token' => $token->name]);
         } else {
-            abort_unless($node->isFile(), 404);
+            abort_if($node->id === $root?->id, 404);
 
             $folder = trim((string) $data['folder'], '/');
             $segments = $folder === '' ? [] : explode('/', $folder);
@@ -231,6 +231,7 @@ class FileController extends Controller
             'q' => ['nullable', 'string', 'max:200'],
             'scope' => ['nullable', 'in:name,content'],
             'trashed' => ['nullable', 'in:1'],
+            'type' => ['nullable', 'in:folder'],
         ]);
 
         $user = $request->user();
@@ -400,6 +401,7 @@ class FileController extends Controller
             ->where('owner_id', $user->id)
             ->whereNull('trashed_at')
             ->where('parent_id', $folder?->id)
+            ->when($request->query('type') === 'folder', fn ($query) => $query->where('type', NodeType::Folder))
             ->where('id', '>', (int) $request->query('cursor', 0))
             ->orderBy('id')
             ->limit(self::PAGE + 1)
