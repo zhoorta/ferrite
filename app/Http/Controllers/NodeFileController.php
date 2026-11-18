@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ActivityAction;
 use App\Models\Node;
+use App\Models\NodeVersion;
 use App\Support\ActivityLog;
 use App\Support\NodeResponder;
 use Illuminate\Http\Request;
@@ -30,6 +31,18 @@ class NodeFileController extends Controller
         $this->authorizeFile($node);
 
         return $this->responder->file($request, $node, inline: true);
+    }
+
+    /**
+     * An earlier version of a file, as a download. Needs the right to change the file (an owner or editor): the old
+     * content may be what someone replaced on purpose.
+     */
+    public function version(Request $request, Node $node, NodeVersion $version): Response
+    {
+        Gate::authorize('update', $node);
+        abort_unless($version->node_id === $node->id && $node->isFile() && ! $node->isTrashed(), 404);
+
+        return $this->responder->file($request, $version->asNode($node));
     }
 
     public function thumbnail(Request $request, Node $node): Response

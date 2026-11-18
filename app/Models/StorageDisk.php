@@ -46,4 +46,12 @@ class StorageDisk extends Model
     {
         return $this->hasMany(Node::class, 'disk_id');
     }
+
+    /**
+     * @return HasMany<NodeVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(NodeVersion::class, 'disk_id');
+    }
 }

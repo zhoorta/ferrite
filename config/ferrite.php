@@ -50,6 +50,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Versions
+    |--------------------------------------------------------------------------
+    |
+    | Replacing a file (an upload over the same name, answered "Replace") keeps its earlier content as a version,
+    | up to `versions_keep` per file, oldest dropped first; 0 turns versions off and a replace deletes the old
+    | content as before. `versions_days` also drops versions older than that many days (0: no age limit). Versions
+    | count against the owner's quota. See docs/versions.md.
+    |
+    */
+
+    'versions_keep' => (int) env('FERRITE_VERSIONS_KEEP', 5),
+
+    'versions_days' => (int) env('FERRITE_VERSIONS_DAYS', 0),
+
+    /*
+    |--------------------------------------------------------------------------
     | Integrity scrub
     |--------------------------------------------------------------------------
     |

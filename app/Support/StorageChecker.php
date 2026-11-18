@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\NodeType;
 use App\Models\Node;
+use App\Models\NodeVersion;
 use App\Models\StorageDisk;
 use App\Models\Upload;
 use App\Support\Encryption\BlobCipher;
@@ -48,7 +49,7 @@ class StorageChecker
         $total = $limit > 0 ? min($limit, $total) : $total;
 
         foreach ($this->blobRows($only, $limit) as $row) {
-            $sample = Node::query()->find((int) $row->first_id);
+            $sample = $row->src === 'v' ? NodeVersion::query()->find((int) $row->first_id)?->asNode() : Node::query()->find((int) $row->first_id);
 
             if ($sample === null) {
                 continue;
@@ -60,7 +61,9 @@ class StorageChecker
             if ($problem !== null) {
                 $problems[] = ['kind' => $problem[0], 'disk' => $disk->name, 'path' => (string) $row->path, 'node_id' => $sample->id, 'name' => $sample->name, 'detail' => $problem[1]];
             } elseif ($verify) {
-                DB::table('nodes')->where('disk_id', $disk->id)->where('path', $row->path)->update(['verified_at' => now()]);
+                foreach (['nodes', 'node_versions'] as $table) {
+                    DB::table($table)->where('disk_id', $disk->id)->where('path', $row->path)->update(['verified_at' => now()]);
+                }
             }
 
             $checked++;
@@ -116,7 +119,10 @@ class StorageChecker
             return [];
         }
 
-        $used = DB::table('nodes')->where('disk_id', $disk->id)->whereIn('path', $paths)->pluck('path')->all();
+        $used = [
+            ...DB::table('nodes')->where('disk_id', $disk->id)->whereIn('path', $paths)->pluck('path')->all(),
+            ...DB::table('node_versions')->where('disk_id', $disk->id)->whereIn('path', $paths)->pluck('path')->all(),
+        ];
         $pending = Upload::query()->where('disk_id', $disk->id)->whereIn('blob_key', $paths)->pluck('blob_key')->all();
 
         return array_values(array_diff($paths, $used, $pending));
@@ -163,57 +169,56 @@ class StorageChecker
     }
 
     /**
-     * One row per blob: the first node that uses it, and where it is. With a limit, the least recently verified first
-     * (so repeated runs with a limit cover everything); without one, in id order.
+     * One row per blob and table (`src`: n for a file, v for a version): the first row that uses it, and where it
+     * is. With a limit, the least recently verified first across both (so repeated runs with a limit cover
+     * everything); without one, files first and then versions, in id order.
      *
      * @return Generator<int, \stdClass>
      */
     private function blobRows(?StorageDisk $only, int $limit): Generator
     {
         if ($limit > 0) {
-            yield from $this->query($only)
-                ->orderByRaw('min(verified_at) is not null, min(verified_at), min(id)')
+            yield from DB::query()
+                ->fromSub($this->query('n', $only)->unionAll($this->query('v', $only)), 'blobs')
+                ->orderByRaw('vat is not null, vat, src, first_id')
                 ->limit($limit)
                 ->get();
 
             return;
         }
 
-        $last = 0;
+        foreach (['n', 'v'] as $src) {
+            $last = 0;
 
-        while (true) {
-            $rows = $this->query($only)->havingRaw('min(id) > ?', [$last])->orderByRaw('min(id)')->limit(200)->get();
+            while (true) {
+                $rows = $this->query($src, $only)->havingRaw('min(id) > ?', [$last])->orderByRaw('min(id)')->limit(200)->get();
 
-            if ($rows->isEmpty()) {
-                return;
-            }
+                if ($rows->isEmpty()) {
+                    break;
+                }
 
-            foreach ($rows as $row) {
-                $last = max($last, (int) $row->first_id);
+                foreach ($rows as $row) {
+                    $last = max($last, (int) $row->first_id);
 
-                yield $row;
+                    yield $row;
+                }
             }
         }
     }
 
     private function count(?StorageDisk $only): int
     {
-        return (int) DB::table(fn ($query) => $this->scope($query->from('nodes'), $only)->groupBy('disk_id', 'path')->selectRaw('min(id) as first_id'), 'blobs')->count();
+        return (int) DB::query()->fromSub($this->query('n', $only)->unionAll($this->query('v', $only)), 'blobs')->count();
     }
 
-    private function query(?StorageDisk $only): Builder
+    private function query(string $src, ?StorageDisk $only): Builder
     {
-        return $this->scope(DB::table('nodes'), $only)
-            ->groupBy('disk_id', 'path')
-            ->selectRaw('min(id) as first_id, disk_id, path');
-    }
-
-    private function scope(Builder $query, ?StorageDisk $only): Builder
-    {
-        return $query
-            ->where('type', NodeType::File->value)
+        $query = DB::table($src === 'n' ? 'nodes' : 'node_versions')
+            ->when($src === 'n', fn ($query) => $query->where('type', NodeType::File->value))
             ->whereNotNull('path')
             ->whereNotNull('disk_id')
             ->when($only !== null, fn ($query) => $query->where('disk_id', $only?->id));
+
+        return $query->groupBy('disk_id', 'path')->selectRaw('? as src, min(id) as first_id, disk_id, path, min(verified_at) as vat', [$src]);
     }
 }

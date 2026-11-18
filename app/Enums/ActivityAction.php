@@ -5,6 +5,8 @@ namespace App\Enums;
 enum ActivityAction: string
 {
     case Uploaded = 'uploaded';
+    case RestoredVersion = 'restored_version';
+    case DeletedVersion = 'deleted_version';
     case CreatedFolder = 'created_folder';
     case Renamed = 'renamed';
     case Moved = 'moved';

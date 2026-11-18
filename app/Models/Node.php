@@ -56,6 +56,14 @@ class Node extends Model
     }
 
     /**
+     * @return HasMany<NodeVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(NodeVersion::class)->latest('id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function owner(): BelongsTo

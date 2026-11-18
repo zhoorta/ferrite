@@ -446,6 +446,13 @@ new #[Title('Files')] class extends Component {
         unset($this->sharing);
     }
 
+    /** A file's content changed in the versions dialog: redraw the list (size, date). */
+    #[On('versions-changed')]
+    public function refreshVersions(): void
+    {
+        unset($this->items);
+    }
+
     public function toggleFavorite(int $id): void
     {
         $node = Node::findOrFail($id);
@@ -807,6 +814,7 @@ new #[Title('Files')] class extends Component {
     @endif
 
     <livewire:pages::files.share-dialog />
+    <livewire:pages::files.versions-dialog />
 
     <x-preview-modal :node="$this->previewNode" :kind="$this->previewKind" :text="$this->previewText" :nav="$this->previewNeighbours" />
 

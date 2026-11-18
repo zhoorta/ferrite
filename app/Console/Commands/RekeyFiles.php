@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Actions\Nodes\PurgeNode;
 use App\Enums\NodeType;
 use App\Models\Node;
+use App\Models\NodeVersion;
 use App\Models\StorageDisk;
 use App\Support\Encryption\BlobConverter;
 use App\Support\Encryption\KeyRing;
@@ -33,52 +34,57 @@ class RekeyFiles extends Command
         $disks = [];
         $done = 0;
         $failed = 0;
-        $last = 0;
 
-        while (true) {
-            $batch = DB::table('nodes')
-                ->where('type', NodeType::File->value)
-                ->whereNotNull('path')
-                ->whereNotNull('encryption_key_id')
-                ->where('encryption_key_id', '!=', $current)
-                ->groupBy('disk_id', 'path')
-                ->havingRaw('min(id) > ?', [$last])
-                ->orderByRaw('min(id)')
-                ->limit(50)
-                ->selectRaw('min(id) as first_id, disk_id, path')
-                ->get();
+        foreach (['nodes', 'node_versions'] as $table) {
+            $last = 0;
 
-            if ($batch->isEmpty()) {
-                break;
-            }
-
-            foreach ($batch as $row) {
-                $last = max($last, (int) $row->first_id);
-
-                if ($limit > 0 && $done + $failed >= $limit) {
-                    break 2;
-                }
-
-                $sample = Node::query()->findOrFail((int) $row->first_id);
-                $disk = $disks[$row->disk_id] ??= StorageDisk::query()->findOrFail((int) $row->disk_id);
-
-                try {
-                    [$key, $keyId] = $converter->rewrap($disk, $sample, $verify);
-                } catch (Throwable $e) {
-                    $failed++;
-                    $this->error("File {$sample->id} ({$sample->name}): {$e->getMessage()}");
-
-                    continue;
-                }
-
-                DB::table('nodes')
-                    ->where('disk_id', $disk->id)
-                    ->where('path', $row->path)
+            while (true) {
+                $batch = DB::table($table)
+                    ->when($table === 'nodes', fn ($query) => $query->where('type', NodeType::File->value))
+                    ->whereNotNull('path')
+                    ->whereNotNull('encryption_key_id')
                     ->where('encryption_key_id', '!=', $current)
-                    ->update(['path' => $key, 'encryption_key_id' => $keyId]);
+                    ->groupBy('disk_id', 'path')
+                    ->havingRaw('min(id) > ?', [$last])
+                    ->orderByRaw('min(id)')
+                    ->limit(50)
+                    ->selectRaw('min(id) as first_id, disk_id, path')
+                    ->get();
 
-                $purge->deleteBlobs([['size' => 0, 'disk_id' => $disk->id, 'path' => (string) $row->path]]);
-                $done++;
+                if ($batch->isEmpty()) {
+                    break;
+                }
+
+                foreach ($batch as $row) {
+                    $last = max($last, (int) $row->first_id);
+
+                    if ($limit > 0 && $done + $failed >= $limit) {
+                        break 3;
+                    }
+
+                    $sample = $table === 'nodes' ? Node::query()->findOrFail((int) $row->first_id) : NodeVersion::query()->findOrFail((int) $row->first_id)->asNode();
+                    $disk = $disks[$row->disk_id] ??= StorageDisk::query()->findOrFail((int) $row->disk_id);
+
+                    try {
+                        [$key, $keyId] = $converter->rewrap($disk, $sample, $verify);
+                    } catch (Throwable $e) {
+                        $failed++;
+                        $this->error("File {$sample->id} ({$sample->name}): {$e->getMessage()}");
+
+                        continue;
+                    }
+
+                    foreach (['nodes', 'node_versions'] as $target) {
+                        DB::table($target)
+                            ->where('disk_id', $disk->id)
+                            ->where('path', $row->path)
+                            ->where('encryption_key_id', '!=', $current)
+                            ->update(['path' => $key, 'encryption_key_id' => $keyId]);
+                    }
+
+                    $purge->deleteBlobs([['size' => 0, 'disk_id' => $disk->id, 'path' => (string) $row->path]]);
+                    $done++;
+                }
             }
         }
 

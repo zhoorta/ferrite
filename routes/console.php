@@ -14,6 +14,7 @@ Schedule::command('uploads:prune')->daily();
 Schedule::command('activity:prune')->daily();
 Schedule::command('trash:purge')->daily();
 Schedule::command('search:prune')->daily();
+Schedule::command('versions:prune')->daily();
 // Reads files that were never indexed: PDFs without a queue worker, or anything whose job was lost.
 Schedule::command('search:index')->hourly()->when(fn () => ContentSearch::enabled());
 // The integrity scrub: reads back this many blobs a night, the least recently verified first, and logs an error

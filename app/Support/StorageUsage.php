@@ -166,6 +166,7 @@ class StorageUsage
      */
     public function physicalByDisk(): array
     {
+        // The files' blobs and those of their earlier versions (docs/versions.md).
         return DB::table('nodes')
             ->selectRaw('disk_id, sum(size) as bytes')
             ->fromSub(
@@ -173,7 +174,8 @@ class StorageUsage
                     ->selectRaw('disk_id, path, max(size) as size')
                     ->where('type', NodeType::File->value)
                     ->whereNotNull('path')
-                    ->groupBy('disk_id', 'path'),
+                    ->groupBy('disk_id', 'path')
+                    ->union(DB::table('node_versions')->selectRaw('disk_id, path, max(size) as size')->groupBy('disk_id', 'path')),
                 'blobs',
             )
             ->groupBy('disk_id')

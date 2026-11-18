@@ -145,7 +145,7 @@ it('does not let users act on other people\'s nodes', function () {
 
 it('previews text files and offers a download for the rest', function () {
     $text = storedFile($this->user, 'notes.txt', 'remember the milk');
-    $binary = storedFile($this->user, 'app.exe', 'MZ', mime: 'application/x-msdownload');
+    $binary = storedFile($this->user, 'app.exe', 'MZ-binary-marker', mime: 'application/x-msdownload');
 
     Livewire::test('pages::files.browser')
         ->call('preview', $text->id)
@@ -156,7 +156,7 @@ it('previews text files and offers a download for the rest', function () {
         ->assertSet('previewId', null)
         ->call('preview', $binary->id)
         ->assertSee('No preview available')
-        ->assertDontSee('MZ');
+        ->assertDontSee('binary-marker');
 });
 
 it('escapes text in the preview', function () {

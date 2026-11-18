@@ -11,6 +11,11 @@
     @can('update', $item)
         <flux:menu.item icon="pencil" wire:click="startRename({{ $item->id }})">{{ __('Rename') }}</flux:menu.item>
     @endcan
+    @if ($item->isFile())
+        @can('update', $item)
+            <flux:menu.item icon="clock" wire:click="$dispatch('versions-node', { id: {{ $item->id }} })" data-test="versions-menu">{{ __('Versions') }}</flux:menu.item>
+        @endcan
+    @endif
     @can('share', $item)
         <flux:menu.item icon="share" wire:click="$dispatch('share-node', { id: {{ $item->id }} })">{{ __('Share') }}</flux:menu.item>
     @endcan

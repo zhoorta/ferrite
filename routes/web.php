@@ -73,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('nodes/zip', [NodeFileController::class, 'zipSelection'])->name('nodes.zip-selection');
     Route::get('nodes/{node}/download', [NodeFileController::class, 'download'])->name('nodes.download');
     Route::get('nodes/{node}/preview', [NodeFileController::class, 'preview'])->name('nodes.preview');
+    Route::get('nodes/{node}/versions/{version}', [NodeFileController::class, 'version'])->whereNumber(['node', 'version'])->name('nodes.version');
     Route::get('nodes/{node}/thumbnail', [NodeFileController::class, 'thumbnail'])->name('nodes.thumbnail');
     Route::get('nodes/{node}/zip', [NodeFileController::class, 'zip'])->name('nodes.zip');
 

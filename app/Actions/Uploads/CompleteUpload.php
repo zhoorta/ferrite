@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Support\ActivityLog;
 use App\Support\Demo;
 use App\Support\StorageManager;
+use App\Support\VersionKeeper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,7 @@ use Throwable;
 
 class CompleteUpload
 {
-    public function __construct(private StorageManager $storage) {}
+    public function __construct(private StorageManager $storage, private VersionKeeper $versions) {}
 
     /**
      * Move a fully received upload to its disk and create the file node, charging the owner's quota.
@@ -70,11 +71,15 @@ class CompleteUpload
             [$written, $keyId] = $this->write($upload, $disk, $key, $tmp);
         }
 
-        // The blob a replaced file used to have, once nothing points at it any more (see below).
+        // The blob a replaced file used to have, once nothing points at it any more (see below), and the blobs of
+        // versions dropped to make room for a new one. A replaced file's old content is kept as a version instead
+        // when versions are on.
         $replaced = null;
+        $pruned = [];
+        $keptVersion = false;
 
         try {
-            $node = DB::transaction(function () use ($upload, $actor, $ownerId, $parent, $disk, $tmp, &$key, &$written, &$keyId, &$replaced, $sha256, $mime) {
+            $node = DB::transaction(function () use ($upload, $actor, $ownerId, $parent, $disk, $tmp, &$key, &$written, &$keyId, &$replaced, &$pruned, &$keptVersion, $sha256, $mime) {
                 // FailUpload (a timeout in uploads:prune) may have given up on it meanwhile and
                 // removed what it wrote; the same lock decides which of the two wins.
                 $current = Upload::query()->lockForUpdate()->find($upload->id);
@@ -93,8 +98,19 @@ class CompleteUpload
 
                 $existing = $upload->replace ? $this->replaceable($actor, $ownerId, $parent?->id, $upload->name) : null;
 
-                // Replacing only needs room for what the file grows by.
+                // Replacing only needs room for what the file grows by, or for the whole new content when the old one
+                // stays as a version. Versions never get in the way of a replace: when the quota cannot hold them
+                // the old content is let go, as it is with versions off.
                 $growth = $upload->size - ($existing === null ? 0 : $existing->size);
+                $keptVersion = $existing !== null && $this->versions->wanted($existing, $sha256);
+
+                if ($keptVersion) {
+                    if ($owner->quota_bytes !== null && $upload->size > $owner->remainingBytes()) {
+                        $keptVersion = false;
+                    } else {
+                        $growth = $upload->size;
+                    }
+                }
 
                 if ($owner->quota_bytes !== null && $growth > $owner->remainingBytes()) {
                     throw ValidationException::withMessages(['size' => __('Not enough storage space left.')]);
@@ -113,9 +129,19 @@ class CompleteUpload
 
                 if ($existing !== null) {
                     // Same node, new content: share links, favorites and the activity history stay with it.
-                    $replaced = ['disk_id' => $existing->disk_id, 'path' => $existing->path];
-                    $existing->forceFill(['disk_id' => $disk->id, 'path' => $key, 'size' => $upload->size, 'mime' => $mime, 'sha256' => $sha256, 'encryption_key_id' => $keyId])->save();
+                    if ($keptVersion) {
+                        $this->versions->keep($existing, $actor);
+                    } else {
+                        $replaced = ['disk_id' => $existing->disk_id, 'path' => $existing->path];
+                    }
+
+                    $existing->forceFill(['disk_id' => $disk->id, 'path' => $key, 'size' => $upload->size, 'mime' => $mime, 'sha256' => $sha256, 'encryption_key_id' => $keyId, 'verified_at' => null])->save();
                     $node = $existing;
+
+                    if ($keptVersion) {
+                        [$freedBytes, $pruned] = $this->versions->prune($existing);
+                        $growth -= $freedBytes;
+                    }
                 } else {
                     $node = new Node([
                         'parent_id' => $parent?->id,
@@ -160,11 +186,17 @@ class CompleteUpload
             app(PurgeNode::class)->deleteBlobs([['size' => 0, 'disk_id' => (int) $replaced['disk_id'], 'path' => (string) $replaced['path']]]);
         }
 
+        // Versions dropped for the limit go with their last reference.
+        if ($pruned !== []) {
+            app(PurgeNode::class)->deleteBlobs($pruned);
+        }
+
         if ($upload->share_id !== null) {
             ActivityLog::record(ActivityAction::LinkUploaded, $node, null, ['size' => $node->size, 'share_id' => $upload->share_id]);
         } else {
             ActivityLog::record(ActivityAction::Uploaded, $node, $actor, ['size' => $node->size]
-                + ($replaced !== null ? ['replaced' => true] : [])
+                + ($replaced !== null || $keptVersion ? ['replaced' => true] : [])
+                + ($keptVersion ? ['version' => true] : [])
                 + ($upload->api_token_name !== null ? ['token' => $upload->api_token_name] : []));
         }
 

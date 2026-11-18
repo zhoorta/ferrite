@@ -4,6 +4,7 @@ namespace App\Actions\Nodes;
 
 use App\Enums\ActivityAction;
 use App\Models\Node;
+use App\Models\NodeVersion;
 use App\Models\StorageDisk;
 use App\Models\User;
 use App\Support\ActivityLog;
@@ -72,11 +73,21 @@ class PurgeNode
             [$root->id],
         );
 
+        // The earlier versions of these files are stored too, and counted in the owner's quota.
+        $versions = DB::select(
+            'with recursive tree (id) as (
+                select id from nodes where id = ?
+                union all
+                select n.id from nodes n join tree on n.parent_id = tree.id
+            ) select v.size, v.disk_id, v.path from node_versions v join tree on v.node_id = tree.id',
+            [$root->id],
+        );
+
         return array_values(array_map(fn ($row) => [
             'size' => (int) $row->size,
             'disk_id' => (int) $row->disk_id,
             'path' => (string) $row->path,
-        ], $rows));
+        ], [...$rows, ...$versions]));
     }
 
     /**
@@ -91,7 +102,8 @@ class PurgeNode
 
         foreach ($files as $file) {
             // Identical files share a blob; it goes with its last node.
-            if (Node::query()->where('disk_id', $file['disk_id'])->where('path', $file['path'])->exists()) {
+            if (Node::query()->where('disk_id', $file['disk_id'])->where('path', $file['path'])->exists()
+                || NodeVersion::query()->where('disk_id', $file['disk_id'])->where('path', $file['path'])->exists()) {
                 continue;
             }
 

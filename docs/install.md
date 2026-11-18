@@ -238,6 +238,8 @@ Set in `ferrite.env` (Docker) or `.env` (standard install):
 | `SESSION_SECURE_COOKIE` | | `true` over HTTPS |
 | `FERRITE_REGISTRATION` | `false` | Let anyone register (not recommended) |
 | `FERRITE_TRASH_DAYS` | `30` | Days before trashed items are deleted for good |
+| `FERRITE_VERSIONS_KEEP` | `5` | Earlier versions kept when a file is replaced, per file; `0` turns versions off (`docs/versions.md`) |
+| `FERRITE_VERSIONS_DAYS` | `0` | Also drop versions older than this many days; `0` keeps them until the count limit |
 | `FERRITE_ACTIVITY_DAYS` | `90` | Days of activity log kept |
 | `FERRITE_CHUNK_SIZE` | `5242880` | Upload chunk size in bytes |
 | `FERRITE_SEARCH_CONTENTS` | `true` | Search inside text files and PDFs (see `docs/content-search.md`); `false` turns indexing and content results off |

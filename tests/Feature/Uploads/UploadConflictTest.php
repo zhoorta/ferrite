@@ -123,7 +123,8 @@ describe('replacing', function () {
         expect(Node::query()->where('owner_id', $this->user->id)->pluck('name')->sort()->values()->all())->toBe(['report (2).txt', 'report.txt']);
     });
 
-    it('replaces the content of the same file, keeping its identity', function () {
+    it('replaces the content of the same file, keeping its identity (versions off: the old content is deleted)', function () {
+        config(['ferrite.versions_keep' => 0]);
         $old = storedFile($this->user, 'report.txt', 'old');
         $this->user->forceFill(['used_bytes' => 3])->save();
         $share = Share::factory()->create(['node_id' => $old->id]);
@@ -211,7 +212,8 @@ describe('replacing', function () {
         $this->postJson(route('uploads.store'), ['path' => 'a.txt', 'size' => 13, 'replace' => true])->assertUnprocessable()->assertJsonValidationErrors('size');
     });
 
-    it('works for an editor in a shared folder, on the owner\'s account', function () {
+    it('works for an editor in a shared folder, on the owner\'s account (versions off)', function () {
+        config(['ferrite.versions_keep' => 0]);
         $owner = User::factory()->create();
         $folder = Node::factory()->for($owner, 'owner')->create(['name' => 'Team']);
         $file = storedFile($owner, 'plan.txt', 'v1', $folder);

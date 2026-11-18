@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Actions\Nodes\PurgeNode;
 use App\Enums\NodeType;
 use App\Models\Node;
+use App\Models\NodeVersion;
 use App\Models\StorageDisk;
 use App\Support\Encryption\BlobConverter;
 use App\Support\Encryption\KeyRing;
@@ -55,55 +56,61 @@ class EncryptFiles extends Command
         $done = 0;
         $failed = 0;
         $bytes = 0;
-        $last = 0;
 
-        while (true) {
-            $batch = DB::table('nodes')
-                ->where('disk_id', $disk->id)
-                ->where('type', NodeType::File->value)
-                ->whereNotNull('path')
-                ->whereNull('encryption_key_id')
-                ->groupBy('path')
-                ->havingRaw('min(id) > ?', [$last])
-                ->orderByRaw('min(id)')
-                ->limit(50)
-                ->selectRaw('min(id) as first_id, path')
-                ->get();
+        // The files' blobs, then the blobs of their earlier versions (docs/versions.md): both are stored the same way.
+        foreach (['nodes', 'node_versions'] as $table) {
+            $last = 0;
 
-            if ($batch->isEmpty()) {
-                break;
-            }
-
-            foreach ($batch as $row) {
-                $last = max($last, (int) $row->first_id);
-
-                if ($limit > 0 && $done + $failed >= $limit) {
-                    break 2;
-                }
-
-                $sample = Node::query()->findOrFail((int) $row->first_id);
-
-                try {
-                    [$key, $keyId] = $converter->encrypt($disk, $sample, $verify);
-                } catch (Throwable $e) {
-                    $failed++;
-                    $this->error("File {$sample->id} ({$sample->name}): {$e->getMessage()}");
-
-                    continue;
-                }
-
-                // Every node that shares this blob moves to the new one; updated_at stays as it was.
-                DB::table('nodes')
+            while (true) {
+                $batch = DB::table($table)
+                    ->when($table === 'nodes', fn ($query) => $query->where('type', NodeType::File->value))
                     ->where('disk_id', $disk->id)
-                    ->where('path', $row->path)
+                    ->whereNotNull('path')
                     ->whereNull('encryption_key_id')
-                    ->update(['path' => $key, 'encryption_key_id' => $keyId]);
+                    ->groupBy('path')
+                    ->havingRaw('min(id) > ?', [$last])
+                    ->orderByRaw('min(id)')
+                    ->limit(50)
+                    ->selectRaw('min(id) as first_id, path')
+                    ->get();
 
-                // The old blob goes once nothing points at it (a file added meanwhile may still have).
-                $purge->deleteBlobs([['size' => 0, 'disk_id' => $disk->id, 'path' => (string) $row->path]]);
+                if ($batch->isEmpty()) {
+                    break;
+                }
 
-                $done++;
-                $bytes += $sample->size;
+                foreach ($batch as $row) {
+                    $last = max($last, (int) $row->first_id);
+
+                    if ($limit > 0 && $done + $failed >= $limit) {
+                        break 3;
+                    }
+
+                    $sample = $table === 'nodes' ? Node::query()->findOrFail((int) $row->first_id) : NodeVersion::query()->findOrFail((int) $row->first_id)->asNode();
+
+                    try {
+                        [$key, $keyId] = $converter->encrypt($disk, $sample, $verify);
+                    } catch (Throwable $e) {
+                        $failed++;
+                        $this->error("File {$sample->id} ({$sample->name}): {$e->getMessage()}");
+
+                        continue;
+                    }
+
+                    // Everything that shares this blob moves to the new one; updated_at stays as it was.
+                    foreach (['nodes', 'node_versions'] as $target) {
+                        DB::table($target)
+                            ->where('disk_id', $disk->id)
+                            ->where('path', $row->path)
+                            ->whereNull('encryption_key_id')
+                            ->update(['path' => $key, 'encryption_key_id' => $keyId]);
+                    }
+
+                    // The old blob goes once nothing points at it (a file added meanwhile may still have).
+                    $purge->deleteBlobs([['size' => 0, 'disk_id' => $disk->id, 'path' => (string) $row->path]]);
+
+                    $done++;
+                    $bytes += $sample->size;
+                }
             }
         }
 

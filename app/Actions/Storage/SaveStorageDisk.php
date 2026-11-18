@@ -64,7 +64,7 @@ class SaveStorageDisk
             return $wanted;
         }
 
-        if ($disk !== null && $disk->nodes()->exists()) {
+        if ($disk !== null && ($disk->nodes()->exists() || $disk->versions()->exists())) {
             throw ValidationException::withMessages(['encrypt' => __('Encryption cannot be changed on a disk that already holds files. Run files:encrypt to convert it.')]);
         }
 
