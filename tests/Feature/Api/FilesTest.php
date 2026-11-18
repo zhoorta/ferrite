@@ -689,3 +689,29 @@ it('leaves trashed items out of the stars', function () {
     $this->b->forceFill(['trashed_at' => null])->save();
     expect(collect(apiGet('/api/v1/files?favorites=1', $write)->json('data'))->pluck('name')->all())->toBe(['b.flac']);
 });
+
+it('downloads a folder as a zip with everything in it, for a read token', function () {
+    $response = apiGet("/api/v1/files/{$this->music->id}/zip", $this->plain)->assertOk();
+
+    expect($response->headers->get('Content-Type'))->toBe('application/zip')
+        ->and(zipEntries($response))->toBe(['Album/' => null, 'Album/a.flac' => 'AAAA', 'b.flac' => 'BBBBBB']);
+});
+
+it('downloads a selection as one zip, folders with their content and files under their own name', function () {
+    $response = apiGet("/api/v1/zip?ids={$this->album->id},{$this->b->id}", $this->plain)->assertOk();
+
+    expect(zipEntries($response))->toBe(['Album/' => null, 'Album/a.flac' => 'AAAA', 'b.flac' => 'BBBBBB']);
+});
+
+it('keeps zips inside the token folder and refuses anything that is not a reachable folder', function () {
+    $this->b->forceFill(['trashed_at' => now()])->save();
+    $theirs = storedFile(User::factory()->create(), 'theirs.flac', 'x', null);
+
+    apiGet("/api/v1/files/{$this->a->id}/zip", $this->plain)->assertNotFound();           // a file: use content
+    apiGet("/api/v1/files/{$this->outside->id}/zip", $this->plain)->assertNotFound();
+    apiGet("/api/v1/zip?ids={$this->album->id},{$this->outside->id}", $this->plain)->assertNotFound();   // one unreachable: nothing
+    apiGet("/api/v1/zip?ids={$this->b->id}", $this->plain)->assertNotFound();             // trashed
+    apiGet("/api/v1/zip?ids={$theirs->id}", $this->plain)->assertNotFound();              // another account
+    apiGet('/api/v1/zip', $this->plain)->assertNotFound();
+    apiGet("/api/v1/files/{$this->music->id}/zip")->assertUnauthorized();
+});

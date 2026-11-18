@@ -120,18 +120,7 @@ class FileController extends Controller
             ->values();
 
         return response()->json([
-            'data' => $items->map(fn (Node $node) => [
-                'id' => $node->id,
-                'name' => $node->name,
-                'type' => $node->isFolder() ? 'folder' : 'file',
-                'path' => $this->relativePath($node, $root?->id),
-                'size' => $node->size,
-                'file_count' => $node->isFolder() ? $node->files_count : null,
-                'sha256' => $node->isFile() ? $node->sha256 : null,
-                'mtime' => $node->updated_at?->timestamp,
-                'mime' => $node->isFile() ? $node->mime : null,
-                'trashed_at' => $node->trashed_at?->timestamp,
-            ])->values(),
+            'data' => $items->map(fn (Node $node) => $this->item($node, $this->relativePath($node, $root?->id)) + ['trashed_at' => $node->trashed_at?->timestamp])->values(),
             'next_cursor' => null,
         ]);
     }
@@ -149,18 +138,7 @@ class FileController extends Controller
             ->values();
 
         return response()->json([
-            'data' => $items->map(fn (Node $node) => [
-                'id' => $node->id,
-                'name' => $node->name,
-                'type' => $node->isFolder() ? 'folder' : 'file',
-                'path' => $this->relativePath($node, $root?->id),
-                'size' => $node->size,
-                'file_count' => $node->isFolder() ? $node->files_count : null,
-                'sha256' => $node->isFile() ? $node->sha256 : null,
-                'mtime' => $node->updated_at?->timestamp,
-                'mime' => $node->isFile() ? $node->mime : null,
-                'favorite' => true,
-            ])->values(),
+            'data' => $items->map(fn (Node $node) => $this->item($node, $this->relativePath($node, $root?->id)) + ['favorite' => true])->values(),
             'next_cursor' => null,
         ]);
     }
@@ -312,6 +290,64 @@ class FileController extends Controller
         ], 201);
     }
 
+    /**
+     * A file or folder as the API shows it in every listing (folders listing, search, trash, favorites): the extra
+     * fields of each listing are added by the caller. Folders have a size and a file count, no hash or type.
+     *
+     * @return array<string, mixed>
+     */
+    private function item(Node $node, string $path): array
+    {
+        return [
+            'id' => $node->id,
+            'name' => $node->name,
+            'type' => $node->isFolder() ? 'folder' : 'file',
+            'path' => $path,
+            'size' => $node->size,
+            'file_count' => $node->isFolder() ? $node->files_count : null,
+            'sha256' => $node->isFile() ? $node->sha256 : null,
+            'mtime' => $node->updated_at?->timestamp,
+            'mime' => $node->isFile() ? $node->mime : null,
+        ];
+    }
+
+    /**
+     * A folder and everything in it (the trash left out) as one zip, built while it is sent, like the web app's
+     * download (the same `NodeResponder`). The token must reach the folder; files have `content` instead.
+     */
+    public function zip(Request $request, Node $node): Response
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        abort_unless($node->isFolder() && $token->reaches($node), 404);
+
+        return $this->responder->zip($node);
+    }
+
+    /**
+     * Several files and folders in one zip, each under its own name: `?ids=1,2,3` (at most 500). Everything asked for
+     * must be reachable by the token, or the answer is 404 and nothing is sent, so a client cannot probe for ids.
+     */
+    public function zipMany(Request $request): Response
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        $ids = collect(explode(',', (string) $request->query('ids')))
+            ->filter(fn (string $id) => ctype_digit($id))
+            ->map(fn (string $id) => (int) $id)
+            ->unique()
+            ->take(500)
+            ->values();
+
+        $nodes = Node::query()->whereKey($ids)->orderByDesc('type')->orderBy('name')->get();
+
+        abort_if($ids->isEmpty() || $nodes->count() !== $ids->count() || $nodes->contains(fn (Node $node) => ! $token->reaches($node)), 404);
+
+        return $this->responder->zipMany($nodes, 'Ferrite.zip');
+    }
+
     /** The file's path below the token's folder, with the names as stored. */
     private function relativePath(Node $file, ?int $rootId): string
     {
@@ -419,17 +455,7 @@ class FileController extends Controller
                 /** @var Node $node */
                 $node = $result['node'];
 
-                return [
-                    'id' => $node->id,
-                    'name' => $node->name,
-                    'type' => $node->isFolder() ? 'folder' : 'file',
-                    'path' => $this->relativePath($node, $root?->id),
-                    'size' => $node->size,
-                    'file_count' => $node->isFolder() ? $node->files_count : null,
-                    'sha256' => $node->isFile() ? $node->sha256 : null,
-                    'mtime' => $node->updated_at?->timestamp,
-                    'mime' => $node->isFile() ? $node->mime : null,
-                ] + ($content ? ['snippet' => str_replace(["\x01", "\x02"], '', $result['snippet'])] : []);
+                return $this->item($node, $this->relativePath($node, $root?->id)) + ($content ? ['snippet' => str_replace(["\x01", "\x02"], '', $result['snippet'])] : []);
             })->values(),
             'next_cursor' => null,
         ]);
@@ -524,18 +550,9 @@ class FileController extends Controller
         $starred = $this->starred($request, $items);
 
         return response()->json([
-            'data' => $items->map(fn (Node $node) => [
-                'id' => $node->id,
-                'name' => $node->name,
-                'type' => $node->isFolder() ? 'folder' : 'file',
-                'path' => $base.$node->name,
-                'size' => $node->size,
-                'file_count' => $node->isFolder() ? $node->files_count : null,
+            'data' => $items->map(fn (Node $node) => $this->item($node, $base.$node->name) + [
                 'has_subfolders' => $node->isFolder() ? (bool) $node->getAttribute('has_subfolders') : null,
                 'favorite' => in_array($node->id, $starred, true),
-                'sha256' => $node->isFile() ? $node->sha256 : null,
-                'mtime' => $node->updated_at?->timestamp,
-                'mime' => $node->isFile() ? $node->mime : null,
             ])->values(),
             'next_cursor' => $more ? $items->last()->id : null,
         ]);
