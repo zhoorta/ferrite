@@ -9,12 +9,12 @@ use App\Enums\NodeType;
 use App\Jobs\ExtractContent;
 use App\Models\Node;
 use App\Models\Share;
+use App\Models\StorageDisk;
 use App\Models\Upload;
 use App\Models\User;
 use App\Support\ActivityLog;
 use App\Support\Demo;
 use App\Support\StorageManager;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -64,16 +64,17 @@ class CompleteUpload
 
         // Identical content of the same owner shares one blob; see duplicateOf().
         $written = null;
+        $keyId = null;
 
         if ($this->duplicateOf($ownerId, $disk->id, $sha256, $upload->size) === null) {
-            $written = $this->write($upload, $disk->id, $filesystem, $key, $tmp);
+            [$written, $keyId] = $this->write($upload, $disk, $key, $tmp);
         }
 
         // The blob a replaced file used to have, once nothing points at it any more (see below).
         $replaced = null;
 
         try {
-            $node = DB::transaction(function () use ($upload, $actor, $ownerId, $parent, $disk, $filesystem, $tmp, &$key, &$written, &$replaced, $sha256, $mime) {
+            $node = DB::transaction(function () use ($upload, $actor, $ownerId, $parent, $disk, $tmp, &$key, &$written, &$keyId, &$replaced, $sha256, $mime) {
                 // FailUpload (a timeout in uploads:prune) may have given up on it meanwhile and
                 // removed what it wrote; the same lock decides which of the two wins.
                 $current = Upload::query()->lockForUpdate()->find($upload->id);
@@ -105,14 +106,15 @@ class CompleteUpload
 
                 if ($source !== null) {
                     $key = (string) $source->path;
+                    $keyId = $source->encryption_key_id;
                 } elseif ($written === null) {
-                    $written = $this->write($upload, $disk->id, $filesystem, $key, $tmp);
+                    [$written, $keyId] = $this->write($upload, $disk, $key, $tmp);
                 }
 
                 if ($existing !== null) {
                     // Same node, new content: share links, favorites and the activity history stay with it.
                     $replaced = ['disk_id' => $existing->disk_id, 'path' => $existing->path];
-                    $existing->forceFill(['disk_id' => $disk->id, 'path' => $key, 'size' => $upload->size, 'mime' => $mime, 'sha256' => $sha256])->save();
+                    $existing->forceFill(['disk_id' => $disk->id, 'path' => $key, 'size' => $upload->size, 'mime' => $mime, 'sha256' => $sha256, 'encryption_key_id' => $keyId])->save();
                     $node = $existing;
                 } else {
                     $node = new Node([
@@ -124,6 +126,7 @@ class CompleteUpload
                         'size' => $upload->size,
                         'mime' => $mime,
                         'sha256' => $sha256,
+                        'encryption_key_id' => $keyId,
                     ]);
                     $node->owner_id = $ownerId;
                     $node->save();
@@ -233,19 +236,20 @@ class CompleteUpload
     }
 
     /**
-     * Copy the file to the disk under $key. The key is noted on the upload first, so a crash
-     * halfway can still be cleaned up, and a failed copy removes what it left on the disk.
+     * Copy the file to the disk under $key, encrypted when the disk says so. The key is noted on the upload
+     * first, so a crash halfway can still be cleaned up, and a failed copy removes what it left on the disk.
      *
-     * @return string the key written
+     * @return array{string, int|null} the key written, and the master key id the blob is encrypted with (null: plaintext)
      */
-    private function write(Upload $upload, int $diskId, Filesystem $filesystem, string $key, string $tmp): string
+    private function write(Upload $upload, StorageDisk $disk, string $key, string $tmp): array
     {
+        $filesystem = $this->storage->filesystem($disk);
         $stream = fopen($tmp, 'rb') ?: throw new RuntimeException('Cannot read the uploaded file.');
 
-        $upload->forceFill(['disk_id' => $diskId, 'blob_key' => $key])->saveQuietly();
+        $upload->forceFill(['disk_id' => $disk->id, 'blob_key' => $key])->saveQuietly();
 
         try {
-            $filesystem->writeStream($key, $stream);
+            $keyId = $this->storage->writeBlob($disk, $key, $stream, $upload->size);
         } catch (Throwable $e) {
             try {
                 $filesystem->delete($key);
@@ -258,6 +262,6 @@ class CompleteUpload
             fclose($stream);
         }
 
-        return $key;
+        return [$key, $keyId];
     }
 }

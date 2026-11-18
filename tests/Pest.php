@@ -2,6 +2,7 @@
 
 use App\Enums\NodeType;
 use App\Models\Node;
+use App\Models\StorageDisk;
 use App\Models\User;
 use App\Support\StorageManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -75,6 +76,47 @@ function apiGet(string $uri, ?string $token = null)
     app('auth')->forgetGuards();
 
     return test()->getJson($uri, $token ? ['Authorization' => "Bearer {$token}"] : []);
+}
+
+/**
+ * A disk that encrypts what it stores (and the file key it needs), not the default one unless $default.
+ */
+function encryptedDisk(bool $default = false): StorageDisk
+{
+    config(['ferrite.file_key' => base64_encode(str_repeat('k', 32)), 'ferrite.file_key_id' => 1, 'ferrite.file_keys_old' => null]);
+
+    return StorageDisk::create(['name' => 'encrypted'.($default ? '-default' : ''), 'driver' => 'local', 'config' => null, 'is_default' => $default, 'encrypt' => true]);
+}
+
+/**
+ * Like storedFile(), but the blob is written encrypted to $disk, through the same path an upload takes.
+ */
+function encryptedFile(User $owner, string $name, string $content, ?StorageDisk $disk = null, ?Node $parent = null, ?string $mime = 'text/plain'): Node
+{
+    $storage = app(StorageManager::class);
+    $disk ??= encryptedDisk();
+    $key = $storage->newKey();
+    $stream = fopen('php://memory', 'w+b');
+    fwrite($stream, $content);
+    rewind($stream);
+    $keyId = $storage->writeBlob($disk, $key, $stream, strlen($content));
+    fclose($stream);
+
+    $node = new Node([
+        'parent_id' => $parent?->id,
+        'type' => NodeType::File,
+        'name' => $name,
+        'disk_id' => $disk->id,
+        'path' => $key,
+        'size' => strlen($content),
+        'mime' => $mime,
+        'sha256' => hash('sha256', $content),
+        'encryption_key_id' => $keyId,
+    ]);
+    $node->owner_id = $owner->id;
+    $node->save();
+
+    return $node;
 }
 
 /**

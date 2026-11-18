@@ -2,7 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\Node;
 use App\Models\StorageDisk;
+use App\Support\Encryption\BlobCipher;
+use App\Support\Encryption\DecryptionFailed;
+use App\Support\Encryption\KeyRing;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Filesystem\AwsS3V3Adapter;
@@ -89,6 +93,67 @@ class StorageManager
         }
 
         return $stream;
+    }
+
+    /**
+     * Open a file's content for reading, positioned at byte $offset of the content: the blob itself, or, for an
+     * encrypted one, its decrypted form (only the chunks the range needs are read and authenticated). Everything
+     * that serves or reads a file's bytes goes through here, so a plaintext and an encrypted blob look the same.
+     *
+     * @return resource
+     *
+     * @throws DecryptionFailed
+     */
+    public function openNodeStream(Node $node, int $offset = 0, ?StorageDisk $disk = null)
+    {
+        return $this->openBlobStream($disk ?? $node->disk ?? throw new RuntimeException('The file has no blob.'), (string) $node->path, $node->size, $node->encryption_key_id, $offset);
+    }
+
+    /**
+     * Like openNodeStream() for a blob that is not (or not yet) a node's: $size is the content size and $keyId the
+     * master key id it is encrypted with, or null for plaintext.
+     *
+     * @return resource
+     *
+     * @throws DecryptionFailed
+     */
+    public function openBlobStream(StorageDisk $disk, string $path, int $size, ?int $keyId, int $offset = 0)
+    {
+        if ($keyId === null) {
+            return $this->openStream($disk, $path, $size, $offset);
+        }
+
+        $cipherSize = BlobCipher::cipherSize($size);
+
+        return app(BlobCipher::class)->decrypt(fn (int $at) => $this->openStream($disk, $path, $cipherSize, $at), $size, $offset);
+    }
+
+    /**
+     * Write a blob of $size bytes read from $stream under $key, encrypted when the disk says so. Returns the
+     * master key id it was encrypted with (to store on the node), or null for a plaintext blob. A disk set to
+     * encrypt never falls back to plaintext: without the key this throws.
+     *
+     * @param  resource  $stream
+     */
+    public function writeBlob(StorageDisk $disk, string $key, $stream, int $size): ?int
+    {
+        $filesystem = $this->filesystem($disk);
+
+        if (! $disk->encrypt) {
+            $filesystem->writeStream($key, $stream);
+
+            return null;
+        }
+
+        $encrypted = app(BlobCipher::class)->encrypt($stream, $size);
+
+        try {
+            $filesystem->writeStream($key, $encrypted);
+        } finally {
+            fclose($encrypted);
+        }
+
+        return app(KeyRing::class)->currentId();
     }
 
     /**

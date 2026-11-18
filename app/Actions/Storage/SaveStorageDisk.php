@@ -5,6 +5,7 @@ namespace App\Actions\Storage;
 use App\Enums\DiskDriver;
 use App\Models\StorageDisk;
 use App\Models\User;
+use App\Support\Encryption\KeyRing;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -41,10 +42,37 @@ class SaveStorageDisk
 
         $this->validateCredentials($driver, $config);
 
+        // A caller that says nothing about encryption leaves it as it is.
+        $encrypt = $this->encryptFlag($disk, array_key_exists('encrypt', $data) ? (bool) $data['encrypt'] : ($disk->encrypt ?? false));
+
         $disk ??= new StorageDisk(['driver' => $driver->value, 'is_default' => ! StorageDisk::query()->exists()]);
-        $disk->fill(['name' => $validated['name'], 'config' => $config])->save();
+        $disk->fill(['name' => $validated['name'], 'config' => $config, 'encrypt' => $encrypt])->save();
 
         return $disk;
+    }
+
+    /**
+     * "Encrypt files" is chosen when a disk is created. It cannot be switched on or off later for a disk that
+     * already holds files (that would leave it half and half with nobody knowing which): `files:encrypt` converts
+     * a disk in place. Turning it on needs FERRITE_FILE_KEY, because a disk set to encrypt never writes plaintext.
+     *
+     * @throws ValidationException
+     */
+    private function encryptFlag(?StorageDisk $disk, bool $wanted): bool
+    {
+        if ($disk !== null && $disk->encrypt === $wanted) {
+            return $wanted;
+        }
+
+        if ($disk !== null && $disk->nodes()->exists()) {
+            throw ValidationException::withMessages(['encrypt' => __('Encryption cannot be changed on a disk that already holds files. Run files:encrypt to convert it.')]);
+        }
+
+        if ($wanted && ! app(KeyRing::class)->configured()) {
+            throw ValidationException::withMessages(['encrypt' => __('Set FERRITE_FILE_KEY in the environment first (see docs/encryption.md).')]);
+        }
+
+        return $wanted;
     }
 
     /**

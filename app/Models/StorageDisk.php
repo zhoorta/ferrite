@@ -16,10 +16,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $driver
  * @property array<string, mixed>|null $config
  * @property bool $is_default
+ * @property bool $encrypt
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
-#[Fillable(['name', 'driver', 'config', 'is_default'])]
+#[Fillable(['name', 'driver', 'config', 'is_default', 'encrypt'])]
 #[Hidden(['config'])]
 class StorageDisk extends Model
 {
@@ -34,6 +35,7 @@ class StorageDisk extends Model
         return [
             'config' => 'encrypted:array',
             'is_default' => 'boolean',
+            'encrypt' => 'boolean',
         ];
     }
 

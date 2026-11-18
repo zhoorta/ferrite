@@ -107,6 +107,8 @@ class CopyNode
             'size' => $source->size ?? 0,
             'mime' => $source->mime,
             'sha256' => $source->sha256,
+            // A duplicated blob is a byte for byte copy of the stored form, so it is encrypted the same way.
+            'encryption_key_id' => $source->encryption_key_id,
         ]);
         $copy->owner_id = $ownerId;
         $copy->save();

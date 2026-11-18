@@ -77,7 +77,7 @@ class ContentExtractor
     private function readText(Node $node): array
     {
         $limit = max(1, (int) config('ferrite.search_max_text_kb')) * 1024;
-        $stream = $this->storage->openStream($node->disk, (string) $node->path, $node->size);
+        $stream = $this->storage->openNodeStream($node);
 
         try {
             $raw = (string) stream_get_contents($stream, $limit);
@@ -107,7 +107,7 @@ class ContentExtractor
         $tmp = rtrim((string) config('ferrite.tmp_path'), '/').'/extract-'.Str::random(20).'.pdf';
 
         try {
-            $source = $this->storage->openStream($node->disk, (string) $node->path, $node->size);
+            $source = $this->storage->openNodeStream($node);
             $target = fopen($tmp, 'wb') ?: throw new RuntimeException('Cannot write a temporary file');
 
             try {

@@ -187,7 +187,7 @@ class NodeResponder
         }
 
         $disk = $this->zipDisks[$file->disk_id] ??= StorageDisk::query()->findOrFail($file->disk_id);
-        $stream = $this->storage->openStream($disk, $file->path, $file->size);
+        $stream = $this->storage->openNodeStream($file, 0, $disk);
 
         try {
             $zip->addFileFromStream("{$prefix}{$file->name}", $stream, lastModificationDateTime: $file->updated_at);
@@ -205,7 +205,7 @@ class NodeResponder
             return;
         }
 
-        $stream = $this->storage->openStream($node->disk, (string) $node->path, $node->size, $start);
+        $stream = $this->storage->openNodeStream($node, $start);
 
         try {
             for ($remaining = $length; $remaining > 0 && ! feof($stream) && ! connection_aborted();) {

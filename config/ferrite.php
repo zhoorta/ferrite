@@ -50,6 +50,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Encryption at rest
+    |--------------------------------------------------------------------------
+    |
+    | Disks created with "Encrypt files" store encrypted blobs (docs/encryption.md). `file_key` is 32
+    | random bytes, base64 encoded, kept in `.env` next to `APP_KEY` and backed up with it: without it
+    | every encrypted file is gone. `file_key_id` names it inside each blob; after a rotation the
+    | retired keys stay readable through `file_keys_old` ("id:base64,id:base64") until `files:rekey`.
+    |
+    */
+
+    'file_key' => env('FERRITE_FILE_KEY'),
+
+    'file_key_id' => (int) env('FERRITE_FILE_KEY_ID', 1),
+
+    'file_keys_old' => env('FERRITE_FILE_KEYS_OLD'),
+
+    // The text extracted for content search is stored in the database unencrypted. Files on encrypted disks are
+    // left out of it unless this is true (names are always searchable): the point of encrypting is that a leaked
+    // database or backup should not reveal what is in the files.
+    'search_encrypted' => (bool) env('FERRITE_SEARCH_ENCRYPTED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Content search
     |--------------------------------------------------------------------------
     |

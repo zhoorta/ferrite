@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\Node;
+use App\Support\Encryption\BlobCipher;
+use App\Support\Encryption\DecryptionFailed;
 use Throwable;
 
 /**
@@ -39,20 +41,41 @@ class Thumbnailer
 
         $filesystem = $this->storage->filesystem($node->disk);
         $cacheKey = "thumbnails/{$node->path}.jpg";
+        $cipher = app(BlobCipher::class);
+
+        // The thumbnail of an encrypted file is encrypted too (a small image is as revealing as the file).
+        $encrypted = $node->encryption_key_id !== null;
 
         if ($filesystem->exists($cacheKey)) {
-            return $filesystem->get($cacheKey);
+            $cached = $filesystem->get($cacheKey);
+
+            if (! $encrypted || ! is_string($cached)) {
+                return $cached;
+            }
+
+            try {
+                return $cipher->decryptString($cached);
+            } catch (DecryptionFailed) {
+                // Left from before the file was encrypted, or damaged: make it again.
+            }
         }
 
         try {
-            $source = $filesystem->get($node->path);
+            $stream = $this->storage->openNodeStream($node);
+
+            try {
+                $source = stream_get_contents($stream);
+            } finally {
+                fclose($stream);
+            }
+
             $thumbnail = is_string($source) ? $this->render($source) : null;
         } catch (Throwable) {
             return null;
         }
 
         if ($thumbnail !== null) {
-            $filesystem->put($cacheKey, $thumbnail);
+            $filesystem->put($cacheKey, $encrypted ? $cipher->encryptString($thumbnail) : $thumbnail);
         }
 
         return $thumbnail;

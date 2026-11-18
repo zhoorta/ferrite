@@ -37,7 +37,7 @@ class ExtractContent implements ShouldQueue
      */
     public static function queueFor(Node $node): void
     {
-        if (! ContentSearch::enabled() || ! $node->isFile() || $node->sha256 === null || $node->path === null) {
+        if (! ContentSearch::enabled() || ! $node->isFile() || $node->sha256 === null || $node->path === null || self::keptOutOfIndex($node)) {
             return;
         }
 
@@ -59,11 +59,21 @@ class ExtractContent implements ShouldQueue
         }
     }
 
+    /**
+     * The extracted text is kept in the database in the clear, which would undo encryption at rest for anyone who
+     * gets hold of the database or its backup. So files on encrypted disks are not indexed unless
+     * `FERRITE_SEARCH_ENCRYPTED` says so; their names stay searchable.
+     */
+    private static function keptOutOfIndex(Node $node): bool
+    {
+        return $node->encryption_key_id !== null && ! config('ferrite.search_encrypted');
+    }
+
     public function handle(ContentExtractor $extractor): void
     {
         $node = Node::query()->find($this->nodeId);
 
-        if ($node === null || ! $node->isFile() || $node->sha256 === null || ! ContentSearch::enabled()) {
+        if ($node === null || ! $node->isFile() || $node->sha256 === null || ! ContentSearch::enabled() || self::keptOutOfIndex($node)) {
             return;
         }
 

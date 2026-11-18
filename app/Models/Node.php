@@ -29,11 +29,12 @@ use Illuminate\Support\Facades\DB;
  * @property int $size
  * @property string|null $mime
  * @property string|null $sha256
+ * @property int|null $encryption_key_id
  * @property CarbonInterface|null $trashed_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
-#[Fillable(['parent_id', 'type', 'name', 'disk_id', 'path', 'size', 'mime', 'sha256'])]
+#[Fillable(['parent_id', 'type', 'name', 'disk_id', 'path', 'size', 'mime', 'sha256', 'encryption_key_id'])]
 class Node extends Model
 {
     /** @use HasFactory<NodeFactory> */
@@ -47,6 +48,7 @@ class Node extends Model
         return [
             'type' => NodeType::class,
             'size' => 'integer',
+            'encryption_key_id' => 'integer',
             'trashed_at' => 'datetime',
         ];
     }

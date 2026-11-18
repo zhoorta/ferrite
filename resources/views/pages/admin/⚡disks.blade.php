@@ -23,6 +23,8 @@ new #[Title('Storage')] class extends Component {
 
     public string $driver = 'local';
 
+    public bool $encrypt = false;
+
     /** @var array<string, mixed> */
     public array $config = [];
 
@@ -72,7 +74,7 @@ new #[Title('Storage')] class extends Component {
     {
         Gate::authorize('admin');
 
-        $this->reset('diskId', 'name', 'config');
+        $this->reset('diskId', 'name', 'config', 'encrypt');
         $this->driver = 'local';
         $this->resetErrorBag();
         Flux::modal('disk')->show();
@@ -88,6 +90,7 @@ new #[Title('Storage')] class extends Component {
         $this->diskId = $disk->id;
         $this->name = $disk->name;
         $this->driver = $disk->driver;
+        $this->encrypt = $disk->encrypt;
         // Secrets are never sent to the browser; leaving them blank keeps the stored value.
         $this->config = collect($disk->config ?? [])->except($secrets)->all();
         $this->resetErrorBag();
@@ -100,6 +103,7 @@ new #[Title('Storage')] class extends Component {
             'name' => $this->name,
             'driver' => $this->driver,
             'config' => $this->config,
+            'encrypt' => $this->encrypt,
         ]);
 
         unset($this->disks);
@@ -150,6 +154,7 @@ new #[Title('Storage')] class extends Component {
                             <span class="font-medium">{{ $disk->name }}</span>
                             <flux:badge size="sm">{{ \App\Enums\DiskDriver::from($disk->driver)->label() }}</flux:badge>
                             @if ($disk->is_default)<flux:badge size="sm" color="green">{{ __('Default') }}</flux:badge>@endif
+                            @if ($disk->encrypt)<flux:badge size="sm" color="amber" icon="lock-closed">{{ __('Encrypted') }}</flux:badge>@endif
                         </div>
                         <flux:text size="sm">
                             {{ trans_choice(':count file|:count files', $disk->nodes_count) }},
@@ -207,6 +212,12 @@ new #[Title('Storage')] class extends Component {
                     <flux:error name="config.{{ $field['key'] }}" />
                 </div>
             @endforeach
+
+            <div>
+                <flux:checkbox wire:model="encrypt" :label="__('Encrypt files')" />
+                <flux:text size="sm" class="mt-1">{{ __('Files written to this disk are stored encrypted (needs FERRITE_FILE_KEY, which you must back up: without it the files cannot be read). Chosen when the disk is created; to convert a disk that already holds files, run files:encrypt.') }}</flux:text>
+                <flux:error name="encrypt" />
+            </div>
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="filled">{{ __('Cancel') }}</flux:button></flux:modal.close>
