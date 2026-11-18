@@ -7,6 +7,8 @@ use App\Actions\Nodes\TrashNode;
 use App\Models\Node;
 use App\Models\User;
 use App\Support\FolderSizes;
+use Illuminate\Support\Number;
+use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create(['quota_bytes' => null]);
@@ -99,4 +101,10 @@ it('shows a folder size in the API listing', function () {
     $rows = collect(apiGet('/api/v1/files?parent=root', $token)->assertOk()->json('data'));
 
     expect($rows->firstWhere('name', 'Docs')['size'])->toBe(10);
+});
+
+it('shows the size of a folder in the file list', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::files.browser')->assertSee('Docs')->assertSee(Number::fileSize(10));
 });

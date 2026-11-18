@@ -172,7 +172,7 @@ new #[Title('Search')] class extends Component {
                             @endif
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
-                            {{ $item->isFile() ? \Illuminate\Support\Number::fileSize($item->size) : '—' }}
+                            {{ \Illuminate\Support\Number::fileSize($item->size) }}
                         </flux:table.cell>
                         <flux:table.cell align="end">
                             <flux:button size="sm" variant="ghost" icon="arrow-down-tray" :aria-label="__('Download')"

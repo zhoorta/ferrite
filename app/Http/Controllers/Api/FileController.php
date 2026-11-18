@@ -28,15 +28,16 @@ class FileController extends Controller
     public function __construct(private NodeResponder $responder) {}
 
     /**
-     * Move a file to the trash (never purge): the owner can still restore it from the web app. Folders cannot be
-     * trashed through a token, and a node outside the token's folder is a 404.
+     * Move a file or a folder (with what is in it) to the trash, never purge: the owner can still restore it from the
+     * web app. The token's own folder cannot be trashed through it (403), and a node outside it is a 404.
      */
     public function trash(Request $request, Node $node, TrashNode $trash): JsonResponse
     {
         /** @var ApiToken $token */
         $token = $request->user()->currentAccessToken();
 
-        abort_unless($node->isFile() && $token->reaches($node), 404);
+        abort_unless($token->reaches($node), 404);
+        abort_if($node->id === $token->folder_id, 403, 'A token cannot trash its own folder.');
 
         $trash->handle($request->user(), $node, ['token' => $token->name]);
 

@@ -779,7 +779,7 @@ new #[Title('Files')] class extends Component {
                             </div>
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell" align="end">
-                            {{ $item->isFile() ? \Illuminate\Support\Number::fileSize($item->size) : '—' }}
+                            {{ \Illuminate\Support\Number::fileSize($item->size) }}
                         </flux:table.cell>
                         <flux:table.cell class="hidden sm:table-cell">{{ $item->updated_at?->diffForHumans() }}</flux:table.cell>
                         <flux:table.cell align="end">

@@ -3,6 +3,7 @@
 use App\Models\Activity;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\FolderSizes;
 use App\Support\StorageManager;
 use Illuminate\Support\Facades\File;
 
@@ -183,17 +184,32 @@ it('does not let read or write tokens trash anything', function () {
     expect($this->a->fresh()->isTrashed())->toBeFalse();
 });
 
-it('answers 404 for files outside the folder, folders, trashed files and other accounts', function () {
+it('answers 404 for files outside the folder, trashed files and other accounts', function () {
     $plain = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
     $theirs = storedFile(User::factory()->create(), 'theirs.flac', 'x', null);
     $this->b->forceFill(['trashed_at' => now()])->save();
 
     apiDelete("/api/v1/files/{$this->outside->id}", $plain)->assertNotFound();
-    apiDelete("/api/v1/files/{$this->album->id}", $plain)->assertNotFound();
     apiDelete("/api/v1/files/{$this->b->id}", $plain)->assertNotFound();
     apiDelete("/api/v1/files/{$theirs->id}", $plain)->assertNotFound();
 
-    expect($this->outside->fresh()->isTrashed())->toBeFalse()->and($this->album->fresh()->isTrashed())->toBeFalse();
+    expect($this->outside->fresh()->isTrashed())->toBeFalse();
+});
+
+it('trashes a folder with what is in it, takes it out of the sizes, but never the token\'s own folder', function () {
+    $plain = apiToken($this->user, $this->music, ['read', 'write', 'trash']);
+    storedFile($this->user, 'in-album.flac', 'CCC', $this->album);
+    app(FolderSizes::class)->recount();
+
+    apiDelete("/api/v1/files/{$this->album->id}", $plain)->assertOk()->assertJson(['trashed' => true]);
+
+    expect($this->album->fresh()->isTrashed())->toBeTrue()
+        ->and($this->music->fresh()->size)->toBe(6)
+        ->and($this->album->fresh()->size)->toBe(7)
+        ->and(app(FolderSizes::class)->recount(fix: false)['wrong'])->toBe(0);
+
+    apiDelete("/api/v1/files/{$this->music->id}", $plain)->assertForbidden();
+    expect($this->music->fresh()->isTrashed())->toBeFalse();
 });
 
 it('needs a token', function () {
