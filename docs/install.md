@@ -274,7 +274,9 @@ Back up the `/data` volume **and** `APP_KEY` (store the key separately, for exam
 
 Standard install: back up `database/database.sqlite` (use the `sqlite3 ... ".backup"` command above for a consistent copy), `.env` (it holds `APP_KEY`) and the local files folder (`storage/app/private/ferrite` by default, or `FERRITE_LOCAL_ROOT`).
 
-Restore: put the data back, keep the same `APP_KEY`, start the container (or the services).
+If you use encrypted disks (`docs/encryption.md`), also back up `FERRITE_FILE_KEY` (and any `FERRITE_FILE_KEYS_OLD`) next to `APP_KEY`, and **not** in the same place as the files: a backup of the encrypted blobs is useless without it, and the key is lost with the server otherwise. Test a restore with the key before you rely on it.
+
+Restore: put the data back, keep the same `APP_KEY` (and `FERRITE_FILE_KEY`), start the container (or the services).
 
 ## Upgrading
 

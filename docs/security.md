@@ -43,7 +43,7 @@ Users upload files and Ferrite serves them from its own origin. Anything a brows
 ## Known limitations
 
 - **Same-origin file serving** (above). Mitigated, not eliminated.
-- **Content search keeps the text of files in the database**, unencrypted, whoever may read them: the first 2 MB of text files and the text of PDFs. Anyone with the database has that text even if the files are on an encrypted or remote disk. Results are filtered by the same access rules as the file list, and the text of a file is never returned for a node the user cannot see. Turn it off with `FERRITE_SEARCH_CONTENTS=false` if that does not suit you. PDFs are parsed by `pdftotext` (poppler) with a time limit; keep it updated.
+- **Content search keeps the text of files in the database**, unencrypted, whoever may read them: the first 2 MB of text files and the text of PDFs. Anyone with the database has that text even if the files are on a remote disk. Files on encrypted disks (`docs/encryption.md`) are left out of the index unless `FERRITE_SEARCH_ENCRYPTED=true`. Results are filtered by the same access rules as the file list, and the text of a file is never returned for a node the user cannot see. Turn it off with `FERRITE_SEARCH_CONTENTS=false` if that does not suit you. PDFs are parsed by `pdftotext` (poppler) with a time limit; keep it updated.
 - **No Content-Security-Policy on the app's own pages**: Livewire and Flux use inline scripts. User files do get one.
 - **Share tokens are stored in plain text** so owners can copy a link later. A database leak exposes the links of unrevoked shares (not the files' contents on other disks, but anything reachable through a link). Hashing them is possible at the cost of showing a link only once.
 - **"View only" is not copy protection**: whatever a browser can display, it can save.
@@ -54,7 +54,8 @@ Users upload files and Ferrite serves them from its own origin. Anything a brows
 - **Existence oracle**: node ids are sequential, and a forbidden node answers 403 while a missing one answers 404, so a user can tell whether an id exists (not what it is).
 - **Admins are trusted**: an admin can point a local disk at any folder the web server can write, and an S3/SFTP disk at any host the server can reach. Do not give the admin role to people you do not trust with the server.
 - **Activity log keeps no IP addresses**, and failed logins are only throttled, not logged.
-- **Losing `APP_KEY`** makes stored 2FA secrets and disk credentials unreadable.
+- **Losing `APP_KEY`** makes stored 2FA secrets and disk credentials unreadable. **Losing `FERRITE_FILE_KEY`** makes every encrypted file permanently unreadable, backups included.
+- **Encryption at rest is server-side** (`docs/encryption.md`): it protects a stolen disk, bucket or blob backup, not someone who has the server and its `.env`, and file names, sizes and owners stay in the database in the clear.
 - **Build tooling advisories**: `npm audit` reports critical issues in `vite-plus` (via `oxfmt`/`tinypool`) and `concurrently` (via `shell-quote`). They affect development and the asset build only; none of it ships in the Docker image or runs in production. The suggested fix upgrades `vite-plus` and breaks the build, so it was not applied.
 - **Install paths**: the Docker image (PHP 8.5) was built and run end to end (2026-10-07; login, a 60 MB chunked upload, download hash, Range, restart). The standard Laravel install (nginx, PHP 8.5-FPM, systemd workers) runs in production at ferrite.stackcare.pt.
 
