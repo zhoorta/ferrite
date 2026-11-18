@@ -10,6 +10,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'api.token:read', 'throttle:api
     Route::get('root', [RootController::class, 'show']);
     Route::get('files', [FileController::class, 'index']);
     Route::get('files/{node}/content', [FileController::class, 'content'])->withoutMiddleware('throttle:api-read')->middleware('throttle:api-content');
+    // A grid of thumbnails is a burst of requests, like content.
+    Route::get('files/{node}/thumbnail', [FileController::class, 'thumbnail'])->withoutMiddleware('throttle:api-read')->middleware('throttle:api-content');
 });
 
 // Trashing needs a token with the trash ability (never purge or delete for good; the owner restores from the web app).

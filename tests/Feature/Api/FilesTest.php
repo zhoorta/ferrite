@@ -3,6 +3,7 @@
 use App\Models\Activity;
 use App\Models\Node;
 use App\Models\User;
+use App\Support\StorageManager;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -389,3 +390,62 @@ function apiMoveRaw(int $id, array $body, string $plain)
 
     return test()->patchJson("/api/v1/files/{$id}", $body, ['Authorization' => "Bearer {$plain}"]);
 }
+
+function apiThumb(int $id, ?string $plain, array $headers = [])
+{
+    app('auth')->forgetGuards();
+
+    return test()->get("/api/v1/files/{$id}/thumbnail", $headers + ($plain ? ['Authorization' => "Bearer {$plain}"] : []));
+}
+
+function apiPng(int $width, int $height): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    imagefill($image, 0, 0, (int) imagecolorallocate($image, 30, 120, 200));
+    ob_start();
+    imagepng($image);
+
+    return (string) ob_get_clean();
+}
+
+it('serves a small JPEG thumbnail with caching headers, and 304 for an unchanged one', function () {
+    $image = storedFile($this->user, 'wide.png', apiPng(1000, 400), $this->music, 'image/png');
+
+    $response = apiThumb($image->id, $this->plain)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+    $size = getimagesizefromstring($response->getContent());
+
+    expect($size[0])->toBe(256)->and($size[1])->toBe(102)->and($size['mime'])->toBe('image/jpeg')
+        ->and($response->headers->get('Cache-Control'))->toContain('max-age=86400')
+        ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
+
+    apiThumb($image->id, $this->plain, ['If-None-Match' => $response->headers->get('ETag')])->assertStatus(304);
+});
+
+it('answers 404 when there is no thumbnail: not an image, a folder, outside the folder, trashed, other accounts', function () {
+    $audio = $this->b;
+    $outside = storedFile($this->user, 'out.png', apiPng(50, 50), null, 'image/png');
+    $trashed = storedFile($this->user, 'gone.png', apiPng(50, 50), $this->music, 'image/png');
+    $trashed->forceFill(['trashed_at' => now()])->save();
+    $theirs = storedFile(User::factory()->create(), 'theirs.png', apiPng(50, 50), null, 'image/png');
+    $broken = storedFile($this->user, 'broken.png', 'not an image', $this->music, 'image/png');
+
+    foreach ([$audio->id, $this->album->id, $outside->id, $trashed->id, $theirs->id, $broken->id, 999999] as $id) {
+        apiThumb($id, $this->plain)->assertNotFound();
+    }
+});
+
+it('needs a valid token for thumbnails', function () {
+    $image = storedFile($this->user, 'a.png', apiPng(50, 50), $this->music, 'image/png');
+
+    apiThumb($image->id, null)->assertUnauthorized();
+});
+
+it('makes a thumbnail of an encrypted image and keeps its cache encrypted', function () {
+    $image = encryptedFile($this->user, 'secret.png', apiPng(600, 300), null, $this->music, 'image/png');
+
+    $response = apiThumb($image->id, $this->plain)->assertOk();
+    $cached = (string) app(StorageManager::class)->filesystem($image->disk)->get("thumbnails/{$image->path}.jpg");
+
+    expect(getimagesizefromstring($response->getContent())[0])->toBe(256)
+        ->and(str_starts_with($cached, 'FRT1'))->toBeTrue();
+});

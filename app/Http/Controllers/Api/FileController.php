@@ -323,6 +323,22 @@ class FileController extends Controller
     }
 
     /**
+     * A small JPEG preview of an image file (256 px on the longest side), with a long-lived `ETag` and `If-None-Match`
+     * answered with 304. The same thumbnail the web app shows, made on first use and cached next to the blob (encrypted
+     * for an encrypted file). 404 when the file has none: not an image, too big or too many pixels to decode, damaged,
+     * or outside the token's folder. Needs only a read token.
+     */
+    public function thumbnail(Request $request, Node $node): Response
+    {
+        /** @var ApiToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        abort_unless($node->isFile() && $token->reaches($node), 404);
+
+        return $this->responder->thumbnail($request, $node) ?? abort(404);
+    }
+
+    /**
      * The folders under the root (or all of the user's folders), not trashed, as id => [id, parent_id, name].
      *
      * @return array<int, array{id: int, parent_id: int|null, name: string}>
