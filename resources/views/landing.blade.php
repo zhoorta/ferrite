@@ -58,18 +58,7 @@
 
             <section class="pb-16 text-center">
                 <h2 class="font-serif text-2xl font-semibold">Who it is for</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Self-hosters, homelabs and small teams who want private file storage on a VPS or a Storage Box, without running Nextcloud.</p>
-            </section>
-
-            <section class="pb-16 text-center">
-                <h2 class="font-serif text-2xl font-semibold">Pick a look</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Fifteen themes, from a calm dark default to Classic Mac, Amiga and green phosphor. Try one, this whole page changes. Every user picks their own.</p>
-                <div class="mt-6 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Theme">
-                    @foreach ($themes as $key => $label)
-                        <button type="button" role="radio" data-palette-choice="{{ $key }}" aria-checked="false"
-                            class="rounded-lg border border-zinc-300 px-3 py-2 text-sm transition hover:border-accent aria-checked:border-accent aria-checked:ring-2 aria-checked:ring-accent/40 dark:border-zinc-700">{{ $label }}</button>
-                    @endforeach
-                </div>
+                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Self-hosters, homelabs and small teams who want private file storage on a VPS or a Storage Box.</p>
             </section>
 
             <section class="grid gap-4 pb-16 sm:grid-cols-2 lg:grid-cols-3">
@@ -93,6 +82,28 @@
                     @endforeach
                 </div>
                 <p class="mt-4 text-center text-sm text-zinc-500">All of it is in the <a class="underline" href="{{ route('docs.index') }}">documentation</a>.</p>
+            </section>
+
+            <section class="pb-16">
+                <h2 class="font-serif text-2xl font-semibold">API</h2>
+                <p class="mt-2 max-w-3xl text-zinc-600 dark:text-zinc-400">
+                    Scripts and other programs can use Ferrite through an HTTP API: list and search, download with Range, upload in resumable chunks, replace files with versions kept.
+                    A token is limited to one folder and to the abilities it was given (read, write, replace, trash), and can be revoked in Settings.
+                </p>
+                <pre class="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>curl -H "Authorization: Bearer $TOKEN" \
+  "https://files.example.com/api/v1/files?parent=root"</code></pre>
+                <p class="mt-3 text-sm text-zinc-500">Reference: <a class="underline" href="{{ route('docs.show', 'api') }}">API</a>. The Mac and Android apps use the same API.</p>
+            </section>
+
+            <section class="pb-16 text-center">
+                <h2 class="font-serif text-2xl font-semibold">Pick a look</h2>
+                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Fifteen themes, from a calm dark default to Classic Mac, Amiga and green phosphor. Try one, this whole page changes. Every user picks their own.</p>
+                <div class="mt-6 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Theme">
+                    @foreach ($themes as $key => $label)
+                        <button type="button" role="radio" data-palette-choice="{{ $key }}" aria-checked="false"
+                            class="rounded-lg border border-zinc-300 px-3 py-2 text-sm transition hover:border-accent aria-checked:border-accent aria-checked:ring-2 aria-checked:ring-accent/40 dark:border-zinc-700">{{ $label }}</button>
+                    @endforeach
+                </div>
             </section>
 
             <section class="pb-16">
