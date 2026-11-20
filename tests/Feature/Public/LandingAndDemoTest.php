@@ -22,7 +22,7 @@ it('shows the landing page to everyone, with a link to the files for signed-in u
     config(['ferrite.landing' => true, 'ferrite.demo_url' => 'https://demo.example.test']);
     User::factory()->create();
 
-    $this->get('/')->assertOk()->assertSee('Your files, on your server.')->assertSee('https://demo.example.test');
+    $this->get('/')->assertOk()->assertSee('Self-hosted file storage.')->assertSee('https://demo.example.test');
     $this->actingAs(User::factory()->create())->get('/')->assertOk()->assertSee('Open my files');
 });
 

@@ -37,9 +37,9 @@
 
         <main class="mx-auto max-w-5xl px-4">
             <section class="py-16 text-center sm:py-24">
-                <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-6xl">Your files, on your server.</h1>
+                <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-6xl">Self-hosted file storage.</h1>
                 <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
-                    Ferrite is a self-hosted file server with a web interface. Upload, organise, preview and share files, stored on a local disk, an S3 bucket or an SFTP box.
+                    Ferrite is a file server with a web interface. Upload, organise, preview and share files, stored on a local disk, an S3 bucket or an SFTP box.
                     For individuals and small teams, with an API for scripts and apps that need storage.
                 </p>
                 <p class="mx-auto mt-3 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">No sync clients and no WebDAV.
