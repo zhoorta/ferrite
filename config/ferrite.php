@@ -169,6 +169,9 @@ return [
 
     'demo_url' => env('FERRITE_DEMO_URL'),
 
+    // Folder with the app builds offered at /download (Ferrite-<version>.dmg, .zip or .apk). Kept outside the repo.
+    'downloads_path' => env('FERRITE_DOWNLOADS_PATH', storage_path('app/downloads')),
+
     /*
     |--------------------------------------------------------------------------
     | Demo mode

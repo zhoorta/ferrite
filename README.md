@@ -25,9 +25,12 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
 - **Storage disks**: local folder, S3-compatible or SFTP, switchable per instance. New uploads go to the default disk, or to a disk an admin assigns to a user.
 - **Search** by name and **inside files** (text, Markdown, code, CSV and PDF; SQLite, MySQL and MariaDB), plus an **activity log**.
 
-Not included (on purpose, for now): sync clients, WebDAV, office document previews, real-time collaboration, OCR for scanned documents, versioning.
+- **Versions**: replacing a file keeps its earlier content, restorable from the web app.
+- **Apps for Mac and Android** (companions, not sync clients), and a token **API** for scripts: [docs/apps.md](docs/apps.md), [docs/api.md](docs/api.md).
 
-Project page: https://ferrite.stackcare.pt · Live demo: https://demo.ferrite.stackcare.pt
+Not included (on purpose, for now): sync clients, WebDAV, office document previews, real-time collaboration, OCR for scanned documents.
+
+Project page: https://ferrite.stackcare.pt · Docs: https://ferrite.stackcare.pt/docs · Apps: https://ferrite.stackcare.pt/download · Live demo: https://demo.ferrite.stackcare.pt
 
 ## Screenshots
 
@@ -133,7 +136,10 @@ vendor/bin/pint && vendor/bin/phpstan analyse
 | [docs/storage-search-activity.md](docs/storage-search-activity.md) | Disks, search, activity log |
 | [docs/users.md](docs/users.md) | Accounts, registration, trash |
 | [docs/security.md](docs/security.md) | Security review: what was checked, known limits |
-| [docs/public-site.md](docs/public-site.md) | Project page and demo mode (how ferrite.stackcare.pt runs) |
+| [docs/public-site.md](docs/public-site.md) | Project page, docs, app downloads and demo mode (how ferrite.stackcare.pt runs) |
+| [docs/apps.md](docs/apps.md) | The Mac and Android apps: connecting, features, publishing the downloads |
+| [docs/api.md](docs/api.md) | The token API |
+| [docs/versions.md](docs/versions.md) | Versions of replaced files |
 
 ## Security
 

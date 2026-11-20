@@ -12,7 +12,7 @@
         ['Sharing', 'Links with an optional password and expiry, sharing with other users as viewer or editor, and upload links so clients can drop files into one folder. Revoke any time.'],
         ['Your storage', 'Local folder, S3-compatible or SFTP (a Hetzner Storage Box works well). Identical files are stored once.'],
         ['Small team ready', 'Several users with quotas, an admin screen, two-factor authentication and passkeys.'],
-        ['Safe by default', 'Files are served with nosniff and a strict policy; only an allowlist of types opens inline. Trash with restore and auto-purge.'],
+        ['Safe by default', 'Files are served with nosniff and a strict policy; only an allowlist of types opens inline. Trash with restore and auto-purge, and earlier versions of a replaced file.'],
     ];
 @endphp
 <!DOCTYPE html>
@@ -22,30 +22,21 @@
         <meta name="description" content="Ferrite by StackCare is a free, self-hosted file server for one person or a small team: upload, preview and share from the browser, on your own server or storage. Built with Laravel and Livewire.">
     </head>
     <body class="cozy-bg min-h-screen antialiased">
-        <header class="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
-            <a href="{{ route('home') }}" class="flex items-center gap-2">
-                <img src="{{ asset('favicon.svg') }}" alt="" class="size-8 rounded-lg">
-                <x-app-wordmark class="text-xl" />
-            </a>
-            <nav class="flex items-center gap-4 text-sm">
-                <a href="{{ $repo }}" class="hover:underline">Source</a>
-                @if ($demo)<a href="{{ $demo }}" class="hover:underline">Demo</a>@endif
-                <a href="{{ auth()->check() ? route('files') : route('login') }}" class="rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">{{ auth()->check() ? 'Open my files' : 'Sign in' }}</a>
-            </nav>
-        </header>
+        @include('partials.site-header')
 
         <main class="mx-auto max-w-5xl px-4">
             <section class="py-16 text-center sm:py-24">
                 <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-6xl">Your files, on your server.</h1>
                 <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
                     Ferrite is a small, self-hosted file server you use from the browser: upload, preview, share. Without the weight of a full cloud suite.
-                    For one person or a small team. No sync clients, no WebDAV, nothing to install on your devices.
+                    For one person or a small team. No sync clients and no WebDAV; apps for Mac and Android are there if you want them, not required.
                 </p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
                     @if ($demo)
                         <a href="{{ $demo }}" class="rounded-lg bg-accent px-5 py-3 font-medium text-accent-foreground hover:opacity-90">Try the live demo</a>
                     @endif
                     <a href="{{ $repo }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Get the source</a>
+                    <a href="{{ route('docs.index') }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Read the docs</a>
                 </div>
                 <p class="mt-4 text-sm text-zinc-500">Free software, AGPL-3.0. Laravel 13, Livewire, Flux UI.</p>
             </section>
@@ -80,6 +71,14 @@
             </section>
 
             <section class="pb-16">
+                <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center dark:border-zinc-800 dark:bg-zinc-900">
+                    <h2 class="font-serif text-2xl font-semibold">Apps for Mac and Android</h2>
+                    <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Browse, upload from the share sheet or Finder, and open your files from a native app. You sign in through your own server, and nothing is mirrored to the device.</p>
+                    <a href="{{ route('downloads') }}" class="mt-5 inline-block rounded-lg bg-accent px-5 py-3 font-medium text-accent-foreground hover:opacity-90">Download the apps</a>
+                </div>
+            </section>
+
+            <section class="pb-16">
                 <h2 class="font-serif text-2xl font-semibold">Run it in five minutes</h2>
                 <p class="mt-2 text-zinc-600 dark:text-zinc-400">Two ways, same app. Either way you need a domain and HTTPS in front of it. The first account to register becomes the admin.</p>
 
@@ -105,22 +104,19 @@ php artisan migrate --force &amp;&amp; php artisan optimize</code></pre>
                     </div>
                 </div>
 
-                <p class="mt-3 text-sm text-zinc-500">Full guide, with the web server, workers and reverse proxy: <a class="underline" href="{{ $repo }}/blob/main/docs/install.md">docs/install.md</a>.</p>
+                <p class="mt-3 text-sm text-zinc-500">Full guide, with the web server, workers and reverse proxy: <a class="underline" href="{{ route('docs.show', 'install') }}">the install guide</a>. Everything else is in the <a class="underline" href="{{ route('docs.index') }}">documentation</a>.</p>
             </section>
 
             <section class="pb-20">
                 <h2 class="font-serif text-2xl font-semibold">What it is not</h2>
                 <p class="mt-2 max-w-3xl text-zinc-600 dark:text-zinc-400">
-                    No sync clients, no WebDAV, no office document previews, no real-time collaboration, no versioning (yet).
+                    No sync clients, no WebDAV, no office document previews, no real-time collaboration. Replacing a file keeps its earlier versions, but there is no editing history beyond that.
                     Ferrite does one job: keep your files on a disk you control, and let you open, share and download them from a browser.
                 </p>
             </section>
         </main>
 
-        <footer class="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800">
-            Ferrite is free software under the <a class="underline" href="{{ $repo }}/blob/main/LICENSE">AGPL-3.0</a>.
-            Made by <a class="underline" href="https://stackcare.pt/en">StackCare</a>.
-        </footer>
+        @include('partials.site-footer')
         <script>
             const lightPalettes = {{ \Illuminate\Support\Js::from(\App\Models\User::LIGHT_PALETTES) }};
             const shot = document.getElementById('app-shot');

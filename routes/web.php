@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\DemoController;
+use App\Http\Controllers\DocsController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\DropboxUploadController;
 use App\Http\Controllers\NodeFileController;
 use App\Http\Controllers\ShareFileController;
 use App\Http\Controllers\UploadController;
 use App\Http\Middleware\DisableInDemo;
+use App\Http\Middleware\PublicSiteOnly;
 use App\Http\Middleware\SharePageHeaders;
+use App\Support\Docs;
 use App\Support\Registration;
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +30,13 @@ Route::get('/', function () {
 Route::get('sitemap.xml', function () {
     abort_unless(config('ferrite.landing'), 404);
 
-    return response()->view('sitemap', ['urls' => [route('home')]])->header('Content-Type', 'application/xml');
+    $urls = [route('home'), route('docs.index'), route('downloads')];
+
+    foreach (array_keys(Docs::PAGES) as $slug) {
+        $urls[] = route('docs.show', $slug);
+    }
+
+    return response()->view('sitemap', ['urls' => $urls])->header('Content-Type', 'application/xml');
 })->name('sitemap');
 
 Route::get('robots.txt', function () {
@@ -38,6 +48,14 @@ Route::get('robots.txt', function () {
 
     return response(implode("\n", $lines)."\n")->header('Content-Type', 'text/plain');
 })->name('robots');
+
+// Documentation and app downloads: part of the public project page, so they exist only while it is on.
+Route::middleware(PublicSiteOnly::class)->group(function () {
+    Route::get('docs', [DocsController::class, 'index'])->name('docs.index');
+    Route::get('docs/{page}', [DocsController::class, 'show'])->name('docs.show');
+    Route::get('download', [DownloadController::class, 'index'])->name('downloads');
+    Route::get('download/{file}', [DownloadController::class, 'file'])->middleware('throttle:60,1')->name('downloads.file');
+});
 
 Route::post('demo', DemoController::class)->middleware(['guest', 'throttle:6,60'])->name('demo.start');
 

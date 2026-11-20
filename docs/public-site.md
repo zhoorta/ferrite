@@ -8,6 +8,15 @@ With `FERRITE_LANDING=true` the landing page is shown at `/` to everyone instead
 
 The same install can be your private instance and the public page at one address: keep `FERRITE_REGISTRATION=false`, so strangers can only reach the page and the sign-in form. On a fresh install `/` sends you to the Welcome page to create the admin account; once it exists, `/` shows the landing page. Turn on 2FA or a passkey for it.
 
+## Documentation and app downloads
+
+While `FERRITE_LANDING` is on, the project page also serves:
+
+- **`/docs`**: the documentation, rendered from the Markdown files in `docs/` (the list of published pages is `App\Support\Docs::PAGES`; design notes such as encryption stay out). Links between pages stay on the site, other relative links point at the repository (`FERRITE_REPO_URL`). Raw HTML in the Markdown is dropped.
+- **`/download`**: the Mac and Android apps. It lists the newest `Ferrite-<version>.dmg|zip|apk` found in `FERRITE_DOWNLOADS_PATH` (default `storage/app/downloads`, kept outside the repository) with size and SHA-256; a platform without a file says it is not published yet. Files are served with `nosniff` and an explicit type, at most 60 requests a minute per IP. See [apps.md](apps.md#publishing-the-downloads-for-server-owners).
+
+All three, and the pages in the sitemap, return 404 when `FERRITE_LANDING` is off.
+
 ## Demo mode
 
 Run a second, separate install (its own database, storage and `APP_KEY`; never shared with a real instance) with:
@@ -33,4 +42,4 @@ Why so strict: an open sign-up that stores files on your domain can be abused to
 
 Install it like any other instance ([install.md](install.md)); with Docker, a second service in the compose file with its own env file and volume is enough, and keep the request size limit of its reverse proxy modest.
 
-The sitemap at `/sitemap.xml` (the landing page only) and `/robots.txt`, which points to it, are served by the app while `FERRITE_LANDING` is on; the sitemap returns 404 otherwise.
+The sitemap at `/sitemap.xml` (the landing page, the docs and the downloads) and `/robots.txt`, which points to it, are served by the app while `FERRITE_LANDING` is on; the sitemap returns 404 otherwise.
