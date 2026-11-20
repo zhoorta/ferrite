@@ -14,6 +14,17 @@
         ['Small team ready', 'Several users with quotas, an admin screen, two-factor authentication and passkeys.'],
         ['Safe by default', 'Files are served with nosniff and a strict policy; only an allowlist of types opens inline. Trash with restore and auto-purge, and earlier versions of a replaced file.'],
     ];
+    $advanced = [
+        ['Search inside files', 'Finds words in text, Markdown, code, CSV and PDF, on SQLite, MySQL and MariaDB. Results show the matching line and where it lives.'],
+        ['Upload links', 'Give a client or a colleague a link that adds files to one folder without letting them see what is in it. With password and expiry.'],
+        ['Versions', 'Replace a file and the earlier content is kept, up to a limit you set, and can be restored. A bad overwrite is no longer a disaster.'],
+        ['A token API', 'Personal access tokens limited to one folder and to read, write, replace or trash. Apps connect through a browser approval with PKCE, never a pasted password.'],
+        ['Storage you can verify', 'A storage check confirms every blob exists, and with --verify reads each one back and compares its checksum.'],
+        ['Disks per user', 'Route each user to their own disk, such as a Storage Box over SFTP or an S3 bucket, with quotas per user. Identical files are stored once.'],
+        ['Usage at a glance', 'See where the space goes: by file type, biggest folders and files, trash and versions, and the savings from deduplication.'],
+        ['Native apps', 'A Mac app with a menu bar item and Finder upload, and an Android app with share-sheet upload, both with themes. Resumable transfers, no mirroring.'],
+        ['Sign-in you control', 'Two-factor authentication and passkeys, registration closed by default, an admin screen and an activity log.'],
+    ];
 @endphp
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -68,6 +79,20 @@
                         <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{{ $text }}</p>
                     </div>
                 @endforeach
+            </section>
+
+            <section class="pb-16">
+                <h2 class="text-center font-serif text-2xl font-semibold">Small, but not simple-minded</h2>
+                <p class="mx-auto mt-2 max-w-2xl text-center text-zinc-600 dark:text-zinc-400">The things you usually only get from a bigger suite, kept small enough to run on a cheap server.</p>
+                <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach ($advanced as [$title, $text])
+                        <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                            <h3 class="font-serif text-lg font-semibold">{{ $title }}</h3>
+                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{{ $text }}</p>
+                        </div>
+                    @endforeach
+                </div>
+                <p class="mt-4 text-center text-sm text-zinc-500">All of it is in the <a class="underline" href="{{ route('docs.index') }}">documentation</a>.</p>
             </section>
 
             <section class="pb-16">
