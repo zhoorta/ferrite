@@ -26,7 +26,7 @@
             .docs-prose table { display: block; overflow-x: auto; border-collapse: collapse; font-size: .9rem; }
             .docs-prose th, .docs-prose td { border: 1px solid var(--color-zinc-200); padding: .4rem .7rem; text-align: left; vertical-align: top; }
             .dark .docs-prose th, .dark .docs-prose td { border-color: var(--color-zinc-800); }
-            .docs-prose td:first-child code, .docs-prose td:first-child { white-space: nowrap; }
+            .docs-prose td:first-child code { white-space: nowrap; }
             .docs-prose th { background: color-mix(in srgb, currentColor 6%, transparent); }
             .docs-prose img { max-width: 100%; border-radius: .5rem; }
             .docs-prose hr { margin: 2rem 0; border-color: var(--color-zinc-200); }
