@@ -66,7 +66,7 @@ describe('first run', function () {
         $this->get('/')->assertRedirect(route('register'));
 
         User::factory()->create();
-        $this->get('/')->assertOk()->assertSee('Your files, on your server.');
+        $this->get('/')->assertOk()->assertSee('Self-hosted file storage.');
     });
 
     it('does not ask a demo instance for an admin', function () {
