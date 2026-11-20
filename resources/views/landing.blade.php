@@ -30,7 +30,7 @@
 <html lang="en" class="dark">
     <head>
         @include('partials.head', ['title' => 'Self-hosted file server by StackCare'])
-        <meta name="description" content="Ferrite by StackCare is a free, self-hosted file server for one person or a small team: upload, preview and share from the browser, on your own server or storage. Built with Laravel and Livewire.">
+        <meta name="description" content="Ferrite by StackCare is a free, self-hosted file server with a web interface and an API. Upload, organise, preview and share files, stored on a local disk, an S3 bucket or an SFTP box. For individuals and small teams. Built with Laravel and Livewire.">
     </head>
     <body class="cozy-bg min-h-screen antialiased">
         @include('partials.site-header')
@@ -39,8 +39,10 @@
             <section class="py-16 text-center sm:py-24">
                 <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-6xl">Your files, on your server.</h1>
                 <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
-                    Ferrite is a small, self-hosted file server you use from the browser: upload, preview, share. Without the weight of a full cloud suite.
-                    For one person or a small team. No sync clients and no WebDAV; optional apps for Mac and Android.
+                    Ferrite is a self-hosted file server with a web interface. Upload, organise, preview and share files, stored on a local disk, an S3 bucket or an SFTP box.
+                    For individuals and small teams, with an API for scripts and apps that need storage.
+                </p>
+                <p class="mx-auto mt-3 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">No sync clients and no WebDAV.
                 </p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
                     @if ($demo)
