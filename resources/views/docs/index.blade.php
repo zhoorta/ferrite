@@ -1,7 +1,7 @@
 <x-layouts::site title="Documentation" description="Documentation for Ferrite, the self-hosted file server by StackCare: install, configure, share, use the apps and the API.">
     <section class="py-10 text-center sm:py-14">
         <h1 class="font-serif text-4xl font-semibold tracking-tight">Documentation</h1>
-        <p class="mx-auto mt-4 max-w-2xl text-zinc-600 dark:text-zinc-400">How to run Ferrite, what it does, and how to talk to it from your own code. Start with <a class="underline" href="{{ route('docs.show', 'install') }}">installing it</a>; it takes about five minutes.</p>
+        <p class="mx-auto mt-4 max-w-2xl text-zinc-600 dark:text-zinc-400">How to run Ferrite, what it does, and how to use the API. Start with the <a class="underline" href="{{ route('docs.show', 'install') }}">install guide</a>.</p>
     </section>
 
     @foreach ($groups as $group => $pages)

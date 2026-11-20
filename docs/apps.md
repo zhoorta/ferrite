@@ -19,7 +19,7 @@ Download them from the **Apps** page of the project site (`/download` on an inst
 
 The token shows up under **Settings > API tokens** named after the app and the device. Revoke it there and the app is signed out at its next request. A token reaches only its folder and what is inside it. Details, including the PKCE exchange, are in the [API reference](api.md#connecting-an-app-browser-approval).
 
-If you prefer, you can paste a token you created yourself in Settings instead. The browser approval is off on the public demo.
+A token created by hand in Settings can be pasted instead. The browser approval is off on the public demo.
 
 ## What they do
 
@@ -50,11 +50,11 @@ Not in the apps: sharing links and users (use the web app), and sync.
 - **The browser does not return to the app**: the server only sends the approval back to the addresses in `FERRITE_CONNECT_REDIRECTS` (default `ferrite://auth`). Leave it at the default unless you know why not.
 - **"Needs a newer version"**: update the server.
 - **Signed out suddenly**: the token expired or was revoked in Settings. Sign in again.
-- **A big upload is interrupted** (network change, app closed): uploads are chunked and resumable, so uploading the same file again continues where it stopped. On Android the transfer runs as a notification, so you can leave the app.
+- **A big upload is interrupted** (network change, app closed): uploads are chunked and resumable, so uploading the same file again continues where it stopped. On Android the transfer runs as a notification, so the app can be left.
 
 ## Publishing the downloads (for server owners)
 
-The download page lists whatever is in one folder on your server. Nothing is stored in the repository.
+The download page lists the files in one folder on the server. Nothing is stored in the repository.
 
 ```
 FERRITE_LANDING=true                     # the project page, docs and downloads are public

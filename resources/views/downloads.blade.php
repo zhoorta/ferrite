@@ -25,10 +25,10 @@
 @endphp
 <x-layouts::site title="Mac and Android apps" description="Download the Ferrite apps for Mac and Android: native companions for browsing, uploading and opening your files on a Ferrite server.">
     <section class="py-10 text-center sm:py-14">
-        <h1 class="font-serif text-4xl font-semibold tracking-tight">Ferrite on your Mac and phone</h1>
+        <h1 class="font-serif text-4xl font-semibold tracking-tight">Ferrite for Mac and Android</h1>
         <p class="mx-auto mt-4 max-w-2xl text-zinc-600 dark:text-zinc-400">
             Native companions for browsing, uploading and opening your files. They are not sync clients: nothing is mirrored to the device, files are fetched when you open them.
-            They talk to your own Ferrite server, so you need one first (<a class="underline" href="{{ route('docs.show', 'install') }}">install guide</a>).
+            They connect to a Ferrite server, so one has to be running first (<a class="underline" href="{{ route('docs.show', 'install') }}">install guide</a>).
         </p>
     </section>
 
@@ -61,7 +61,7 @@
     <section class="mt-10 grid gap-6 md:grid-cols-2">
         <div>
             <h2 class="font-serif text-xl font-semibold">What the server needs</h2>
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Ferrite v0.4.0 or newer, reachable over HTTPS. You sign in in the browser, with two-factor authentication if you use it, then choose which folder the app may reach and whether it may only read or also change things. The access shows up under Settings, API tokens, where you can revoke it.</p>
+            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Ferrite v0.4.0 or newer, reachable over HTTPS. Sign-in happens in the browser, with two-factor authentication if enabled. There you choose which folder the app may reach and whether it can only read or also change files. The access is listed under Settings, API tokens, and can be revoked there.</p>
         </div>
         <div>
             <h2 class="font-serif text-xl font-semibold">More</h2>

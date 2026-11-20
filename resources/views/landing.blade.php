@@ -10,8 +10,8 @@
         ['Files and folders', 'Chunked, resumable uploads that cope with multi-gigabyte files and flaky connections. Drag in whole folders, rename, move, copy, download a folder as a ZIP.'],
         ['Previews and search', 'Images, PDF, video, audio and text open in the browser, with thumbnails and seeking in large videos. Search finds words inside text files and PDFs, not just names.'],
         ['Sharing', 'Links with an optional password and expiry, sharing with other users as viewer or editor, and upload links so clients can drop files into one folder. Revoke any time.'],
-        ['Your storage', 'Local folder, S3-compatible or SFTP (a Hetzner Storage Box works well). Identical files are stored once.'],
-        ['Small team ready', 'Several users with quotas, an admin screen, two-factor authentication and passkeys.'],
+        ['Storage', 'Local folder, S3-compatible or SFTP (a Hetzner Storage Box works well). Identical files are stored once.'],
+        ['Several users', 'Accounts with quotas, an admin screen, two-factor authentication and passkeys.'],
         ['Safe by default', 'Files are served with nosniff and a strict policy; only an allowlist of types opens inline. Trash with restore and auto-purge, and earlier versions of a replaced file.'],
     ];
     $advanced = [
@@ -19,11 +19,11 @@
         ['Upload links', 'Give a client or a colleague a link that adds files to one folder without letting them see what is in it. With password and expiry.'],
         ['Versions', 'Replace a file and the earlier content is kept, up to a limit you set, and can be restored. A bad overwrite is no longer a disaster.'],
         ['A token API', 'Personal access tokens limited to one folder and to read, write, replace or trash. Apps connect through a browser approval with PKCE, never a pasted password.'],
-        ['Storage you can verify', 'A storage check confirms every blob exists, and with --verify reads each one back and compares its checksum.'],
+        ['Storage check', 'A storage check confirms every blob exists, and with --verify reads each one back and compares its checksum.'],
         ['Disks per user', 'Route each user to their own disk, such as a Storage Box over SFTP or an S3 bucket, with quotas per user. Identical files are stored once.'],
-        ['Usage at a glance', 'See where the space goes: by file type, biggest folders and files, trash and versions, and the savings from deduplication.'],
+        ['Usage', 'Where the space goes: by file type, biggest folders and files, trash and versions, and the savings from deduplication.'],
         ['Native apps', 'A Mac app with a menu bar item and Finder upload, and an Android app with share-sheet upload, both with themes. Resumable transfers, no mirroring.'],
-        ['Sign-in you control', 'Two-factor authentication and passkeys, registration closed by default, an admin screen and an activity log.'],
+        ['Sign-in', 'Two-factor authentication and passkeys, registration closed by default, an admin screen and an activity log.'],
     ];
 @endphp
 <!DOCTYPE html>
@@ -40,7 +40,7 @@
                 <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-6xl">Your files, on your server.</h1>
                 <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
                     Ferrite is a small, self-hosted file server you use from the browser: upload, preview, share. Without the weight of a full cloud suite.
-                    For one person or a small team. No sync clients and no WebDAV; apps for Mac and Android are there if you want them, not required.
+                    For one person or a small team. No sync clients and no WebDAV; optional apps for Mac and Android.
                 </p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
                     @if ($demo)
@@ -82,8 +82,8 @@
             </section>
 
             <section class="pb-16">
-                <h2 class="text-center font-serif text-2xl font-semibold">Small, but not simple-minded</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-center text-zinc-600 dark:text-zinc-400">The things you usually only get from a bigger suite, kept small enough to run on a cheap server.</p>
+                <h2 class="text-center font-serif text-2xl font-semibold">More than a file list</h2>
+                <p class="mx-auto mt-2 max-w-2xl text-center text-zinc-600 dark:text-zinc-400">Features usually found in larger suites, in an app that runs on a small server.</p>
                 <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($advanced as [$title, $text])
                         <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
@@ -98,14 +98,14 @@
             <section class="pb-16">
                 <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 class="font-serif text-2xl font-semibold">Apps for Mac and Android</h2>
-                    <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Browse, upload from the share sheet or Finder, and open your files from a native app. You sign in through your own server, and nothing is mirrored to the device.</p>
+                    <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Browse, upload from the share sheet or Finder, and open files from a native app. Sign-in goes through your server, and nothing is mirrored to the device.</p>
                     <a href="{{ route('downloads') }}" class="mt-5 inline-block rounded-lg bg-accent px-5 py-3 font-medium text-accent-foreground hover:opacity-90">Download the apps</a>
                 </div>
             </section>
 
             <section class="pb-16">
-                <h2 class="font-serif text-2xl font-semibold">Run it in five minutes</h2>
-                <p class="mt-2 text-zinc-600 dark:text-zinc-400">Two ways, same app. Either way you need a domain and HTTPS in front of it. The first account to register becomes the admin.</p>
+                <h2 class="font-serif text-2xl font-semibold">Install</h2>
+                <p class="mt-2 text-zinc-600 dark:text-zinc-400">Two ways, same app. Both need a domain and HTTPS in front of it. The first account to register becomes the admin.</p>
 
                 <div class="mt-6 grid gap-6">
                     <div class="min-w-0">
@@ -120,7 +120,7 @@ docker compose up -d</code></pre>
 
                     <div class="min-w-0">
                         <h3 class="font-serif text-lg font-semibold">With Laravel</h3>
-                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server that already runs PHP 8.3+ and nginx or Apache. You add two queue workers and a cron entry.</p>
+                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server that already runs PHP 8.3+ and nginx or Apache. Add two queue workers and a cron entry.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>git clone {{ $repo }}.git &amp;&amp; cd ferrite
 composer install --no-dev -o &amp;&amp; npm ci &amp;&amp; npm run build
 cp .env.example .env &amp;&amp; php artisan key:generate
@@ -136,7 +136,7 @@ php artisan migrate --force &amp;&amp; php artisan optimize</code></pre>
                 <h2 class="font-serif text-2xl font-semibold">What it is not</h2>
                 <p class="mt-2 max-w-3xl text-zinc-600 dark:text-zinc-400">
                     No sync clients, no WebDAV, no office document previews, no real-time collaboration. Replacing a file keeps its earlier versions, but there is no editing history beyond that.
-                    Ferrite does one job: keep your files on a disk you control, and let you open, share and download them from a browser.
+                    Ferrite does one job: keep files on your own disk, and open, share and download them from a browser.
                 </p>
             </section>
         </main>
