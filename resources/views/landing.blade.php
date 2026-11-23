@@ -7,10 +7,10 @@
         'amiga' => 'Amiga', 'nokia' => 'Nokia 3310', 'miami' => 'Miami Vice', 'wallstreet' => 'Wall Street', 'lotus' => 'Lotus 1-2-3', 'memphis' => 'Memphis',
     ];
     $features = [
-        ['Files and folders', 'Upload files or whole folders from the browser. Chunked uploads resume after a dropped connection, including multi-gigabyte files. Rename, move, copy, or download a folder as a ZIP. Select several items to download, move or trash them together. If a name already exists, you choose to replace it, keep both or skip it.'],
+        ['Files and folders', 'Upload files or whole folders from the browser. Chunked uploads resume after a dropped connection, including multi-gigabyte files. Rename, move and copy. Download files, a folder or a selection as a ZIP. Tick several items to move or trash them in one step. If a name already exists, you choose to replace it, keep both or skip it.'],
         ['Previews and search', 'Images, PDFs, video, audio and text open in the browser. Search matches file names and the text inside text files, code, CSV and PDFs, and shows the matching line.'],
         ['Sharing', 'Share with other users as viewer or editor, or by link with an optional password and expiry. An upload link lets someone add files to one folder without seeing what is in it.'],
-        ['Storage', 'A local folder, S3-compatible storage or SFTP, such as a Hetzner Storage Box. Each user can be routed to their own disk. Identical files are stored once. A disk can be set to encrypt files at rest. The usage page breaks space down by file type, folder and file, trash and versions, and shows what deduplication saves.'],
+        ['Storage', 'A local folder, S3-compatible storage or SFTP, such as a Hetzner Storage Box. An administrator can assign a disk to each user. Identical files are stored once. A disk can store its files encrypted. The usage page breaks space down by file type, folder and file, trash and versions, and shows what deduplication saves.'],
         ['Users and access', 'Accounts with quotas, an admin screen, two-factor authentication and passkeys. Registration is closed by default, and an activity log records file operations.'],
         ['Trash and versions', 'Deleted files go to the trash and can be restored, and are purged after a set time. Replacing a file keeps the earlier content, up to a limit you set.'],
     ];
@@ -91,7 +91,7 @@
                 <div class="mt-6 grid gap-6">
                     <div class="min-w-0">
                         <h3 class="font-serif text-lg font-semibold">With Docker</h3>
-                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server with Docker. The image brings PHP, the web server, the workers and the scheduler.</p>
+                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">A server with Docker. The image includes PHP, the web server, the workers and the scheduler.</p>
                         <pre class="mt-3 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>git clone {{ $repo }}.git ferrite &amp;&amp; cd ferrite
 cp docker/ferrite.env.example ferrite.env
 docker compose run --rm ferrite php artisan key:generate --show
@@ -116,7 +116,7 @@ php artisan migrate --force &amp;&amp; php artisan optimize</code></pre>
             <section class="pb-20">
                 <h2 class="font-serif text-2xl font-semibold">Not included</h2>
                 <p class="mt-2 max-w-3xl text-zinc-600 dark:text-zinc-400">
-                    Ferrite has no sync clients, no WebDAV, no office document previews and no real-time collaboration. It stores and manages files; it is not a document editing suite.
+                    Ferrite has no sync clients, no WebDAV, no office document previews and no real-time collaboration.
                 </p>
             </section>
         </main>

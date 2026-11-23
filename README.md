@@ -17,10 +17,10 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
 
 ## Features
 
-- **Files and folders.** Upload files or whole folders from the browser. Chunked uploads resume after a dropped connection, including multi-gigabyte files. Rename, move, copy, download with Range support, or download a folder as a ZIP. Select several items to download, move or trash them together. Uploading a name that already exists asks whether to replace it, keep both, skip it or cancel.
+- **Files and folders.** Upload files or whole folders from the browser. Chunked uploads resume after a dropped connection, including multi-gigabyte files. Rename, move and copy. Download with Range support, and download files, a folder or a selection as a ZIP. Tick several items to move or trash them in one step. Uploading a name that already exists asks whether to replace it, keep both, skip it or cancel.
 - **Previews and search.** Images (with thumbnails), PDFs, video, audio and text open in the browser. Search matches file names and the text inside text files, Markdown, code, CSV and PDFs, on SQLite, MySQL and MariaDB.
 - **Sharing.** Share with other users as viewer or editor, or by link with an optional password and expiry. An upload link lets someone add files to one folder without seeing what is in it.
-- **Storage.** A local folder, S3-compatible storage or SFTP. New uploads go to the default disk, or to a disk an administrator assigns to a user. Identical files are stored once. A disk can be set to encrypt files at rest with XChaCha20-Poly1305 ([docs/encryption.md](docs/encryption.md)). Names, sizes and the database are not encrypted.
+- **Storage.** A local folder, S3-compatible storage or SFTP. New uploads go to the default disk, or to a disk an administrator assigns to a user. Identical files are stored once. A disk can store its files encrypted with XChaCha20-Poly1305 ([docs/encryption.md](docs/encryption.md)). Names, sizes and the database are not encrypted.
 - **Usage.** Space is broken down by file type, folder and file, trash and versions, with the amount deduplication saves.
 - **Users and access.** Accounts with quotas, an admin screen, two-factor authentication and passkeys. An activity log records file operations.
 - **Trash and versions.** Deleted files go to the trash and can be restored, and are purged after a set time. Replacing a file keeps the earlier content, which can be restored from the web app.
@@ -111,7 +111,7 @@ A fresh install shows a **Welcome** page where you create the administrator acco
 
 ## Develop
 
-Contributions are welcome; read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 ```sh
 composer install && npm ci
