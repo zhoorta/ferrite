@@ -7,23 +7,12 @@
         'amiga' => 'Amiga', 'nokia' => 'Nokia 3310', 'miami' => 'Miami Vice', 'wallstreet' => 'Wall Street', 'lotus' => 'Lotus 1-2-3', 'memphis' => 'Memphis',
     ];
     $features = [
-        ['Files and folders', 'Chunked, resumable uploads that cope with multi-gigabyte files and flaky connections. Drag in whole folders, rename, move, copy, download a folder as a ZIP.'],
-        ['Previews and search', 'Images, PDF, video, audio and text open in the browser, with thumbnails and seeking in large videos. Search finds words inside text files and PDFs, not just names.'],
-        ['Sharing', 'Links with an optional password and expiry, sharing with other users as viewer or editor, and upload links so clients can drop files into one folder. Revoke any time.'],
-        ['Storage', 'Local folder, S3-compatible or SFTP (a Hetzner Storage Box works well). Identical files are stored once.'],
-        ['Several users', 'Accounts with quotas, an admin screen, two-factor authentication and passkeys.'],
-        ['Safe by default', 'Files are served with nosniff and a strict policy; only an allowlist of types opens inline. Trash with restore and auto-purge, and earlier versions of a replaced file.'],
-    ];
-    $advanced = [
-        ['Search inside files', 'Finds words in text, Markdown, code, CSV and PDF, on SQLite, MySQL and MariaDB. Results show the matching line and where it lives.'],
-        ['Upload links', 'Give a client or a colleague a link that adds files to one folder without letting them see what is in it. With password and expiry.'],
-        ['Versions', 'Replace a file and the earlier content is kept, up to a limit you set, and can be restored. A bad overwrite is no longer a disaster.'],
-        ['A token API', 'Personal access tokens limited to one folder and to read, write, replace or trash. Apps connect through a browser approval with PKCE, never a pasted password.'],
-        ['Storage check', 'A storage check confirms every blob exists, and with --verify reads each one back and compares its checksum.'],
-        ['Disks per user', 'Route each user to their own disk, such as a Storage Box over SFTP or an S3 bucket, with quotas per user. Identical files are stored once.'],
-        ['Usage', 'Where the space goes: by file type, biggest folders and files, trash and versions, and the savings from deduplication.'],
-        ['Native apps', 'A Mac app with a menu bar item and Finder upload, and an Android app with share-sheet upload, both with themes. Resumable transfers, no mirroring.'],
-        ['Sign-in', 'Two-factor authentication and passkeys, registration closed by default, an admin screen and an activity log.'],
+        ['Files and folders', 'Upload files or whole folders from the browser. Chunked uploads resume after a dropped connection, including multi-gigabyte files. Rename, move, copy, or download a folder as a ZIP.'],
+        ['Previews and search', 'Images, PDFs, video, audio and text open in the browser. Search matches file names and the text inside text files, code, CSV and PDFs, and shows the matching line.'],
+        ['Sharing', 'Share with other users as viewer or editor, or by link with an optional password and expiry. An upload link lets someone add files to one folder without seeing what is in it.'],
+        ['Storage', 'A local folder, S3-compatible storage or SFTP, such as a Hetzner Storage Box. Each user can be routed to their own disk. Identical files are stored once, and a usage page shows where the space goes.'],
+        ['Users and access', 'Accounts with quotas, an admin screen, two-factor authentication and passkeys. Registration is closed by default, and an activity log records file operations.'],
+        ['Trash and versions', 'Deleted files go to the trash and can be restored, and are purged after a set time. Replacing a file keeps the earlier content, up to a limit you set.'],
     ];
 @endphp
 <!DOCTYPE html>
@@ -42,25 +31,18 @@
                     Ferrite is a file server with a web interface. Upload, organise, preview and share files, stored on a local disk, an S3 bucket or an SFTP box.
                     For individuals and small teams, with an API for scripts and apps that need storage.
                 </p>
-                <p class="mx-auto mt-3 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">No sync clients and no WebDAV.
-                </p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
                     @if ($demo)
-                        <a href="{{ $demo }}" class="rounded-lg bg-accent px-5 py-3 font-medium text-accent-foreground hover:opacity-90">Try the live demo</a>
+                        <a href="{{ $demo }}" class="rounded-lg bg-accent px-5 py-3 font-medium text-accent-foreground hover:opacity-90">Try the demo</a>
                     @endif
-                    <a href="{{ $repo }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Get the source</a>
-                    <a href="{{ route('docs.index') }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Read the docs</a>
+                    <a href="{{ $repo }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Source code</a>
+                    <a href="{{ route('docs.index') }}" class="rounded-lg border border-zinc-300 px-5 py-3 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Documentation</a>
                 </div>
                 <p class="mt-4 text-sm text-zinc-500">Free software, AGPL-3.0. Laravel 13, Livewire, Flux UI.</p>
             </section>
 
             <section class="pb-16">
                 <img id="app-shot" src="{{ asset('img/themes/ferrite.png') }}" alt="The Ferrite file browser: a sidebar, folders and files in a list with upload and new-folder buttons" width="1280" height="800" class="w-full rounded-xl border border-zinc-200 shadow-2xl dark:border-zinc-800">
-            </section>
-
-            <section class="pb-16 text-center">
-                <h2 class="font-serif text-2xl font-semibold">Who it is for</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Self-hosters, homelabs and small teams who want private file storage on a VPS or a Storage Box.</p>
             </section>
 
             <section class="grid gap-4 pb-16 sm:grid-cols-2 lg:grid-cols-3">
@@ -73,24 +55,10 @@
             </section>
 
             <section class="pb-16">
-                <h2 class="text-center font-serif text-2xl font-semibold">More than a file list</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-center text-zinc-600 dark:text-zinc-400">Features usually found in larger suites, in an app that runs on a small server.</p>
-                <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ($advanced as [$title, $text])
-                        <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                            <h3 class="font-serif text-lg font-semibold">{{ $title }}</h3>
-                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{{ $text }}</p>
-                        </div>
-                    @endforeach
-                </div>
-                <p class="mt-4 text-center text-sm text-zinc-500">All of it is in the <a class="underline" href="{{ route('docs.index') }}">documentation</a>.</p>
-            </section>
-
-            <section class="pb-16">
                 <h2 class="font-serif text-2xl font-semibold">API</h2>
                 <p class="mt-2 max-w-3xl text-zinc-600 dark:text-zinc-400">
-                    Scripts and other programs can use Ferrite through an HTTP API: list and search, download with Range, upload in resumable chunks, replace files with versions kept.
-                    A token is limited to one folder and to the abilities it was given (read, write, replace, trash), and can be revoked in Settings.
+                    Scripts and other programs can use Ferrite through an HTTP API: list and search, download, upload in resumable chunks, and replace files.
+                    A token is limited to one folder and to the operations it was given (read, write, replace, trash), and can be revoked in Settings.
                 </p>
                 <pre class="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"><code>curl -H "Authorization: Bearer $TOKEN" \
   "https://files.example.com/api/v1/files?parent=root"</code></pre>
@@ -98,8 +66,8 @@
             </section>
 
             <section class="pb-16 text-center">
-                <h2 class="font-serif text-2xl font-semibold">Pick a look</h2>
-                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Fifteen themes, from a calm dark default to Classic Mac, Amiga and green phosphor. Try one, this whole page changes. Every user picks their own.</p>
+                <h2 class="font-serif text-2xl font-semibold">Themes</h2>
+                <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Fifteen themes, including Classic Mac, Amiga, Commodore, Nokia 3310 and several terminal designs. Each user picks their own. Choose one below to preview it on this page.</p>
                 <div class="mt-6 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Theme">
                     @foreach ($themes as $key => $label)
                         <button type="button" role="radio" data-palette-choice="{{ $key }}" aria-checked="false"
@@ -111,14 +79,14 @@
             <section class="pb-16">
                 <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 class="font-serif text-2xl font-semibold">Apps for Mac and Android</h2>
-                    <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">Browse, upload from the share sheet or Finder, and open files from a native app. Sign-in goes through your server, and nothing is mirrored to the device.</p>
+                    <p class="mx-auto mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">The Mac app uploads from Finder and has a menu bar item. The Android app uploads from the share sheet. Both sign in through your server and resume interrupted transfers. Neither mirrors folders to the device.</p>
                     <a href="{{ route('downloads') }}" class="mt-5 inline-block rounded-lg bg-accent px-5 py-3 font-medium text-accent-foreground hover:opacity-90">Download the apps</a>
                 </div>
             </section>
 
             <section class="pb-16">
                 <h2 class="font-serif text-2xl font-semibold">Install</h2>
-                <p class="mt-2 text-zinc-600 dark:text-zinc-400">Two ways, same app. Both need a domain and HTTPS in front of it. The first account to register becomes the admin.</p>
+                <p class="mt-2 text-zinc-600 dark:text-zinc-400">Ferrite runs with Docker or as a regular Laravel application. Both need a domain and HTTPS. The first account to register becomes the admin, and registration then closes.</p>
 
                 <div class="mt-6 grid gap-6">
                     <div class="min-w-0">
@@ -142,14 +110,13 @@ php artisan migrate --force &amp;&amp; php artisan optimize</code></pre>
                     </div>
                 </div>
 
-                <p class="mt-3 text-sm text-zinc-500">Full guide, with the web server, workers and reverse proxy: <a class="underline" href="{{ route('docs.show', 'install') }}">the install guide</a>. Everything else is in the <a class="underline" href="{{ route('docs.index') }}">documentation</a>.</p>
+                <p class="mt-3 text-sm text-zinc-500">Full guide, with the web server, workers and reverse proxy: <a class="underline" href="{{ route('docs.show', 'install') }}">the install guide</a>. The rest is in the <a class="underline" href="{{ route('docs.index') }}">documentation</a>.</p>
             </section>
 
             <section class="pb-20">
-                <h2 class="font-serif text-2xl font-semibold">What it is not</h2>
+                <h2 class="font-serif text-2xl font-semibold">Not included</h2>
                 <p class="mt-2 max-w-3xl text-zinc-600 dark:text-zinc-400">
-                    No sync clients, no WebDAV, no office document previews, no real-time collaboration. Replacing a file keeps its earlier versions, but there is no editing history beyond that.
-                    Ferrite does one job: keep files on your own disk, and open, share and download them from a browser.
+                    Ferrite has no sync clients, no WebDAV, no office document previews and no real-time collaboration. It stores and manages files; it is not a document editing suite.
                 </p>
             </section>
         </main>

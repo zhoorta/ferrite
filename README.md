@@ -7,7 +7,7 @@
 
 # Ferrite by StackCare
 
-A small, self-hosted file server for one person or a small team: upload, preview and share from the browser, without the weight of a full cloud suite. For self-hosters and homelabs who want private storage on their own server. Web only, built with Laravel, Livewire and Flux. No sync clients and no WebDAV, by design.
+Ferrite is a self-hosted file server with a web interface. Upload, organise, preview and share files stored on a local disk, S3-compatible storage or an SFTP server. It is for individuals and small teams, and has an HTTP API for other applications. Built with Laravel, Livewire and Flux.
 
 Not to be confused with other projects of the same name, such as the Rust Markdown editor Ferrite and the Rust DNS filter ferrite-server. This one is a Laravel file-storage app, named after the magnetic coating on tape.
 
@@ -15,20 +15,18 @@ Not to be confused with other projects of the same name, such as the Rust Markdo
   <img src="docs/img/demo.gif" alt="A short tour of Ferrite: one click into the demo, uploading files, searching for a word inside a PDF and a text file, replacing a file that already exists, and switching themes" width="900">
 </p>
 
-## What it does
+## Features
 
-- **Files and folders** with upload (chunked and resumable, so multi-gigabyte files and flaky connections are fine; whole folders by drag and drop), download with Range support, rename, move, and folder download as ZIP. Uploading a name that already exists asks whether to replace it, keep both, skip it or cancel.
-- **Previews** for images, PDF, video, audio and text, plus image thumbnails.
-- **Trash** with restore, permanent delete and automatic purge.
-- **Sharing**: with other users (view or edit) and with **links** (optional password and expiry, view-only, revoke), and **upload links** that let guests add files to one folder without seeing it.
-- **Several users** with quotas, an admin screen, two-factor authentication and passkeys.
-- **Storage disks**: local folder, S3-compatible or SFTP, switchable per instance. New uploads go to the default disk, or to a disk an admin assigns to a user.
-- **Search** by name and **inside files** (text, Markdown, code, CSV and PDF; SQLite, MySQL and MariaDB), plus an **activity log**.
+- **Files and folders.** Upload files or whole folders from the browser. Chunked uploads resume after a dropped connection, including multi-gigabyte files. Rename, move, copy, download with Range support, or download a folder as a ZIP. Uploading a name that already exists asks whether to replace it, keep both, skip it or cancel.
+- **Previews and search.** Images (with thumbnails), PDFs, video, audio and text open in the browser. Search matches file names and the text inside text files, Markdown, code, CSV and PDFs, on SQLite, MySQL and MariaDB.
+- **Sharing.** Share with other users as viewer or editor, or by link with an optional password and expiry. An upload link lets someone add files to one folder without seeing what is in it.
+- **Storage.** A local folder, S3-compatible storage or SFTP. New uploads go to the default disk, or to a disk an administrator assigns to a user. Identical files are stored once.
+- **Users and access.** Accounts with quotas, an admin screen, two-factor authentication and passkeys. An activity log records file operations.
+- **Trash and versions.** Deleted files go to the trash and can be restored, and are purged after a set time. Replacing a file keeps the earlier content, which can be restored from the web app.
+- **API and apps.** A token API for scripts ([docs/api.md](docs/api.md)), and apps for Mac and Android that use it ([docs/apps.md](docs/apps.md)). The apps upload and browse; they do not synchronise folders.
+- **Themes.** Fifteen themes, selected per user.
 
-- **Versions**: replacing a file keeps its earlier content, restorable from the web app.
-- **Apps for Mac and Android** (companions, not sync clients), and a token **API** for scripts: [docs/apps.md](docs/apps.md), [docs/api.md](docs/api.md).
-
-Not included (on purpose, for now): sync clients, WebDAV, office document previews, real-time collaboration, OCR for scanned documents.
+Not included: sync clients, WebDAV, office document previews, real-time collaboration and OCR for scanned documents.
 
 Project page: https://ferrite.stackcare.pt · Docs: https://ferrite.stackcare.pt/docs · Apps: https://ferrite.stackcare.pt/download · Live demo: https://demo.ferrite.stackcare.pt
 
@@ -39,7 +37,7 @@ Project page: https://ferrite.stackcare.pt · Docs: https://ferrite.stackcare.pt
 | ![Ferrite file browser in grid view with image thumbnails](docs/img/screenshots/files-grid.png) | ![Usage page: quota, breakdown by type, biggest folders and files](docs/img/screenshots/usage.png) |
 | The file browser in grid view. | The usage page: where your space goes. |
 | ![Classic Mac theme](public/img/themes/mac.png) | ![Amber terminal theme](public/img/themes/amber.png) |
-| Fifteen themes, picked per user. Here: Classic Mac. | Amber terminal. |
+| Classic Mac, one of fifteen themes. | Amber terminal. |
 | ![Miami Vice theme](public/img/themes/miami.png) | ![Nokia 3310 theme](public/img/themes/nokia.png) |
 | Miami Vice. | Nokia 3310. |
 
@@ -47,7 +45,7 @@ Try it without installing anything: https://demo.ferrite.stackcare.pt
 
 ## Install
 
-Two ways to run Ferrite. Pick one; both give you the same app.
+Ferrite runs with Docker or as a regular Laravel application. Both give you the same app.
 
 | | Docker | Laravel (without Docker) |
 | --- | --- | --- |
