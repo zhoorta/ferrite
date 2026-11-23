@@ -18,20 +18,20 @@ class Docs
 {
     /** @var array<string, array{title: string, blurb: string, group: string}> slug => page, in menu order; the slug is the file name in docs/ */
     public const PAGES = [
-        'install' => ['title' => 'Install and configure', 'blurb' => 'Docker or a standard Laravel install, web server, workers, reverse proxy, backups and upgrades.', 'group' => 'Run it'],
-        'storage-search-activity' => ['title' => 'Disks, search and activity', 'blurb' => 'Local, S3 and SFTP disks, name search and the activity log.', 'group' => 'Run it'],
-        'content-search' => ['title' => 'Search inside files', 'blurb' => 'What is indexed, and how it works on SQLite, MySQL and MariaDB.', 'group' => 'Run it'],
-        'storage-check' => ['title' => 'Storage check', 'blurb' => 'Verify that every blob is there and still has the right content.', 'group' => 'Run it'],
-        'users' => ['title' => 'Users and registration', 'blurb' => 'Accounts, quotas, registration policy and the trash.', 'group' => 'Run it'],
-        'security' => ['title' => 'Security', 'blurb' => 'What was reviewed, and the known limits.', 'group' => 'Run it'],
-        'public-site' => ['title' => 'Project page and demo mode', 'blurb' => 'How to run a public project page, downloads and a demo.', 'group' => 'Run it'],
-        'apps' => ['title' => 'Mac and Android apps', 'blurb' => 'Download, connect and use the native companions.', 'group' => 'Use it'],
-        'sharing' => ['title' => 'Sharing', 'blurb' => 'Share with users, links with password and expiry, upload links.', 'group' => 'Use it'],
-        'uploads' => ['title' => 'Uploads', 'blurb' => 'Chunked, resumable uploads and what happens when a name is taken.', 'group' => 'Use it'],
-        'versions' => ['title' => 'Versions', 'blurb' => 'Replacing a file keeps the earlier content; restore it from the web app.', 'group' => 'Use it'],
-        'themes' => ['title' => 'Themes', 'blurb' => 'The fifteen themes, and how to add one.', 'group' => 'Use it'],
-        'serving-files' => ['title' => 'How files are served', 'blurb' => 'Headers, inline types and why a file cannot attack the site.', 'group' => 'Use it'],
-        'api' => ['title' => 'API', 'blurb' => 'Tokens, browser approval for apps, and every endpoint under /api/v1.', 'group' => 'Build on it'],
+        'install' => ['title' => 'Install and configure', 'blurb' => 'Docker or a standard Laravel install, web server, workers, reverse proxy, backups and upgrades.', 'group' => 'Installation and administration'],
+        'storage-search-activity' => ['title' => 'Disks, search and activity', 'blurb' => 'Local, S3 and SFTP disks, name search and the activity log.', 'group' => 'Installation and administration'],
+        'content-search' => ['title' => 'Search inside files', 'blurb' => 'What is indexed, and how it works on SQLite, MySQL and MariaDB.', 'group' => 'Installation and administration'],
+        'storage-check' => ['title' => 'Storage check', 'blurb' => 'Verify that every blob is there and still has the right content.', 'group' => 'Installation and administration'],
+        'users' => ['title' => 'Users and registration', 'blurb' => 'Accounts, quotas, registration policy and the trash.', 'group' => 'Installation and administration'],
+        'security' => ['title' => 'Security', 'blurb' => 'What was reviewed, and the known limits.', 'group' => 'Installation and administration'],
+        'public-site' => ['title' => 'Project page and demo mode', 'blurb' => 'How to run a public project page, downloads and a demo.', 'group' => 'Installation and administration'],
+        'apps' => ['title' => 'Mac and Android apps', 'blurb' => 'Download, connect and use the native companions.', 'group' => 'Features'],
+        'sharing' => ['title' => 'Sharing', 'blurb' => 'Share with users, links with password and expiry, upload links.', 'group' => 'Features'],
+        'uploads' => ['title' => 'Uploads', 'blurb' => 'Chunked, resumable uploads and what happens when a name is taken.', 'group' => 'Features'],
+        'versions' => ['title' => 'Versions', 'blurb' => 'Replacing a file keeps the earlier content; restore it from the web app.', 'group' => 'Features'],
+        'themes' => ['title' => 'Themes', 'blurb' => 'The fifteen themes, and how to add one.', 'group' => 'Features'],
+        'serving-files' => ['title' => 'How files are served', 'blurb' => 'Headers, inline types and why a file cannot attack the site.', 'group' => 'Features'],
+        'api' => ['title' => 'API', 'blurb' => 'Tokens, browser approval for apps, and every endpoint under /api/v1.', 'group' => 'API'],
     ];
 
     public static function has(string $slug): bool
